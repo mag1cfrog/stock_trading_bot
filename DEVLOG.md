@@ -1,0 +1,29 @@
+# Development Log for Automated Stock Trading System
+
+This log documents the development process, decisions, challenges, and progress of the automated stock trading system project.
+
+## 2024-06-05
+
+### Introduction
+Today marks the official start of the automated stock trading system project. The main goal of this project is to develop a system that can autonomously download stock data, analyze it using pre-defined algorithms, and execute trades based on the analysis.
+
+### Initial Setup
+- Created the GitHub repository to host the project code and documentation.
+- Set up the basic folder structure accommodating Python and Go codebases.
+- Configured the `.gitignore` file suitable for Python and Go development environments.
+
+### Goals
+- **Benchmarking Performance**: The first technical objective is to benchmark the API fetching capabilities of Python and Go. This will help determine which programming language is more suited for handling real-time stock data efficiently.
+- **Project Documentation**: Begin documenting the development process systematically in this DEVLOG.md to track progress, decisions, and learnings.
+
+### Next Steps
+- ~~Research and select the stock market APIs that will be used for fetching the data.~~ We would use Alpaca as the stock data API source.
+- Prepare initial benchmarking scripts for both Python and Go to compare performance in terms of speed and resource utilization.
+- Outline the criteria for evaluating the benchmark results.
+
+### Challenges Anticipated
+- Anticipating potential challenges with rate limiting of stock market APIs during high-frequency data fetching.
+- Uncertainties about the optimal concurrency model in Python for managing simultaneous API calls efficiently.
+
+### Reflection
+Setting clear, measurable goals at the outset is crucial for maintaining focus and assessing progress. The setup phase is crucial for ensuring that the technical infrastructure is in place for the upcoming development challenges.

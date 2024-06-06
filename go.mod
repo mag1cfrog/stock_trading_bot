@@ -1,6 +1,6 @@
 module stock_trading_bot
 
-go 1.18
+go 1.22
 
 require (
 	cloud.google.com/go v0.114.0 // indirect

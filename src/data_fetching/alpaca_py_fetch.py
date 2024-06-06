@@ -14,8 +14,8 @@ from alpaca.data.timeframe import TimeFrame
 def test_alpaca_api_with_dynamic_time_range(symbol="NVDA", timeframe=TimeFrame.Day, duration=60, days_back=1, increment_by_days=2):
 
     
-    api_key = os.getenv('ALPACA_API_KEY')
-    secret_key = os.getenv('ALPACA_SECRET_KEY')
+    api_key = os.getenv('APCA_API_KEY_ID')
+    secret_key = os.getenv('APCA_API_SECRET_KEY')
 
     client = StockHistoricalDataClient(api_key, secret_key)
 
@@ -118,7 +118,7 @@ def main():
                     filename=f'./logs/alpaca_api_test_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log',
                     filemode='a')  # Append mode
         
-    test_alpaca_api_with_longest_time_range()
+    test_alpaca_api_with_dynamic_time_range()
 
 
 if __name__ == "__main__":

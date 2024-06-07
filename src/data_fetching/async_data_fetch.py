@@ -1,17 +1,21 @@
+import os
 import time
 import base64
 import aiohttp
 import asyncio
 
-from src.data_fetching import __version__
+__version__ = "0.22.0"
 
 class BaseAsyncRESTClient:
     def __init__(self, base_url, api_key=None, retry_attempts=3, retry_wait=1, retry_codes=None):
         self.base_url = base_url
-        self.api_key = api_key
+        self._api_key = os.getenv("APCA_API_KEY_ID")
+        self._secret_key = os.getenv("APCA_API_SECRET_KEY")
         self.retry_attempts = retry_attempts
         self.retry_wait = retry_wait
         self.retry_codes = retry_codes if retry_codes is not None else [429, 504]
+        self._oauth_token = None
+        self._use_basic_auth = False
 
 
         
@@ -56,7 +60,7 @@ class BaseAsyncRESTClient:
     
     async def _request(self, method, path, data=None):
         url = f"{self.base_url}/{path}"
-        headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
+        headers = self._get_default_headers()
         params = data if method == "GET" else None
         json = data if method != "GET" else None
         
@@ -80,12 +84,14 @@ class BaseAsyncRESTClient:
     
 # Usage in an async function
 async def main():
-    client = BaseAsyncRESTClient("https://api.example.com", "your_api_key")
+    client = BaseAsyncRESTClient("https://data.alpaca.markets/v2/stocks")
+    print(str(client._api_key))
     try:
-        data = await client._request("GET", "data/endpoint")
+        data = await client._request("GET", "bars?symbols=nvda&timeframe=1Day&start=2020-01-03T00%3A00%3A00Z&end=2022-01-04T00%3A00%3A00Z&limit=1000&adjustment=all&feed=sip&sort=asc")
         print(data)
     except Exception as e:
         print(f"Failed to fetch data: {e}")
 
 if __name__ == "__main__":
+    
     asyncio.run(main())

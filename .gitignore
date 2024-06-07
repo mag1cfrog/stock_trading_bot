@@ -189,3 +189,6 @@ go.work.sum
 
 # data folder
 data/
+
+# Exploratory notebooks
+notebooks/

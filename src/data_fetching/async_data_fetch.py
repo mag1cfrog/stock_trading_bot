@@ -83,15 +83,29 @@ class BaseAsyncRESTClient:
                     
     
 # Usage in an async function
-async def main():
-    client = BaseAsyncRESTClient("https://data.alpaca.markets/v2/stocks")
-    print(str(client._api_key))
+async def fetch_data(client):
+    
+    path = "bars?symbols=nvda&timeframe=1Day&start=2016-01-03T00%3A00%3A00Z&end=2022-01-04T00%3A00%3A00Z&limit=1000&adjustment=all&feed=sip&sort=asc"
     try:
-        data = await client._request("GET", "bars?symbols=nvda&timeframe=1Day&start=2020-01-03T00%3A00%3A00Z&end=2022-01-04T00%3A00%3A00Z&limit=1000&adjustment=all&feed=sip&sort=asc")
-        print(data)
+        data = await client._request("GET", path)
+        # print(data)
     except Exception as e:
         print(f"Failed to fetch data: {e}")
 
+
+async def main():
+    client = BaseAsyncRESTClient("https://data.alpaca.markets/v2/stocks")
+    start_time = time.time()
+    duration = 60  # Run for one minute
+    calls = 0
+
+    while time.time() - start_time < duration:
+        await fetch_data(client)
+        calls += 1
+
+    print(f"Total API calls made in one minute: {calls}")
+
+
 if __name__ == "__main__":
-    
-    asyncio.run(main())
+    for _ in range(10):
+        asyncio.run(main())

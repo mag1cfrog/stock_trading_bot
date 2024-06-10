@@ -1,4 +1,37 @@
-# Development Log for Automated Stock Trading System
+# Development Log for Automated Stock Trading System- [Development Log for Automated Stock Trading System](#development-log-for-automated-stock-trading-system)
+- [Development Log for Automated Stock Trading System- Development Log for Automated Stock Trading System](#development-log-for-automated-stock-trading-system--development-log-for-automated-stock-trading-system)
+  - [2024-06-04](#2024-06-04)
+    - [Introduction](#introduction)
+    - [Initial Setup](#initial-setup)
+    - [Goals](#goals)
+    - [Next Steps](#next-steps)
+    - [Challenges Anticipated](#challenges-anticipated)
+    - [Reflection](#reflection)
+  - [Development Log Entry - 2024-06-05](#development-log-entry---2024-06-05)
+    - [Testing the Alpaca-py SDK Performance](#testing-the-alpaca-py-sdk-performance)
+      - [Objective:](#objective)
+      - [Methodology:](#methodology)
+      - [Findings:](#findings)
+      - [Conclusion:](#conclusion)
+    - [Next Steps:](#next-steps-1)
+  - [2024-06-06: Performance Testing of Alpaca Official GO SDK](#2024-06-06-performance-testing-of-alpaca-official-go-sdk)
+    - [Objective](#objective-1)
+    - [Methodology](#methodology-1)
+    - [Results](#results)
+    - [Comparison with Python SDK](#comparison-with-python-sdk)
+    - [Conclusion](#conclusion-1)
+    - [Next Steps](#next-steps-2)
+  - [2024-06-07: Asynchronous API Call Performance Testing and Future Planning](#2024-06-07-asynchronous-api-call-performance-testing-and-future-planning)
+    - [Objective](#objective-2)
+    - [Methodology](#methodology-2)
+    - [Results](#results-1)
+    - [Conclusion](#conclusion-2)
+    - [Next Steps](#next-steps-3)
+  - [2024-06-09: Testing Customized Go Program for API Fetching](#2024-06-09-testing-customized-go-program-for-api-fetching)
+    - [Test Setup and Findings:](#test-setup-and-findings)
+    - [Observations:](#observations)
+    - [Conclusions:](#conclusions)
+
 
 This log documents the development process, decisions, challenges, and progress of the automated stock trading system project.
 
@@ -95,5 +128,26 @@ The custom asynchronous Python approach demonstrated a higher throughput in term
 ### Next Steps
 - **Planning and Implementing Data Storage**: The next phase will focus on developing an efficient structure for initial data storage. Despite the custom implementation's higher performance, we will utilize Alpaca's official SDK for data extraction due to its ease of use. This decision allows us to focus more on building and optimizing the overall system architecture.
 - **System Architecture Development**: Prioritize the design and implementation of the system's big picture, ensuring that data handling and storage are optimized for scalability and performance.
+
+
+## 2024-06-09: Testing Customized Go Program for API Fetching
+
+Today, we conducted extensive testing on our customized Go program designed to fetch data from Alpaca's API. Our objective was to compare its performance against our previously implemented Python async method under similar conditions.
+
+### Test Setup and Findings:
+- **Connection Method:** Due to an IP ban presumably from excessive testing, we utilized a VPN, which slightly reduced our connection speed.
+- **Pool Size Variance:** We experimented with different pool sizes in the Go program:
+  - Size = 1: 396 calls/min
+  - Size = 2: 359 calls/min
+  - Size = 3: 402 calls/min
+  - Size = 4: 272 calls/min
+  - Size = 5: 402 calls/min (with errors indicating "retries exceeded")
+
+### Observations:
+- The Go program's performance was not linear with the pool size, which suggests that there might be optimal concurrency levels for API calling that do not simply scale with the number of workers.
+- Despite the reduced network performance due to the VPN, the Go program significantly outperformed the Python async script, making around 400 calls per minute compared to Python's 145 calls per minute.
+
+### Conclusions:
+Although the customized Go program demonstrates superior performance, indicating a substantial advantage in using Go for API fetching tasks, we have decided to use this knowledge as a proof of concept rather than immediately implementing these customizations. For now, our focus will shift towards building a more comprehensive and general system. The insights gained will guide future optimizations but are not a priority in the current phase of development.
 
 

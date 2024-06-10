@@ -192,3 +192,6 @@ data/
 
 # Exploratory notebooks
 notebooks/
+
+# Target folder
+target/

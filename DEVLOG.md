@@ -1,5 +1,8 @@
-# Development Log for Automated Stock Trading System- [Development Log for Automated Stock Trading System](#development-log-for-automated-stock-trading-system)
-- [Development Log for Automated Stock Trading System- Development Log for Automated Stock Trading System](#development-log-for-automated-stock-trading-system--development-log-for-automated-stock-trading-system)
+# Development Log for Automated Stock Trading System- 
+
+
+
+- [Development Log for Automated Stock Trading System-](#development-log-for-automated-stock-trading-system-)
   - [2024-06-04](#2024-06-04)
     - [Introduction](#introduction)
     - [Initial Setup](#initial-setup)

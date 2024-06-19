@@ -1,21 +1,20 @@
-import os
-import time
 import logging
-import itertools
-from concurrent.futures import ThreadPoolExecutor
-import json
+import os
+
+# import itertools
+# from concurrent.futures import ThreadPoolExecutor
+# import json
 import threading
+import time
 from datetime import datetime, timedelta
+
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
 
-
-
-
 # def test_alpaca_api_with_dynamic_time_range(symbol="NVDA", timeframe=TimeFrame.Day, duration=60, days_back=1, increment_by_days=2):
 
-    
+
 #     api_key = os.getenv('APCA_API_KEY_ID')
 #     secret_key = os.getenv('APCA_API_SECRET_KEY')
 
@@ -84,20 +83,20 @@ from alpaca.data.timeframe import TimeFrame
 
 # def test_alpaca_api_with_longest_time_range(symbol="NVDA", timeframe=TimeFrame.Day, duration=60, time_back=1):
 
-    
+
 #     api_key = os.getenv('APCA_API_KEY_ID')
 #     secret_key = os.getenv('APCA_API_SECRET_KEY')
 
 #     client = StockHistoricalDataClient(api_key, secret_key)
 
 #     os.makedirs('./data/landing', exist_ok=True)
-    
+
 
 #     # Define initial time range
 #     end_date = datetime.now() - timedelta(days=1)
 #     # This alpaca api can get data since 2016
 #     start_date = datetime(2016, 1, 1)
-    
+
 
 #     request_params = StockBarsRequest(
 #         symbol_or_symbols=[symbol],
@@ -119,12 +118,12 @@ def call_api(client, request_params, stop_event):
         try:
             response = client.get_stock_bars(request_params)
             calls += 1
-            json_file_path = f'./data/landing/response_{calls}.json'
-            parquet_file_path = f'./data/landing/response_{calls}.parquet'
+            json_file_path = f"./data/landing/response_{calls}.json"
+            parquet_file_path = f"./data/landing/response_{calls}.parquet"
             data_df = response.df.reset_index(drop=False)
             # Save data to parquet file
             data_df.to_parquet(parquet_file_path)
-            
+
             # Save data to json file
             # data_dict = data_df.to_dict(orient='records')
             # with open(json_file_path, 'w') as f:
@@ -137,25 +136,27 @@ def call_api(client, request_params, stop_event):
 
     logging.info(f"Total API calls made: {calls}")
 
-def test_alpaca_api_with_longest_time_range(symbol="NVDA", timeframe=TimeFrame.Day, duration=60):
-    api_key = os.getenv('APCA_API_KEY_ID')
-    secret_key = os.getenv('APCA_API_SECRET_KEY')
+
+def test_alpaca_api_with_longest_time_range(
+    symbol="NVDA", timeframe=TimeFrame.Day, duration=60
+):
+    api_key = os.getenv("APCA_API_KEY_ID")
+    secret_key = os.getenv("APCA_API_SECRET_KEY")
     client = StockHistoricalDataClient(api_key, secret_key)
-    os.makedirs('./data/landing', exist_ok=True)
+    os.makedirs("./data/landing", exist_ok=True)
     end_date = datetime.now() - timedelta(weeks=1)
     start_date = datetime(2016, 1, 1)
     request_params = StockBarsRequest(
-        symbol_or_symbols=[symbol],
-        timeframe=timeframe,
-        start=start_date,
-        end=end_date
+        symbol_or_symbols=[symbol], timeframe=timeframe, start=start_date, end=end_date
     )
 
     # Create a thread for calling the API
     stop_event = threading.Event()
-    api_thread = threading.Thread(target=call_api, args=(client, request_params, stop_event))
+    api_thread = threading.Thread(
+        target=call_api, args=(client, request_params, stop_event)
+    )
     api_thread.start()
-    
+
     # Allow the thread to run for the specified duration
     time.sleep(duration)
     stop_event.set()  # Signal the thread to stop making API calls
@@ -163,13 +164,15 @@ def test_alpaca_api_with_longest_time_range(symbol="NVDA", timeframe=TimeFrame.D
 
 
 def main():
-    os.makedirs('./logs', exist_ok=True)
+    os.makedirs("./logs", exist_ok=True)
     # Setup logging to file with timestamp in filename
-    logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s',
-                    filename=f'./logs/alpaca_api_test_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log',
-                    filemode='a')  # Append mode
-        
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        filename=f'./logs/alpaca_api_test_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log',
+        filemode="a",
+    )  # Append mode
+
     test_alpaca_api_with_longest_time_range()
 
 

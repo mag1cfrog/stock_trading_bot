@@ -4,7 +4,7 @@ alpaca-py==0.22.0
 annotated-types==0.7.0
 async-timeout==4.0.3
 attrs==23.2.0
-certifi==2024.6.2
+certifi>=2024.07.04
 charset-normalizer==3.3.2
 frozenlist==1.4.1
 idna==3.7
@@ -22,6 +22,6 @@ six==1.16.0
 sseclient-py==1.8.0
 typing_extensions==4.12.1
 tzdata==2024.1
-urllib3==2.2.1
+urllib3==2.2.2
 websockets==12.0
 yarl==1.9.4

@@ -31,7 +31,7 @@ spark = (SparkSession.builder.appName('testing')
         .getOrCreate())
 df = spark.createDataFrame([(1,), (3,), (5,)], ["id"])
 
-df.write.format("parquet").option("path", "s3a://warehouse/my-output").mode("overwrite").save()
+df.write.format("iceberg").mode("overwrite").saveAsTable('demo.default.test_table')
 
 
 spark.stop()

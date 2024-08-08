@@ -197,4 +197,4 @@ notebooks/
 target/
 
 # Java package
-*.jar
+*/*.jar

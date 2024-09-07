@@ -21,4 +21,4 @@ As of now, the project is in the initial stages of development. The primary focu
 This project is licensed under the MIT License - see the [LICENSE.md](./LICENSE) file for details.
 
 ## Documentation
-- [Development Log](DEVLOG.md)
+- [Development Log](./doc/dev-log/index.md)

@@ -198,3 +198,5 @@ target/
 
 # Java package
 # */*.jar
+
+extra-jar/

@@ -200,3 +200,6 @@ target/
 # */*.jar
 
 extra-jar/
+
+# Logs
+logs/

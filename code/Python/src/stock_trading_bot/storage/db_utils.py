@@ -49,7 +49,7 @@ def get_latest_snapshot(snapshot_directory) -> Path | None:
     return None
 
 
-def snapshot_database(db_directory: Path, snapshot_directory: Path):
+def snapshot_database(db_directory: Path, snapshot_directory: Path) -> None:
     """Create a snapshot of the current DuckDB file."""
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     snapshot_path = snapshot_directory / f"stock_data_{current_time}.duckdb"
@@ -61,7 +61,7 @@ def snapshot_database(db_directory: Path, snapshot_directory: Path):
         logger.error(f"Error creating snapshot: {e}")
 
 
-def cleanup_snapshots(snapshot_directory: Path, max_snapshots: int):
+def cleanup_snapshots(snapshot_directory: Path, max_snapshots: int) -> None:
     """Remove old snapshots beyond the maximum retention number."""
     snapshots = list(snapshot_directory.glob("*.duckdb"))
     snapshots.sort(key=lambda x: x.stat().st_mtime)

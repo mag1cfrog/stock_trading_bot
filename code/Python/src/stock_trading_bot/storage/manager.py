@@ -42,10 +42,18 @@ class DuckDBManager(StorageManager):
         self.connection = None
 
     def __enter__(self):
-        db_utils.prepare_and_connect_to_latest_snapshot()
+        """
+        Use the utils function to retrieve the latest snapshot if available, and then connect to it.
+        If no snapshot is available, create a new connection to the database.
+        """
+        self.connection = db_utils.prepare_and_connect_to_latest_snapshot()
         return self
     
     def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Close the connection and snapshot the database.
+        If the number of snapshots exceeds the maximum, clean up the oldest snapshot.
+        """
         if self.connection:
             self.connection.close()
         db_utils.snapshot_database()

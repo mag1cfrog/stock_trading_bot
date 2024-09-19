@@ -2,8 +2,21 @@ from datetime import datetime
 from pathlib import Path
 import shutil
 
-from loguru import logger
 import duckdb
+from loguru import logger
+
+
+BASE_LEVEL_TABLE_SCHEMA = """
+symbol STRING,
+timestamp TIMESTAMP,
+open FLOAT64,
+high FLOAT64,
+low FLOAT64,
+close FLOAT64,
+volume INT64,
+trade_count INT64,
+vwap FLOAT64,
+"""
 
 
 def prepare_and_connect_to_latest_snapshot(db_directory: Path, snapshot_directory: Path) -> duckdb.DuckDBPyConnection:

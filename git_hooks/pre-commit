@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Path to the generate_index.py script
+INDEX_SCRIPT="./scripts/dev-log/generate_index.py"
+
+# Check for changes in the doc/dev-log directory
+if git diff --cached --name-only | grep --quiet "doc/dev-log/"
+then
+    echo "Changes detected in doc/dev-log directory. Regenerating index."
+    python3 $INDEX_SCRIPT
+    # Add the updated index.md file to the commit
+    git add doc/dev-log/index.md
+fi
+
+# Exit with zero status
+exit 0

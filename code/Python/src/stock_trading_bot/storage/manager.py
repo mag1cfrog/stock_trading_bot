@@ -5,6 +5,8 @@ from pathlib import Path
 
 import duckdb
 from loguru import logger
+import pandera.polars as pa
+import polars as pl
 
 from stock_trading_bot.utils import load_config_auto
 from stock_trading_bot.storage import db_utils
@@ -59,10 +61,59 @@ class DuckDBManager(StorageManager):
         db_utils.snapshot_database()
         db_utils.cleanup_snapshots()
 
-    def add_data(self, data, table_name):
-        ...
+    def initialize_base_level_table(self):
+        """
+        Create the lowest granularity table for storing stock data.
+        """
+        sql_query_create_table = f"""
+            CREATE TABLE db.base_level_table (
+                {db_utils.BASE_LEVEL_TABLE_SCHEMA}
+            )
+        """
+        self.connection.execute(sql_query_create_table)
 
-    def calculate_higher_granularity(self, base_table_name, new_table_name, granularity):
-        ...
+    def add_stock_data(self, data:pl.DataFrame , table_name: str):
+        """
+        Add a polars DataFrame to the DuckDB database.
 
+        """
+
+        # First examine the polars DataFrame schema to ensure it matches the base level table schema
+
+        non_negative_checks = [
+            pa.Check.greater_than_or_equal_to(0)
+        ]
+        schema = pa.DataFrameSchema(
+            columns={
+                'symbol': pa.Column(pa.String),
+                'timestamp': pa.Column(pl.Datetime(time_unit='ns', time_zone='UTC')),
+                'open': pa.Column(pa.Float, checks=non_negative_checks),
+                'high': pa.Column(pa.Float, checks=non_negative_checks),
+                'low': pa.Column(pa.Float, checks=non_negative_checks),
+                'close': pa.Column(pa.Float, checks=non_negative_checks),
+                'volume': pa.Column(pa.Int, checks=non_negative_checks, coerce=True),
+                'trade_count': pa.Column(pa.Int, checks=non_negative_checks, coerce=True),
+                'vwap': pa.Column(pa.Float, checks=non_negative_checks),
+            }
+        )
+
+        schema.validate(data)
+
+
+        sql_query_insert_data = f"""
+            INSERT INTO db.{table_name}
+                SELECT * FROM {data}
+            WHERE NOT EXISTS (
+                SELECT 1 FROM db.{table_name}
+                WHERE 
+                    db.{table_name}.timestamp = {data}.timestamp
+                    AND db.{table_name}.symbol = {data}.symbol
+            )
+
+        """
+        self.connection.execute(sql_query_insert_data)
+        
+
+    # def calculate_higher_granularity(self, base_table_name, new_table_name, granularity):
+    #     ...
     

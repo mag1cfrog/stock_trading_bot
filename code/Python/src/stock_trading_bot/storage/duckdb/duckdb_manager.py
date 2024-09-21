@@ -9,7 +9,7 @@ import pandera.polars as pa
 import polars as pl
 
 from stock_trading_bot.utils import load_config_auto
-from stock_trading_bot.storage import db_utils
+from stock_trading_bot.storage.duckdb import db_utils
 from stock_trading_bot.storage.protocols import StorageManager
 
 

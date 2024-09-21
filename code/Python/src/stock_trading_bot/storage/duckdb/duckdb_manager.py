@@ -17,6 +17,8 @@ from stock_trading_bot.storage.protocols import StorageManager
 class DuckDBManager(StorageManager):
     def __init__(self):
         config = load_config_auto()
+        self.base_granularity = (config['data_granularity']['base_amount'], 
+                                 config['data_granularity']['base_unit'])
         self.data_directory = Path(config['data_directory'])
         self.db_directory = self.data_directory / 'db'
         self.max_snapshots = config.get('max_snapshots', 7)  # Default to 7 days of snapshots
@@ -101,6 +103,14 @@ class DuckDBManager(StorageManager):
         logger.exception(self.connection.execute(sql_query_insert_data))
         
 
-    # def calculate_higher_granularity(self, base_table_name, new_table_name, granularity):
-    #     ...
-    
+    def check_database_health(self):
+        """
+        Check the health or connectivity of the database.
+        """
+        try:
+            self.connection.execute("SELECT 1")
+            logger.trace("Database connection is healthy")
+            return True
+        except Exception as e:
+            logger.error(f"Database health check failed: {str(e)}")
+            return False

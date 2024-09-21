@@ -1,1 +1,4 @@
 data_directory: /home/mag1cfrog/git_repos/stock_trading_bot/data/
+data_granularity:
+  base_unit: "minutes"
+  base_amount: 15

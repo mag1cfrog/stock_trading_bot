@@ -5,10 +5,10 @@ from pathlib import Path
 
 import duckdb
 from loguru import logger
-import pandera.polars as pa
+
 import polars as pl
 
-from stock_trading_bot.utils import load_config_auto
+from stock_trading_bot.utils import load_config_auto, validate_pl_df
 from stock_trading_bot.storage.duckdb import db_utils
 from stock_trading_bot.storage.protocols import StorageManager
 
@@ -66,28 +66,8 @@ class DuckDBManager(StorageManager):
         """
 
         # First examine the polars DataFrame schema to ensure it matches the base level table schema
-
-        non_negative_checks = [
-            pa.Check.greater_than_or_equal_to(0)
-        ]
-        schema = pa.DataFrameSchema(
-            columns={
-                'symbol': pa.Column(pa.String),
-                'timestamp': pa.Column(pl.Datetime(time_unit='ns', time_zone='UTC')),
-                'open': pa.Column(pa.Float, checks=non_negative_checks),
-                'high': pa.Column(pa.Float, checks=non_negative_checks),
-                'low': pa.Column(pa.Float, checks=non_negative_checks),
-                'close': pa.Column(pa.Float, checks=non_negative_checks),
-                'volume': pa.Column(pa.Int, checks=non_negative_checks, coerce=True),
-                'trade_count': pa.Column(pa.Int, checks=non_negative_checks, coerce=True),
-                'vwap': pa.Column(pa.Float, checks=non_negative_checks),
-            }
-        )
-
-        logger.trace(f"Validating DataFrame schema")
-        logger.exception(schema.validate(data))
-
-
+        validate_pl_df(data)
+        
         sql_query_insert_data = f"""
             INSERT INTO db.{table_name}
                 SELECT * FROM {data}

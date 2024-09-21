@@ -54,6 +54,7 @@ class DuckDBManager(StorageManager):
                 {db_utils.BASE_LEVEL_TABLE_SCHEMA}
             )
         """
+        logger.trace(f"Creating base level table with schema: {db_utils.BASE_LEVEL_TABLE_SCHEMA}")
         self.connection.execute(sql_query_create_table)
 
     def add_stock_data(self, data:pl.DataFrame , table_name: str):
@@ -81,7 +82,8 @@ class DuckDBManager(StorageManager):
             }
         )
 
-        schema.validate(data)
+        logger.trace(f"Validating DataFrame schema")
+        logger.exception(schema.validate(data))
 
 
         sql_query_insert_data = f"""
@@ -95,7 +97,8 @@ class DuckDBManager(StorageManager):
             )
 
         """
-        self.connection.execute(sql_query_insert_data)
+        logger.trace(f"Inserting data into table {table_name}")
+        logger.exception(self.connection.execute(sql_query_insert_data))
         
 
     # def calculate_higher_granularity(self, base_table_name, new_table_name, granularity):

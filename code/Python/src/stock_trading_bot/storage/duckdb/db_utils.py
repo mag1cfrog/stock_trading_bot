@@ -42,6 +42,7 @@ def prepare_and_connect_to_latest_snapshot(db_directory: Path, snapshot_director
     else:
         logger.warning("No snapshot found, initializing a new database.")
     
+    logger.trace(f"Connecting to {working_db_path}")
     return duckdb.connect(str(working_db_path))
 
 

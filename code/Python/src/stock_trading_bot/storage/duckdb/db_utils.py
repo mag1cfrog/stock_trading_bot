@@ -80,8 +80,9 @@ def snapshot_database(db_directory: Path, snapshot_directory: Path) -> None:
         logger.error(f"Error creating snapshot: {e}")
 
 
-def cleanup_snapshots(snapshot_directory: Path, max_snapshots: int) -> None:
+def cleanup_snapshots(db_directory: Path, max_snapshots: int) -> None:
     """Remove old snapshots beyond the maximum retention number."""
+    snapshot_directory = db_directory / "snapshots"
     snapshots = list(snapshot_directory.glob("*.duckdb"))
     snapshots.sort(key=lambda x: x.stat().st_mtime)
     while len(snapshots) > max_snapshots:
@@ -91,3 +92,9 @@ def cleanup_snapshots(snapshot_directory: Path, max_snapshots: int) -> None:
             snapshots.pop(0)
         except Exception as e:
             logger.error(f"Failed to remove snapshot {snapshots[0]}: {e}")
+    
+    # Remove tmp directory
+    if (db_directory / "temp_dir").exists():
+        shutil.rmtree(db_directory / "temp_dir")
+        logger.trace("Removed temporary directory")
+    

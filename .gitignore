@@ -203,3 +203,6 @@ extra-jar/
 
 # Logs
 logs/
+
+# VS Code
+.vscode/

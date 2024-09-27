@@ -45,14 +45,14 @@ class DuckDBManager(StorageManager):
         if self.connection:
             self.connection.close()
         db_utils.snapshot_database(self.db_directory, self.snapshot_directory)
-        db_utils.cleanup_snapshots(self.snapshot_directory, self.max_snapshots)
+        db_utils.cleanup_snapshots(self.db_directory, self.max_snapshots)
 
     def initialize_base_level_table(self):
         """
         Create the lowest granularity table for storing stock data.
         """
         sql_query_create_table = f"""
-            CREATE TABLE base_level_table (
+            CREATE TABLE IF NOT EXISTS base_level_table (
                 {db_utils.BASE_LEVEL_TABLE_SCHEMA}
             )
         """
@@ -69,18 +69,18 @@ class DuckDBManager(StorageManager):
         validate_pl_df(data)
         
         sql_query_insert_data = f"""
-            INSERT INTO db.{table_name}
-                SELECT * FROM {data}
+            INSERT INTO {table_name}
+                SELECT * FROM data d 
             WHERE NOT EXISTS (
-                SELECT 1 FROM db.{table_name}
+                SELECT 1 FROM {table_name} t
                 WHERE 
-                    db.{table_name}.timestamp = {data}.timestamp
-                    AND db.{table_name}.symbol = {data}.symbol
+                    t.timestamp = d.timestamp
+                    AND t.symbol = d.symbol
             )
 
         """
         logger.trace(f"Inserting data into table {table_name}")
-        logger.exception(self.connection.execute(sql_query_insert_data))
+        logger.catch(self.connection.execute(sql_query_insert_data))
         
 
     def check_database_health(self) -> bool:

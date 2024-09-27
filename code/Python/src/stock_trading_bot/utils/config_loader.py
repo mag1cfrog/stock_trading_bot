@@ -1,6 +1,7 @@
 import json
 from typing import Dict
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -41,16 +42,24 @@ def load_config_json(config_path: str) -> Dict:
     return config
 
 
-def load_config_auto() -> dict:
+def load_config_auto( config_path: Path =None ) -> dict:
     """
     Dynamically loads configuration based on the presence of a .env file or an environment variable.
-
+    Can optionally specify a configuration path.
+    
+    Args:
+        config_path (Path, optional): Path to the configuration file. Defaults to None.
+        
     Returns:
         dict: The configuration dictionary loaded from a JSON or YAML file.
 
     Raises:
         FileNotFoundError: If no suitable configuration path is found.
     """
+    if config_path:
+        return load_config(config_path)
+    
+
     current_dir = os.getcwd()
     env_path = os.path.join(current_dir, '.env')
     

@@ -15,8 +15,8 @@ from stock_trading_bot.storage.protocols import StorageManager
 
 
 class DuckDBManager(StorageManager):
-    def __init__(self):
-        config = load_config_auto()
+    def __init__(self, config_path: Path = None):
+        config = load_config_auto(config_path)
         self.base_granularity = (config['data_granularity']['base_amount'], 
                                  config['data_granularity']['base_unit'])
         self.data_directory = Path(config['data_directory'])

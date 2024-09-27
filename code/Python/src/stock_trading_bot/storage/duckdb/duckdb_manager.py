@@ -83,7 +83,7 @@ class DuckDBManager(StorageManager):
         logger.exception(self.connection.execute(sql_query_insert_data))
         
 
-    def check_database_health(self):
+    def check_database_health(self) -> bool:
         """
         Check the health or connectivity of the database.
         """

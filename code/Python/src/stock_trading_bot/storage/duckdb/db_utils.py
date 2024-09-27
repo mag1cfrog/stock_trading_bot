@@ -9,13 +9,13 @@ from loguru import logger
 BASE_LEVEL_TABLE_SCHEMA = """
 symbol STRING,
 timestamp TIMESTAMP,
-open FLOAT64,
-high FLOAT64,
-low FLOAT64,
-close FLOAT64,
+open DOUBLE,
+high DOUBLE,
+low DOUBLE,
+close DOUBLE,
 volume INT64,
 trade_count INT64,
-vwap FLOAT64,
+vwap DOUBLE,
 """
 
 
@@ -32,6 +32,11 @@ def prepare_and_connect_to_latest_snapshot(db_directory: Path, snapshot_director
 
     """
     latest_snapshot = get_latest_snapshot(snapshot_directory)
+    # Create a temporary directory folder for the working database
+    # Check if the directory exists, and create it if it doesn't
+    if not (db_directory / "temp_dir").exists():
+        (db_directory / "temp_dir").mkdir(parents=True, exist_ok=True)
+
     working_db_path = db_directory / "temp_dir" / "stock_data.duckdb"
 
     if latest_snapshot:

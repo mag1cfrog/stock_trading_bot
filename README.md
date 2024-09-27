@@ -5,11 +5,12 @@ This project aims to develop an automated stock trading system that can autonomo
 
 ## Key Features
 - **Real-Time Data Fetching**: Uses Alpaca's API to fetch stock market data. Both Python and Go SDKs have been tested for performance and suitability for high-frequency API calls.
-
+  
 - **Algorithmic Trading**: The system is designed to execute trades based on real-time analysis of market data using predefined trading strategies.
 
 - **Asynchronous Data Handling**: Python's async capabilities have been implemented to enhance the efficiency of API interactions for I/O-bound tasks like data fetching and processing.
 
+- **Custom Data Storage with DuckDB**: A custom DuckDB manager was developed to efficiently manage stock data storage operations. This lightweight solution simplifies data management by eliminating the overhead of distributed storage systems like Apache Iceberg, while still providing high performance on a single node.
 
 ## Development Progress
 
@@ -25,17 +26,15 @@ Multiple approaches were tested to determine the best way to fetch real-time sto
    - We successfully deployed a local Apache Iceberg system using PySpark + MinIO, and documented the steps in [this setup guide](./doc/setup_pyspark_iceberg.md).
    - However, the setup proved to be cumbersome, requiring a Spark cluster for even lightweight operations. Given the current data volume and computation requirements, Spark brings unnecessary overhead.
 
-- **Planned Transition to DuckDB**:
-   - We plan to replace Apache Iceberg with a home-built storage system based on DuckDB. The new system will be designed to handle regular stock data operations efficiently on a single node, reducing overhead and simplifying usage.
-   - The goal is to create a lightweight and easy-to-use storage solution that meets our needs without the complexity of distributed systems like Spark.
+- **DuckDB Manager (Current Solution)**:
+   - We developed a custom DuckDB-based storage system specifically for stock data. This solution operates efficiently on a single node, significantly reducing complexity and overhead compared to distributed solutions like Spark. The DuckDB manager handles common stock data operations such as data snapshots, querying, and cleanup, allowing for easier integration with our trading logic.
 
 ## Next Steps
-- **Data Storage with DuckDB**: Begin building a custom storage solution using DuckDB to manage stock data efficiently.
-
-- **Trading Logic Implementation**: Work on implementing and testing the core trading algorithms based on real-time data.
+- **Stock Trading Strategy Exploration**: Begin researching and testing various stock trading strategies. We aim to implement strategies that are optimized for the current system and can leverage both real-time and historical data for decision-making.
+  
+- **Enhanced Data Visualization**: Explore ways to better visualize stock data to assist in both strategy development and real-time monitoring. This could include finding optimized visualization libraries or even building custom visualization tools tailored to our specific data needs.
 
 - **System Optimization**: Continue exploring ways to optimize both Python and Go components for better performance in high-frequency trading scenarios.
-
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.

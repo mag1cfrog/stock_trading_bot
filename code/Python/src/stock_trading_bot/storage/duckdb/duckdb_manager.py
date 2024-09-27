@@ -34,7 +34,7 @@ class DuckDBManager(StorageManager):
         Use the utils function to retrieve the latest snapshot if available, and then connect to it.
         If no snapshot is available, create a new connection to the database.
         """
-        self.connection = db_utils.prepare_and_connect_to_latest_snapshot()
+        self.connection = db_utils.prepare_and_connect_to_latest_snapshot(self.db_directory, self.snapshot_directory)
         return self
     
     def __exit__(self, exc_type, exc_value, traceback):
@@ -44,15 +44,15 @@ class DuckDBManager(StorageManager):
         """
         if self.connection:
             self.connection.close()
-        db_utils.snapshot_database()
-        db_utils.cleanup_snapshots()
+        db_utils.snapshot_database(self.db_directory, self.snapshot_directory)
+        db_utils.cleanup_snapshots(self.snapshot_directory, self.max_snapshots)
 
     def initialize_base_level_table(self):
         """
         Create the lowest granularity table for storing stock data.
         """
         sql_query_create_table = f"""
-            CREATE TABLE db.base_level_table (
+            CREATE TABLE base_level_table (
                 {db_utils.BASE_LEVEL_TABLE_SCHEMA}
             )
         """

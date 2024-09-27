@@ -1,41 +1,79 @@
 import polars as pl
 
-def is_base_granularity(data: pl.DataFrame, base_amount: int, base_unit: str) -> bool:
+def base_granularity_health_score(data: pl.DataFrame, base_unit: str, base_amount: int) -> float:
     """
-    Check if the data is at the base granularity level.
+    Calculate the health score of the data based on the base granularity.
+
+    Args:
+    data: The input data with a timestamp column.
+    base_unit: The base unit of the granularity (e.g., "minutes").
+    base_amount: The base amount of the granularity (e.g., 5).
+
+    Returns:
+    The health score of the data based on the base granularity.
+
+    Raises:
+    ValueError: If the base unit is not supported.
+
+    Example:
+    data = pl.DataFrame({
+        'timestamp': ['2021-01-01 00:00:00', '2021-01-01 00:05:00', '2021-01-01 00:10:00', '2021-01-01 00:20:00']
+    })
+    base_granularity_health_score(data, "minutes", 5)
+    # Output
+    100.0
+
+    
     """
+
+
     # Calculate the expected difference in seconds based on the base time unit and amount
-    if base_unit == "seconds":
-        expected_diff_seconds = base_amount
-    elif base_unit == "minutes":
-        expected_diff_seconds = base_amount * 60
-    elif base_unit == "hours":
-        expected_diff_seconds = base_amount * 3600
-    elif base_unit == "days":
-        expected_diff_seconds = base_amount * 86400
-    else:
+    unit_to_seconds = {
+        "seconds": 1,
+        "minutes": 60,
+        "hours": 3600,
+        "days": 86400
+    }
+    if base_unit not in unit_to_seconds:
         raise ValueError("Unsupported time unit for base granularity")
 
-    # Convert timestamp differences to seconds
-    time_diffs = data.with_columns(
-        pl.col('timestamp').diff().fill_none(0).cast(pl.Int64).alias('diff')
+    expected_diff_seconds = base_amount * unit_to_seconds[base_unit]
+
+    # Convert timestamps to a date format (yyyy-mm-dd)
+    data_with_date = data.with_columns(
+        pl.col('timestamp').dt.date().alias('date')
     )
 
-    # Assuming stock market hours are from 9:30 AM to 4:00 PM local time
-    normal_trading_hours = data.filter(
-        (pl.col('timestamp').dt.hour() * 60 + pl.col('timestamp').dt.minute() >= 570) &  # Market opens at 9:30 AM
-        (pl.col('timestamp').dt.hour() * 60 + pl.col('timestamp').dt.minute() <= 960)    # Market closes at 4:00 PM
-    )
+    # Group data by date and check intervals within each date
+    grouped_data = data_with_date.group_by('date')
 
-    # Filter time differences to only those during normal trading hours
-    filtered_diffs = normal_trading_hours.join(
-        time_diffs,
-        how='left',
-        on='timestamp'
-    )['diff']
+    total_expected_count = 0
+    total_actual_fit_count = 0
 
-    # Define a tolerance for time difference (e.g., a few seconds)
-    tolerance = 10  # seconds
+    # Calculate expected and actual fitting records for each group
+    for _, group in grouped_data:
+        max_timestamp = group.select(pl.max('timestamp')).to_struct()[0]['timestamp']
+        min_timestamp = group.select(pl.min('timestamp')).to_struct()[0]['timestamp']
+        day_range_seconds = (max_timestamp - min_timestamp).total_seconds()
+        expected_count = day_range_seconds // expected_diff_seconds
 
-    # Check if all time differences are within the expected range considering the tolerance
-    return all((filtered_diffs.abs() - expected_diff_seconds).abs() < tolerance)
+        # Get the actual records for that day
+        actual_data = group.sort('timestamp')
+        actual_diffs = actual_data.with_columns(
+            pl.col('timestamp').dt.epoch(time_unit='s').diff().cast(pl.Int64).alias('diff')
+        ).drop_nulls()['diff']
+
+        # Calculate the number of records fitting the expected interval
+        fit_count = (actual_diffs == expected_diff_seconds).sum()
+
+        total_expected_count += expected_count
+        total_actual_fit_count += fit_count
+
+    # Calculate overall health percentage
+    if total_expected_count > 0:
+        health_percentage = (total_actual_fit_count / total_expected_count) * 100
+    else:
+        health_percentage = 100  # No expected data (e.g., non-trading days), assume perfect health
+
+    return health_percentage
+

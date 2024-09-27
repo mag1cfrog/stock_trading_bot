@@ -12,17 +12,17 @@ def validate_pl_df(data: pl.DataFrame):
     ]
     schema = pa.DataFrameSchema(
         columns={
-            'symbol': pa.Column(pa.String),
+            'symbol': pa.Column(pl.Utf8),
             'timestamp': pa.Column(pl.Datetime(time_unit='ns', time_zone='UTC')),
-            'open': pa.Column(pa.Float, checks=non_negative_checks),
-            'high': pa.Column(pa.Float, checks=non_negative_checks),
-            'low': pa.Column(pa.Float, checks=non_negative_checks),
-            'close': pa.Column(pa.Float, checks=non_negative_checks),
-            'volume': pa.Column(pa.Int, checks=non_negative_checks, coerce=True),
-            'trade_count': pa.Column(pa.Int, checks=non_negative_checks, coerce=True),
-            'vwap': pa.Column(pa.Float, checks=non_negative_checks),
+            'open': pa.Column(pl.Float64, checks=non_negative_checks),
+            'high': pa.Column(pl.Float64, checks=non_negative_checks),
+            'low': pa.Column(pl.Float64, checks=non_negative_checks),
+            'close': pa.Column(pl.Float64, checks=non_negative_checks),
+            'volume': pa.Column(pl.Int64, checks=non_negative_checks, coerce=True),
+            'trade_count': pa.Column(pl.Int64, checks=non_negative_checks, coerce=True),
+            'vwap': pa.Column(pl.Float64, checks=non_negative_checks),
         }
     )
 
     logger.trace(f"Validating DataFrame schema")
-    logger.exception(schema.validate(data))
+    logger.catch(schema.validate(data))

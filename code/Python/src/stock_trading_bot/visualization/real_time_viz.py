@@ -19,17 +19,6 @@ logger = logging.getLogger(__name__)
 # Load environment variables from a .env file
 load_dotenv()
 
-# Retrieve API keys from environment variables
-api_key = os.getenv("APCA_API_KEY_ID")
-secret_key = os.getenv("APCA_API_SECRET_KEY")
-
-if not api_key or not secret_key:
-    logger.error("API key and Secret key must be set in the environment variables.")
-    sys.exit(1)
-
-# Initialize the CryptoDataStream with your API credentials
-crypto_stream = CryptoDataStream(api_key, secret_key)
-
 # Initialize a thread-safe deque to store incoming data
 # Limiting to the latest 100 data points for visualization
 data_buffer = deque(maxlen=100)
@@ -44,14 +33,9 @@ async def on_crypto_quote(data):
     })
     logger.debug(f"Received data at {data.timestamp}: Bid={data.bid_price}, Ask={data.ask_price}")
 
-# Subscribe to crypto quotes for the symbol "BTC/USD"
-crypto_stream.subscribe_quotes(on_crypto_quote, "BTC/USD")
-
+# Define a function to run the CryptoDataStream
 def run_crypto_stream():
-    """
-    Function to run the CryptoDataStream.
-    This will be executed in a separate daemon thread.
-    """
+    global crypto_stream
     try:
         logger.info("Starting CryptoDataStream...")
         crypto_stream.run()
@@ -66,9 +50,25 @@ def run_crypto_stream():
     except Exception as e:
         logger.error(f"Error in CryptoDataStream: {e}")
 
-# Start the CryptoDataStream in a separate daemon thread
-stream_thread = threading.Thread(target=run_crypto_stream, daemon=True)
-stream_thread.start()
+# Define a function to gracefully stop the CryptoDataStream
+def stop_stream():
+    global crypto_stream
+    logger.info("Stopping CryptoDataStream...")
+    try:
+        crypto_stream.stop()
+    except Exception as e:
+        logger.error(f"Error while stopping CryptoDataStream: {e}")
+
+# Define a signal handler for graceful shutdown
+def signal_handler(sig, frame):
+    logger.info("Received interrupt signal, shutting down gracefully...")
+    stop_stream()
+    # Allow Dash to shut down
+    sys.exit(0)
+
+# Register the signal handler for SIGINT (Ctrl+C) and SIGTERM
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 # Initialize Dash app
 app = dash.Dash(__name__)
@@ -137,34 +137,38 @@ def update_graph_live(n):
 
     return fig
 
-# Define a function to gracefully stop the CryptoDataStream
-def stop_stream():
-    logger.info("Stopping CryptoDataStream...")
+def main() -> None:
+    global crypto_stream
+
+    # Retrieve API keys from environment variables
+    api_key = os.getenv("APCA_API_KEY_ID")
+    secret_key = os.getenv("APCA_API_SECRET_KEY")
+
+    if not api_key or not secret_key:
+        logger.error("API key and Secret key must be set in the environment variables.")
+        sys.exit(1)
+
+    # Initialize the CryptoDataStream with your API credentials
+    crypto_stream = CryptoDataStream(api_key, secret_key)
+
+    # Subscribe to crypto quotes for the symbol "BTC/USD"
+    crypto_stream.subscribe_quotes(on_crypto_quote, "BTC/USD")
+
+    # Start the CryptoDataStream in a separate daemon thread
+    stream_thread = threading.Thread(target=run_crypto_stream, daemon=True)
+    stream_thread.start()
+
+    # Register atexit to ensure stream is stopped
+    import atexit
+    atexit.register(stop_stream)
+
     try:
-        crypto_stream.stop()
-    except Exception as e:
-        logger.error(f"Error while stopping CryptoDataStream: {e}")
-
-# Define a signal handler for graceful shutdown
-def signal_handler(sig, frame):
-    logger.info("Received interrupt signal, shutting down gracefully...")
-    stop_stream()
-    # Allow Dash to shut down
-    sys.exit(0)
-
-# Register the signal handler for SIGINT (Ctrl+C) and SIGTERM
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
-
-# Register atexit to ensure stream is stopped
-import atexit
-atexit.register(stop_stream)
-
-# Run the Dash app
-if __name__ == '__main__':
-    try:
-        app.run_server(debug=True)
+        # Run the Dash app without the reloader
+        app.run_server(debug=True, use_reloader=False)
     except Exception as e:
         logger.error(f"Error running Dash server: {e}")
         stop_stream()
         sys.exit(1)
+
+if __name__ == '__main__':
+    main()

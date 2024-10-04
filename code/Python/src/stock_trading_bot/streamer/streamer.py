@@ -41,7 +41,7 @@ class CryptoStreamer:
         })
         logger.debug(f"Received data at {data.timestamp}: Bid={data.bid_price}, Ask={data.ask_price}")
 
-    def run_stream(self):
+    def run_stream(self) -> None:
         """
         Starts the CryptoDataStream and handles exceptions.
         """
@@ -59,7 +59,7 @@ class CryptoStreamer:
         except Exception as e:
             logger.error(f"Error in CryptoDataStream: {e}")
 
-    def start(self):
+    def start(self) -> None:
         """
         Starts the CryptoDataStream in a separate daemon thread.
         """
@@ -67,7 +67,7 @@ class CryptoStreamer:
         self.thread.start()
         logger.info("CryptoDataStream thread started.")
 
-    def stop_stream(self):
+    def stop_stream(self) -> None:
         """
         Gracefully stops the CryptoDataStream.
         """

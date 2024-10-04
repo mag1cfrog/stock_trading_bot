@@ -1,6 +1,5 @@
 import os
 import threading
-import asyncio
 from collections import deque
 from alpaca.data.live import CryptoDataStream
 from dotenv import load_dotenv

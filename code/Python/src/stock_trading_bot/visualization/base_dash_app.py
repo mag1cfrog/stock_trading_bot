@@ -54,7 +54,7 @@ class BaseDashApp:
                 "layout": {}
             }
 
-    def run(self, use_debug: bool=True, if_use_reloader: bool=False) -> None:
+    def run(self, used_debug: bool=True, used_reloader: bool=False) -> None:
         """
         Runs the Dash server.
         
@@ -62,4 +62,4 @@ class BaseDashApp:
             debug (bool): Whether to run the Dash app in debug mode.
             use_reloader (bool): Whether to use the Flask reloader.
         """
-        self.app.run_server(debug=use_debug, use_reloader=if_use_reloader)
+        self.app.run_server(debug=used_debug, use_reloader=used_reloader)

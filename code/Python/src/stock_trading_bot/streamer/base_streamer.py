@@ -1,16 +1,20 @@
-from collections import deque
+from typing import Deque
 from loguru import logger
 import threading
-from typing import Protocol, Deque
+import signal
+import sys
 
-class BaseStreamer(Protocol):
-    def __init__(self, symbol: str, data_buffer: deque) -> None:
+from streamer.protocols import StreamerProtocol
+
+
+class BaseStreamer(StreamerProtocol):
+    def __init__(self, symbol: str, data_buffer: Deque[dict]) -> None:
         """
         Initializes the BaseStreamer with the symbol and data buffer.
         
         Args:
             symbol (str): The symbol to subscribe to (e.g., "BTC/USD").
-            data_buffer (deque): Thread-safe deque to store incoming data.
+            data_buffer (Deque[dict]): Thread-safe deque to store incoming data.
         """
         self.symbol = symbol
         self.data_buffer = data_buffer
@@ -18,9 +22,10 @@ class BaseStreamer(Protocol):
 
     def run_stream(self) -> None:
         """
-        Starts the data stream and handles exceptions.
+        Placeholder method to run the data stream.
+        Should be implemented by subclasses.
         """
-        ...
+        raise NotImplementedError("Subclasses must implement run_stream method.")
 
     def start(self) -> None:
         """
@@ -32,6 +37,7 @@ class BaseStreamer(Protocol):
 
     def stop_stream(self) -> None:
         """
-        Stops the data stream.
+        Placeholder method to stop the data stream.
+        Should be implemented by subclasses.
         """
-        ...
+        raise NotImplementedError("Subclasses must implement stop_stream method.")

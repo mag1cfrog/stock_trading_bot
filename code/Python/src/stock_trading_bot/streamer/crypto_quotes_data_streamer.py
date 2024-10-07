@@ -1,16 +1,18 @@
-# src/stock_trading_bot/streamer/streamer.py
-
-from loguru import logger
-import threading
+import atexit
+from collections import deque
 import os
 import sys
-from collections import deque
-from alpaca.data.live import CryptoDataStream
 
-class CryptoStreamer:
-    def __init__(self, api_key: str, secret_key: str, symbol: str, data_buffer: deque)  -> None:
+from alpaca.data.live import CryptoDataStream
+from loguru import logger
+
+from streamer.base_streamer import BaseStreamer
+from streamer.protocols import StreamerProtocol
+
+class CryptoQuotesDataStreamer(BaseStreamer, StreamerProtocol):
+    def __init__(self, api_key: str, secret_key: str, symbol: str, data_buffer: deque) -> None:
         """
-        Initializes the CryptoStreamer with API credentials and subscription details.
+        Initializes the CryptoQuotesDataStreamer with API credentials and subscription details.
         
         Args:
             api_key (str): Alpaca API key.
@@ -18,14 +20,16 @@ class CryptoStreamer:
             symbol (str): Cryptocurrency symbol to subscribe to (e.g., "BTC/USD").
             data_buffer (deque): Thread-safe deque to store incoming data.
         """
+        super().__init__(symbol, data_buffer)
         self.api_key = api_key
         self.secret_key = secret_key
-        self.symbol = symbol
-        self.data_buffer = data_buffer
 
         # Initialize the CryptoDataStream
         self.crypto_stream = CryptoDataStream(self.api_key, self.secret_key)
         self.crypto_stream.subscribe_quotes(self.on_crypto_quote, self.symbol)
+
+        # Register atexit to ensure the stream is stopped gracefully
+        atexit.register(self.stop_stream)
 
     async def on_crypto_quote(self, data: dict) -> None:
         """
@@ -46,26 +50,18 @@ class CryptoStreamer:
         Starts the CryptoDataStream and handles exceptions.
         """
         try:
-            logger.info("Starting CryptoDataStream...")
+            logger.info("CryptoQuotesDataStreamer: Starting CryptoDataStream...")
             self.crypto_stream.run()
         except ValueError as ve:
             if 'connection limit exceeded' in str(ve).lower():
-                logger.error(f"Connection limit exceeded: {ve}")
+                logger.error(f"CryptoQuotesDataStreamer: Connection limit exceeded: {ve}")
                 self.stop_stream()
                 # Exit the entire script to prevent further attempts
                 os._exit(1)
             else:
-                logger.error(f"ValueError in CryptoDataStream: {ve}")
+                logger.error(f"CryptoQuotesDataStreamer: ValueError in CryptoDataStream: {ve}")
         except Exception as e:
-            logger.error(f"Error in CryptoDataStream: {e}")
-
-    def start(self) -> None:
-        """
-        Starts the CryptoDataStream in a separate daemon thread.
-        """
-        self.thread = threading.Thread(target=self.run_stream, daemon=True)
-        self.thread.start()
-        logger.info("CryptoDataStream thread started.")
+            logger.error(f"CryptoQuotesDataStreamer: Error in CryptoDataStream: {e}")
 
     def stop_stream(self) -> None:
         """

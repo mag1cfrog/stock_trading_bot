@@ -2,64 +2,105 @@ import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
 from loguru import logger
+import plotly.graph_objs as go
+from typing import Deque
 
-class BaseDashApp:
-    def __init__(self, title: str="Dash Application") -> None:
+from ...protocols import VisualizationBackendProtocol
+
+class DashBackend(VisualizationBackendProtocol):
+    def __init__(self, data_buffer: Deque[dict], title: str="Dash Application") -> None:
         """
         Initializes the BaseDashApp with common Dash configurations.
         
         Args:
+            data_buffer (Deque[dict]): Thread-safe deque containing the latest data points.
             title (str): The title of the Dash application.
         """
+        self.data_buffer = data_buffer
+        self.title = title
         self.app = dash.Dash(__name__)
-        self.app.title = title
+        self.setup_layout()
+        self.setup_callbacks()
 
-        # Define a basic layout that can be extended or overridden
+    def setup_layout(self) -> None:
+        """
+        Sets up the Dash application layout.
+        """
         self.app.layout = html.Div([
-            html.H1(title),
-            dcc.Graph(id='base-graph'),
+            html.H1(self.title),
+            dcc.Graph(id='live-graph'),
             dcc.Interval(
-                id='base-interval',
-                interval=5*1000,  # 5 seconds
+                id='graph-update',
+                interval=1*1000,  # Update every second
                 n_intervals=0
             )
         ])
 
-        # Register base callbacks if any (optional)
-        self.register_base_callbacks()
-
-    def register_base_callbacks(self) -> None:
+    def setup_callbacks(self) -> None:
         """
-        Registers callbacks common to all Dash apps.
-        Override or extend in child classes as needed.
+        Sets up the Dash callbacks for updating the graph.
         """
         @self.app.callback(
-            Output('base-graph', 'figure'),
-            [Input('base-interval', 'n_intervals')]
+            Output('live-graph', 'figure'),
+            [Input('graph-update', 'n_intervals')]
         )
-        def update_base_graph(n: int) -> dict:
-            """
-            A placeholder callback for the base graph.
-            Child classes should override this method.
-            
-            Args:
-                n (int): Interval count.
-            
-            Returns:
-                plotly.graph_objs.Figure: An empty figure.
-            """
-            logger.debug("BaseDashApp: update_base_graph called.")
-            return {
-                "data": [],
-                "layout": {}
-            }
+        def update_graph_live(n):
+            if not self.data_buffer:
+                logger.debug("DashBackend: No data available to update graph.")
+                return go.Figure()
 
-    def run(self, used_debug: bool=True, used_reloader: bool=False) -> None:
+            # Extract data from the deque
+            timestamps = [data['timestamp'] for data in self.data_buffer]
+            bid_prices = [data['bid_price'] for data in self.data_buffer]
+            ask_prices = [data['ask_price'] for data in self.data_buffer]
+
+            # Create the Plotly figure
+            fig = go.Figure()
+
+            fig.add_trace(go.Scatter(
+                x=timestamps,
+                y=bid_prices,
+                mode='lines+markers',
+                name='Bid Price',
+                line=dict(color='blue'),
+                marker=dict(size=6)
+            ))
+
+            fig.add_trace(go.Scatter(
+                x=timestamps,
+                y=ask_prices,
+                mode='lines+markers',
+                name='Ask Price',
+                line=dict(color='red'),
+                marker=dict(size=6)
+            ))
+
+            # Update layout for better visualization
+            fig.update_layout(
+                title=self.title,
+                xaxis_title="Timestamp",
+                yaxis_title="Price (USD)",
+                template="plotly_dark",
+                margin=dict(l=40, r=40, t=40, b=40)
+            )
+
+            logger.debug("DashBackend: Graph updated with new data.")
+            return fig
+
+    def update_visualization(self, data_buffer: Deque[dict]) -> None:
         """
-        Runs the Dash server.
+        Updates the visualization with new data.
         
         Args:
-            debug (bool): Whether to run the Dash app in debug mode.
-            use_reloader (bool): Whether to use the Flask reloader.
+            data_buffer (Deque[dict]): The latest data points.
         """
-        self.app.run_server(debug=used_debug, use_reloader=used_reloader)
+        # Since Dash uses callbacks and the Interval component handles updates,
+        # this method might not be necessary. However, it's included to conform to the protocol.
+        pass
+
+    def run(self) -> None:
+        """
+        Runs the Dash server.
+        """
+        logger.info("DashBackend: Running Dash server...")
+        self.app.run_server(debug=False, use_reloader=False)

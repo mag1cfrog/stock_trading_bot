@@ -42,7 +42,7 @@ def load_config_json(config_path: str) -> Dict:
     return config
 
 
-def load_config_auto( config_path: Path =None ) -> dict:
+def load_config_auto(config_path: Path = None) -> dict:
     """
     Dynamically loads configuration based on the presence of a .env file or an environment variable.
     Can optionally specify a configuration path.
@@ -58,39 +58,47 @@ def load_config_auto( config_path: Path =None ) -> dict:
     """
     if config_path:
         return load_config(config_path)
-    
 
-    current_dir = os.getcwd()
-    env_path = os.path.join(current_dir, '.env')
-    
-    # Check if .env exists in the current working directory
-    if not os.path.exists(env_path):
-        logger.debug(f"No .env file found at {env_path}")
-        # Check for .env in the 'code/Python/' subdirectory
-        env_path = os.path.join(current_dir, 'code', 'Python', '.env')
-        if not os.path.exists(env_path):
-            logger.debug(f"No .env file found at {env_path}")
-            # Check if CONFIG_PATH is already set in the environment variables
-            config_path = os.getenv('CONFIG_PATH')
-            if not config_path:
-                logger.error("No configuration path found in environment variables.")
-                raise FileNotFoundError("No configuration path provided and no .env file found.")
-        else:
-            logger.debug(f"Loading environment variables from {env_path}")
-            load_dotenv(dotenv_path=env_path)
-    else:
+    env_path = find_env_file()
+    if env_path:
         logger.debug(f"Loading environment variables from {env_path}")
         load_dotenv(dotenv_path=env_path)
-    
+    else:
+        logger.error("No .env file found and CONFIG_PATH not set in environment variables.")
+        raise FileNotFoundError("No configuration path provided and no .env file found.")
+
     config_path = os.getenv('CONFIG_PATH')
     if not config_path:
         logger.error("CONFIG_PATH not set in environment variables.")
         raise FileNotFoundError("CONFIG_PATH environment variable is not set.")
     
-    else:
-        logger.debug(f"Loading configuration from {config_path}")
-    
+    logger.debug(f"Loading configuration from {config_path}")
     return load_config(config_path)
+
+
+def find_env_file() -> str:
+    """
+    Finds the .env file in the current directory, 'code/Python/' subdirectory,
+    or two levels up if the current directory ends with 'code/Python'.
+    
+    Returns:
+        str: The path to the .env file if found, otherwise None.
+    """
+    current_dir = os.getcwd()
+    potential_paths = [
+        os.path.join(current_dir, '.env'),
+        os.path.join(current_dir, 'code', 'Python', '.env')
+    ]
+
+    if current_dir.endswith(os.path.join('code', 'Python')):
+        potential_paths.append(os.path.abspath(os.path.join(current_dir, '..', '..', '.env')))
+
+    for path in potential_paths:
+        if os.path.exists(path):
+            return path
+
+    return None
+
 
 
 def load_config(config_path: str) -> dict:

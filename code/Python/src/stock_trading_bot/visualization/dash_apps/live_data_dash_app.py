@@ -6,7 +6,7 @@ from loguru import logger
 import plotly.graph_objs as go
 
 
-from .base_dash_app import BaseDashApp
+from ..base_dash_app import BaseDashApp
 
 class LiveDataDashApp(BaseDashApp):
     def __init__(self, data_buffer: deque, live_app_title: str="Real-Time Data Dash App", symbol: str="BTC/USD") -> None:

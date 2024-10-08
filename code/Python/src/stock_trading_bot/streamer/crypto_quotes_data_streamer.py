@@ -6,8 +6,8 @@ import sys
 from alpaca.data.live import CryptoDataStream
 from loguru import logger
 
-from streamer.base_streamer import BaseStreamer
-from streamer.protocols import StreamerProtocol
+from stock_trading_bot.streamer.base_streamer import BaseStreamer
+from stock_trading_bot.streamer.protocols import StreamerProtocol
 
 class CryptoQuotesDataStreamer(BaseStreamer, StreamerProtocol):
     def __init__(self, api_key: str, secret_key: str, symbol: str, data_buffer: deque) -> None:

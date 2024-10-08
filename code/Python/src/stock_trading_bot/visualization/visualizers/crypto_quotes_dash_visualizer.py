@@ -1,12 +1,14 @@
 from collections import deque
+import os
 import signal
 import sys
 
 from loguru import logger
 
-from visualization.protocols import VisualizerProtocol, VisualizationBackendProtocol
-from visualization.backends.dash.dash_backend import DashBackend
-from streamer.crypto_quotes_data_streamer import CryptoQuotesDataStreamer
+from stock_trading_bot.visualization.protocols import VisualizerProtocol, VisualizationBackendProtocol
+from stock_trading_bot.visualization.backends.dash.dash_backend import DashBackend
+from stock_trading_bot.streamer.crypto_quotes_data_streamer import CryptoQuotesDataStreamer
+from stock_trading_bot.utils.config_loader import load_config_auto
 
 class CryptoQuotesDashVisualizer(VisualizerProtocol):
     symbol: str
@@ -65,3 +67,30 @@ class CryptoQuotesDashVisualizer(VisualizerProtocol):
         logger.info("CryptoQuotesDashVisualizer: Received interrupt signal, shutting down gracefully...")
         self.streamer.stop_stream()
         sys.exit(0)
+
+
+def main():
+    """
+    The main function to run the CryptoQuotesDashVisualizer.
+    
+    """
+    # Load the Alpaca API keys from environment variables
+    load_config_auto()
+    
+    
+    ALPACA_API_KEY = os.getenv("APCA_API_KEY_ID")
+    ALPACA_SECRET_KEY = os.getenv("APCA_API_SECRET_KEY")
+    SYMBOL = "BTC/USD"
+
+    # Instantiate the visualizer
+    visualizer = CryptoQuotesDashVisualizer(
+        api_key=ALPACA_API_KEY,
+        secret_key=ALPACA_SECRET_KEY,
+        symbol=SYMBOL
+    )
+
+    # Run the visualizer
+    visualizer.run()
+
+if __name__ == '__main__':
+    main()

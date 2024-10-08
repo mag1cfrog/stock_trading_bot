@@ -4,7 +4,7 @@ import threading
 import signal
 import sys
 
-from streamer.protocols import StreamerProtocol
+from stock_trading_bot.streamer.protocols import StreamerProtocol
 
 
 class BaseStreamer(StreamerProtocol):

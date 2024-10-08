@@ -8,6 +8,7 @@ from loguru import logger
 from stock_trading_bot.visualization.protocols import VisualizerProtocol, VisualizationBackendProtocol
 from stock_trading_bot.visualization.backends.dash.dash_backend import DashBackend
 from stock_trading_bot.streamer.crypto_quotes_data_streamer import CryptoQuotesDataStreamer
+from stock_trading_bot.visualization.data_buffer import DataBuffer
 from stock_trading_bot.utils.config_loader import load_config_auto
 
 class CryptoQuotesDashVisualizer(VisualizerProtocol):
@@ -25,7 +26,7 @@ class CryptoQuotesDashVisualizer(VisualizerProtocol):
         self.symbol = symbol
 
         # Initialize data buffer
-        self.data_buffer = deque(maxlen=1000)
+        self.data_buffer = DataBuffer(maxlen=1000)
 
         # Initialize the streamer
         self.streamer = CryptoQuotesDataStreamer(
@@ -90,7 +91,10 @@ def main():
     )
 
     # Run the visualizer
-    visualizer.run()
+    try:
+        visualizer.run()
+    except Exception as e:
+        logger.error(f"Error running CryptoQuotesDashVisualizer: {e}")
 
 if __name__ == '__main__':
     main()

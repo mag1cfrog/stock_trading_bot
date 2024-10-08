@@ -1,16 +1,17 @@
+# import asyncio
 import atexit
-from collections import deque
 import os
-import sys
+import threading
 
 from alpaca.data.live import CryptoDataStream
 from loguru import logger
 
 from stock_trading_bot.streamer.base_streamer import BaseStreamer
 from stock_trading_bot.streamer.protocols import StreamerProtocol
+from stock_trading_bot.visualization.data_buffer import DataBuffer
 
 class CryptoQuotesDataStreamer(BaseStreamer, StreamerProtocol):
-    def __init__(self, api_key: str, secret_key: str, symbol: str, data_buffer: deque) -> None:
+    def __init__(self, api_key: str, secret_key: str, symbol: str, data_buffer: DataBuffer) -> None:
         """
         Initializes the CryptoQuotesDataStreamer with API credentials and subscription details.
         
@@ -18,7 +19,7 @@ class CryptoQuotesDataStreamer(BaseStreamer, StreamerProtocol):
             api_key (str): Alpaca API key.
             secret_key (str): Alpaca Secret key.
             symbol (str): Cryptocurrency symbol to subscribe to (e.g., "BTC/USD").
-            data_buffer (deque): Thread-safe deque to store incoming data.
+            data_buffer (DataBuffer): Shared data buffer for incoming data.
         """
         super().__init__(symbol, data_buffer)
         self.api_key = api_key
@@ -38,12 +39,13 @@ class CryptoQuotesDataStreamer(BaseStreamer, StreamerProtocol):
         Args:
             data: Data object containing timestamp, bid_price, and ask_price.
         """
+        logger.debug(f"on_crypto_quote: Received data at {data.timestamp}")
         self.data_buffer.append({
             'timestamp': data.timestamp,
             'bid_price': data.bid_price,
             'ask_price': data.ask_price
         })
-        logger.debug(f"Received data at {data.timestamp}: Bid={data.bid_price}, Ask={data.ask_price}")
+        logger.debug(f"on_crypto_quote: Appended data with {data.timestamp=}, {data.bid_price=} and {data.ask_price=}  to buffer.")
 
     def run_stream(self) -> None:
         """
@@ -51,6 +53,13 @@ class CryptoQuotesDataStreamer(BaseStreamer, StreamerProtocol):
         """
         try:
             logger.info("CryptoQuotesDataStreamer: Starting CryptoDataStream...")
+
+            # # Create a new event loop for this thread
+            # loop = asyncio.new_event_loop()
+            # asyncio.set_event_loop(loop)
+
+            # # Run the CryptoDataStream within the event loop
+            # loop.run_until_complete(self.crypto_stream.run())
             self.crypto_stream.run()
         except ValueError as ve:
             if 'connection limit exceeded' in str(ve).lower():

@@ -19,6 +19,12 @@ class DashBackend(VisualizationBackendProtocol):
         self.data_buffer = data_buffer
         self.title = title
         self.app = dash.Dash(__name__)
+
+        # State tracking attributes
+        self.has_logged_no_data = False
+        self.last_timestamp = None
+
+
         self.setup_layout()
         self.setup_callbacks()
 
@@ -44,10 +50,28 @@ class DashBackend(VisualizationBackendProtocol):
             Output('live-graph', 'figure'),
             [Input('graph-update', 'n_intervals')]
         )
-        def update_graph_live(n):
+        def update_graph_live(n: int) -> go.Figure:
             if not self.data_buffer:
-                logger.debug("DashBackend: No data available to update graph.")
+                if not self.has_logged_no_data:
+                    logger.info("DashBackend: No data available to update graph.")
+                    self.has_logged_no_data = True
                 return go.Figure()
+            else:
+                # Reset the 'no data' flag if data is available
+                if self.has_logged_no_data:
+                    self.has_logged_no_data = False
+
+            # Retrieve the latest data entry
+            latest_data = self.data_buffer[-1]
+            latest_timestamp = latest_data.get('timestamp')
+
+            # Check if new data has arrived
+            if latest_timestamp != self.last_timestamp:
+                logger.info("DashBackend: Graph updated with new data.")
+                self.last_timestamp = latest_timestamp
+            else:
+                # No new data; no logging needed
+                pass
 
             # Extract data from the deque
             timestamps = [data['timestamp'] for data in self.data_buffer]
@@ -84,7 +108,7 @@ class DashBackend(VisualizationBackendProtocol):
                 margin=dict(l=40, r=40, t=40, b=40)
             )
 
-            logger.debug("DashBackend: Graph updated with new data.")
+            # logger.debug("DashBackend: Graph updated with new data.")
             return fig
 
     def update_visualization(self, data_buffer: Deque[dict]) -> None:

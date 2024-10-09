@@ -8,6 +8,24 @@ from loguru import logger
 
 @dataclass
 class DataBuffer:
+    """
+    DataBuffer class for storing and managing data points in a thread-safe manner.
+
+    Args:
+        maxlen (int): Maximum number of data points to store in the buffer (default: 1000).
+        
+    Attributes:
+        buffer (Deque[Dict]): Deque containing the data points.
+        lock (Lock): Lock for thread-safe access to the buffer.
+
+    Methods:
+        append(data: Dict) -> None: Appends a data point to the buffer.
+        get_snapshot() -> List[Dict]: Returns a snapshot of the buffer.
+        is_empty() -> bool: Checks if the buffer is empty.
+        get_latest_timestamp() -> Optional[str]: Returns the timestamp of the latest data point.
+        __len__() -> int: Returns the number of data points in the buffer.
+
+    """
     maxlen: int = 1000
     buffer: Deque[Dict] = field(init=False)
     lock: Lock = field(default_factory=Lock)

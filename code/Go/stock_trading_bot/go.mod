@@ -1,6 +1,6 @@
-module stock_trading_bot
+module github.com/mag1cfrog/stock_trading_bot/code/Go/stock_trading_bot
 
-go 1.22
+go 1.23
 
 require (
 	cloud.google.com/go v0.114.0 // indirect

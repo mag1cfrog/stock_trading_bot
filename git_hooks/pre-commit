@@ -5,14 +5,51 @@ echo "Pre-commit hook triggered"
 # Path to the generate_index.py script
 INDEX_SCRIPT="./scripts/dev-log/generate_index.py"
 
-# Check for changes in the doc/dev-log directory
-if git diff --cached --name-only | grep --quiet "doc/dev-log/"
-then
-    echo "Changes detected in doc/dev-log directory. Regenerating index."
-    python3 $INDEX_SCRIPT
-    # Add the updated index.md file to the commit
-    git add doc/dev-log/index.md
-fi
+# Function to format Python files using Ruff if available
+format_python_files() {
+    # Check if ruff is installed
+    if ! command -v ruff >/dev/null 2>&1; then
+        echo "Ruff not found. Skipping Python file formatting."
+        return
+    fi
 
-# Exit with zero status
+    # Get list of staged Python files in code/Python directory
+    PY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "^code/Python/.*\.py$")
+
+    if [ -n "$PY_FILES" ]; then
+        echo "Python files changed. Formatting with Ruff."
+        
+        # Run Ruff with the --fix flag to automatically format the files
+        ruff fix $PY_FILES
+
+        # Re-add the formatted Python files to the staging area
+        echo "$PY_FILES" | xargs git add
+
+        echo "Python files formatted and re-staged successfully."
+    fi
+}
+
+# Function to regenerate index.md if changes are detected in doc/dev-log
+regenerate_index() {
+    # Check for changes in the doc/dev-log directory
+    if git diff --cached --name-only | grep --quiet "^doc/dev-log/"; then
+        echo "Changes detected in doc/dev-log directory. Regenerating index."
+
+        # Execute the generate_index.py script
+        if python3 $INDEX_SCRIPT; then
+            # Add the updated index.md file to the staging area
+            git add doc/dev-log/index.md
+            echo "index.md regenerated and added to commit."
+        else
+            echo "Failed to regenerate index.md. Aborting commit."
+            exit 1
+        fi
+    fi
+}
+
+# Execute formatting and index regeneration functions
+format_python_files
+regenerate_index
+
+# Exit with zero status to allow the commit to proceed
 exit 0

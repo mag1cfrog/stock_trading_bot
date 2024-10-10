@@ -1,0 +1,23 @@
+[project]
+name = "fake_crypto_feed"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "mag1cfrog", email = "harrywong2017@gmail.com"},
+]
+dependencies = [
+    "websockets>=13.1",
+    "prometheus-client>=0.21.0",
+    "psutil>=6.0.0",
+]
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true

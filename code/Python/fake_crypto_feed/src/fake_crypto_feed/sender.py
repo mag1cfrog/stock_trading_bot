@@ -12,30 +12,40 @@ import multiprocessing
 from multiprocessing.synchronize import Event
 
 # Initialize Prometheus metrics
-cpu_usage = Gauge('sender_cpu_usage_percent', 'CPU usage percentage of the data sender')
-ram_usage = Gauge('sender_ram_usage_percent', 'RAM usage percentage of the data sender')
+cpu_usage = Gauge('Python_sender_cpu_usage_percent', 'CPU usage percentage of the data sender')
+ram_usage = Gauge('Python_sender_ram_usage_mb', 'RAM usage in MB of the data sender')
 io_read = Gauge('sender_io_read_bytes', 'IO read bytes per second of the data sender')
 io_write = Gauge('sender_io_write_bytes', 'IO write bytes per second of the data sender')
-sent_messages = Counter('sender_sent_messages_total', 'Total number of messages sent by the data sender')
-error_count = Counter('sender_error_count_total', 'Total number of errors encountered by the data sender')
+sent_messages = Counter('Python_sender_sent_messages_total', 'Total number of messages sent by the data sender')
+error_count = Counter('Python_sender_error_count_total', 'Total number of errors encountered by the data sender')
 
 async def collect_metrics() -> None:
     process = psutil.Process()
+
+    # Initialize CPU measurement
+    process.cpu_percent(interval=None)
     prev_io = process.io_counters()
+
     while True:
-        cpu = process.cpu_percent(interval=1)
-        ram = process.memory_percent()
+        
+        # Get CPU usage
+        cpu = process.cpu_percent(interval=None)
+        cpu_usage.set(cpu)
+
+        # Get RAM usage in MB
+        ram = process.memory_info().rss / (1024 * 1024)
+        ram_usage.set(ram)
+
+        # Get I/O counters
         io_counters = process.io_counters()
         io_r = io_counters.read_bytes - prev_io.read_bytes
         io_w = io_counters.write_bytes - prev_io.write_bytes
         prev_io = io_counters
 
-        cpu_usage.set(cpu)
-        ram_usage.set(ram)
         io_read.set(io_r)
         io_write.set(io_w)
 
-        await asyncio.sleep(5)  # Update every 5 seconds
+        await asyncio.sleep(1)  # Update every 5 seconds
 
 async def price_feed(websocket: WebSocketServer, path):
     bid_price = random.uniform(10000, 20000)
@@ -84,8 +94,8 @@ async def start_server(start_event: Event, wb_port: int=8765) -> None:
     await server.wait_closed()
     
 
-def run_sender(start_event: Event, prometheus_port: int=9000, wb_port: int=8765) -> None:
-    # Start Prometheus metrics server on port 9000
+def run_sender(start_event: Event, prometheus_port: int=8000, wb_port: int=8765) -> None:
+    # Start Prometheus metrics server on port 8000
     start_http_server(prometheus_port)
     
     loop = asyncio.new_event_loop()

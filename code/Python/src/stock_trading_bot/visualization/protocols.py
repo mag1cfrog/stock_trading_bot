@@ -1,5 +1,6 @@
 from typing import Protocol, Deque
 
+
 class VisualizerProtocol(Protocol):
     symbol: str
 

@@ -5,11 +5,17 @@ import sys
 
 from loguru import logger
 
-from stock_trading_bot.visualization.protocols import VisualizerProtocol, VisualizationBackendProtocol
+from stock_trading_bot.visualization.protocols import (
+    VisualizerProtocol,
+    VisualizationBackendProtocol,
+)
 from stock_trading_bot.visualization.backends.dash.dash_backend import DashBackend
-from stock_trading_bot.streamer.crypto_quotes_data_streamer import CryptoQuotesDataStreamer
+from stock_trading_bot.streamer.crypto_quotes_data_streamer import (
+    CryptoQuotesDataStreamer,
+)
 from stock_trading_bot.visualization.data_buffer import DataBuffer
 from stock_trading_bot.utils.config_loader import load_config_auto
+
 
 class CryptoQuotesDashVisualizer(VisualizerProtocol):
     symbol: str
@@ -33,13 +39,13 @@ class CryptoQuotesDashVisualizer(VisualizerProtocol):
             api_key=api_key,
             secret_key=secret_key,
             symbol=symbol,
-            data_buffer=self.data_buffer
+            data_buffer=self.data_buffer,
         )
 
         # Initialize Visualization Backend (Dash in this case)
         self.visualization_backend: VisualizationBackendProtocol = DashBackend(
             data_buffer=self.data_buffer,
-            title=f"Real-Time {symbol} Price Visualization"
+            title=f"Real-Time {symbol} Price Visualization",
         )
 
         # Register signal handlers for graceful shutdown
@@ -52,7 +58,9 @@ class CryptoQuotesDashVisualizer(VisualizerProtocol):
         """
         # Start the streamer
         self.streamer.start()
-        logger.info(f"{self.symbol} Quotes Dash Visualizer is running. Awaiting data...")
+        logger.info(
+            f"{self.symbol} Quotes Dash Visualizer is running. Awaiting data..."
+        )
 
         # Run the visualization backend
         self.visualization_backend.run()
@@ -65,7 +73,9 @@ class CryptoQuotesDashVisualizer(VisualizerProtocol):
             sig: Signal number.
             frame: Current stack frame.
         """
-        logger.info("CryptoQuotesDashVisualizer: Received interrupt signal, shutting down gracefully...")
+        logger.info(
+            "CryptoQuotesDashVisualizer: Received interrupt signal, shutting down gracefully..."
+        )
         self.streamer.stop_stream()
         sys.exit(0)
 
@@ -73,21 +83,18 @@ class CryptoQuotesDashVisualizer(VisualizerProtocol):
 def main():
     """
     The main function to run the CryptoQuotesDashVisualizer.
-    
+
     """
     # Load the Alpaca API keys from environment variables
     load_config_auto()
-    
-    
+
     ALPACA_API_KEY = os.getenv("APCA_API_KEY_ID")
     ALPACA_SECRET_KEY = os.getenv("APCA_API_SECRET_KEY")
     SYMBOL = "BTC/USD"
 
     # Instantiate the visualizer
     visualizer = CryptoQuotesDashVisualizer(
-        api_key=ALPACA_API_KEY,
-        secret_key=ALPACA_SECRET_KEY,
-        symbol=SYMBOL
+        api_key=ALPACA_API_KEY, secret_key=ALPACA_SECRET_KEY, symbol=SYMBOL
     )
 
     # Run the visualizer
@@ -96,5 +103,6 @@ def main():
     except Exception as e:
         logger.error(f"Error running CryptoQuotesDashVisualizer: {e}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

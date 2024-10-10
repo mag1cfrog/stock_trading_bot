@@ -11,7 +11,7 @@ class BaseStreamer(StreamerProtocol):
     def __init__(self, symbol: str, data_buffer: Deque[dict]) -> None:
         """
         Initializes the BaseStreamer with the symbol and data buffer.
-        
+
         Args:
             symbol (str): The symbol to subscribe to (e.g., "BTC/USD").
             data_buffer (Deque[dict]): Thread-safe deque to store incoming data.

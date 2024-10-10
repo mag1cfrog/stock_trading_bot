@@ -2,12 +2,13 @@ from typing import Protocol
 
 
 class StorageManager(Protocol):
-
     def add_data(self, data, table_name: str) -> None:
         """Add new data to the storage system."""
         pass
 
-    def calculate_higher_granularity(self, base_table_name: str, new_table_name: str, granularity: str) -> None:
+    def calculate_higher_granularity(
+        self, base_table_name: str, new_table_name: str, granularity: str
+    ) -> None:
         """Calculate higher granularity data from base data."""
         pass
 

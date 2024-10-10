@@ -10,11 +10,14 @@ from stock_trading_bot.streamer.base_streamer import BaseStreamer
 from stock_trading_bot.streamer.protocols import StreamerProtocol
 from stock_trading_bot.visualization.data_buffer import DataBuffer
 
+
 class CryptoQuotesDataStreamer(BaseStreamer, StreamerProtocol):
-    def __init__(self, api_key: str, secret_key: str, symbol: str, data_buffer: DataBuffer) -> None:
+    def __init__(
+        self, api_key: str, secret_key: str, symbol: str, data_buffer: DataBuffer
+    ) -> None:
         """
         Initializes the CryptoQuotesDataStreamer with API credentials and subscription details.
-        
+
         Args:
             api_key (str): Alpaca API key.
             secret_key (str): Alpaca Secret key.
@@ -35,17 +38,21 @@ class CryptoQuotesDataStreamer(BaseStreamer, StreamerProtocol):
     async def on_crypto_quote(self, data: dict) -> None:
         """
         Asynchronously handles incoming crypto quotes.
-        
+
         Args:
             data: Data object containing timestamp, bid_price, and ask_price.
         """
         logger.debug(f"on_crypto_quote: Received data at {data.timestamp}")
-        self.data_buffer.append({
-            'timestamp': data.timestamp,
-            'bid_price': data.bid_price,
-            'ask_price': data.ask_price
-        })
-        logger.debug(f"on_crypto_quote: Appended data with {data.timestamp=}, {data.bid_price=} and {data.ask_price=}  to buffer.")
+        self.data_buffer.append(
+            {
+                "timestamp": data.timestamp,
+                "bid_price": data.bid_price,
+                "ask_price": data.ask_price,
+            }
+        )
+        logger.debug(
+            f"on_crypto_quote: Appended data with {data.timestamp=}, {data.bid_price=} and {data.ask_price=}  to buffer."
+        )
 
     def run_stream(self) -> None:
         """
@@ -62,13 +69,17 @@ class CryptoQuotesDataStreamer(BaseStreamer, StreamerProtocol):
             # loop.run_until_complete(self.crypto_stream.run())
             self.crypto_stream.run()
         except ValueError as ve:
-            if 'connection limit exceeded' in str(ve).lower():
-                logger.error(f"CryptoQuotesDataStreamer: Connection limit exceeded: {ve}")
+            if "connection limit exceeded" in str(ve).lower():
+                logger.error(
+                    f"CryptoQuotesDataStreamer: Connection limit exceeded: {ve}"
+                )
                 self.stop_stream()
                 # Exit the entire script to prevent further attempts
                 os._exit(1)
             else:
-                logger.error(f"CryptoQuotesDataStreamer: ValueError in CryptoDataStream: {ve}")
+                logger.error(
+                    f"CryptoQuotesDataStreamer: ValueError in CryptoDataStream: {ve}"
+                )
         except Exception as e:
             logger.error(f"CryptoQuotesDataStreamer: Error in CryptoDataStream: {e}")
 

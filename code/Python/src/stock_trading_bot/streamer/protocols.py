@@ -1,5 +1,6 @@
 from typing import Protocol
 
+
 class StreamerProtocol(Protocol):
     symbol: str
 

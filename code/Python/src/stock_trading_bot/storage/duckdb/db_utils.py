@@ -19,14 +19,16 @@ vwap DOUBLE,
 """
 
 
-def prepare_and_connect_to_latest_snapshot(db_directory: Path, snapshot_directory: Path) -> duckdb.DuckDBPyConnection:
+def prepare_and_connect_to_latest_snapshot(
+    db_directory: Path, snapshot_directory: Path
+) -> duckdb.DuckDBPyConnection:
     """
     Prepare the working environment by selecting and connecting to the latest snapshot.
-    
+
     Args:
         db_directory (Path): The directory where the database is stored.
         snapshot_directory (Path): The directory where snapshots are stored.
-    
+
     Returns:
         duckdb.DuckDBPyConnection: The connection to the DuckDB database.
 
@@ -46,7 +48,7 @@ def prepare_and_connect_to_latest_snapshot(db_directory: Path, snapshot_director
         logger.info(f"Using latest snapshot: {latest_snapshot}")
     else:
         logger.warning("No snapshot found, initializing a new database.")
-    
+
     logger.trace(f"Connecting to {working_db_path}")
     return duckdb.connect(str(working_db_path))
 
@@ -57,7 +59,7 @@ def get_latest_snapshot(snapshot_directory) -> Path | None:
 
     Args:
         snapshot_directory (Path): The directory where snapshots are stored.
-    
+
     Returns:
         Path | None: The path to the latest snapshot file, or None if no snapshots are found.
     """
@@ -72,7 +74,7 @@ def snapshot_database(db_directory: Path, snapshot_directory: Path) -> None:
     """Create a snapshot of the current DuckDB file."""
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     snapshot_path = snapshot_directory / f"stock_data_{current_time}.duckdb"
-    current_db_path = db_directory / "temp_dir"/ "stock_data.duckdb"
+    current_db_path = db_directory / "temp_dir" / "stock_data.duckdb"
     try:
         shutil.copy2(current_db_path, snapshot_path)
         logger.debug(f"Snapshot saved to {snapshot_path}")
@@ -92,9 +94,8 @@ def cleanup_snapshots(db_directory: Path, max_snapshots: int) -> None:
             snapshots.pop(0)
         except Exception as e:
             logger.error(f"Failed to remove snapshot {snapshots[0]}: {e}")
-    
+
     # Remove tmp directory
     if (db_directory / "temp_dir").exists():
         shutil.rmtree(db_directory / "temp_dir")
         logger.trace("Removed temporary directory")
-    

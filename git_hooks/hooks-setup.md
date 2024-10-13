@@ -3,7 +3,7 @@
 ## Introduction
 This guide explains how to ensure that Git hooks, like the `pre-commit` hook, work correctly in your local environment. 
 
-In our repository, we use a pre-commit hook to automatically regenerate the `index.md` file for the development logs whenever changes are made to the `doc/dev-log` directory.
+In our repository, we use a pre-commit hook to automatically regenerate the `index.md` file for the development logs whenever changes are made to the `doc/dev-log` directory. We alao add a formatter using ruff to automatically format the Python code before commiting.
 
 ## Steps to Enable the Pre-Commit Hook
 

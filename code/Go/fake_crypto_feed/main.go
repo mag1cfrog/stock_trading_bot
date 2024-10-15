@@ -24,7 +24,7 @@ func main() {
     wg.Add(1)
     go func() {
         defer wg.Done()
-        if err := sender.StartServer(ctx); err != nil {
+        if err := sender.StartServer(ctx, &wg); err != nil {
             log.Println("Sender error:", err)
         }
     }()

@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -51,29 +52,87 @@ type PriceData struct {
 	Ask float64 `json:"ask"`
 }
 
-func StartServer(ctx context.Context) error {
+func StartServer(ctx context.Context, wg *sync.WaitGroup) error {
+	defer wg.Done()
+
+	// Create a new ServeMux for the main server
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws", handleConnections)
+
+	// Create the main server on port 8081
+	srv := &http.Server{
+		Addr:	":8081",
+		Handler: mux,
+	}
+
+	// Create a new ServeMux for the metrics server
+	metricsMux := http.NewServeMux()
+	metricsMux.Handle("/metrics", promhttp.Handler())
+
+	metricsServer := &http.Server{
+		Addr:	":9000",
+		Handler: metricsMux,
+	}
+
+	// Start the server in a goroutine
+	internalWG := sync.WaitGroup{}
+
+	internalWG.Add(1)
 	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		if err := http.ListenAndServe(":9000", nil); err != nil {
-			log.Println("Metrics server error:", err)
+		defer internalWG.Done()
+		log.Println("WebSocket server started on : 8081")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Println("WebSocket server error:", err)
 		}
 	}()
 
-	go updateUsageMetrics(ctx)
-
-	http.HandleFunc("/ws", handleConnections)
-
-	srv := &http.Server{Addr: ":8081"}
-
+	// Start the metrics server in a separate goroutine
+	internalWG.Add(1)
 	go func() {
-		<-ctx.Done()
-		srv.Close()
+		defer internalWG.Done()
+		log.Println("Metrics server started on : 9000")
+		if err := metricsServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Println("Metrics server error:", err)
+		}
+
 	}()
 
-	log.Println("WebSocket server started on :8081")
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		return err
-	}
+	// Start updating usage metrics in a goroutine
+    internalWG.Add(1)
+    go func() {
+        defer internalWG.Done()
+        updateUsageMetrics(ctx)
+    }()
+
+	// Start the shutdown handler in a separate goroutine
+    internalWG.Add(1)
+	go func() {
+		defer internalWG.Done()
+		<-ctx.Done()
+		log.Println("Shutting down servers...")
+		
+		// Create a context with a timeout for the shutdown
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// Shutdown the main server
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			log.Println("Main server shutdown error:", err)
+		} else {
+			log.Println("Main server gracefully stopped")
+		}
+
+		// Shutdown the metrics server
+		if err := metricsServer.Shutdown(shutdownCtx); err != nil {
+			log.Println("Metrics server shutdown error:", err)
+		} else {
+			log.Println("Metrics server gracefully stopped")
+		}
+	}()
+
+	// Wait for all internal goroutines to finish
+    internalWG.Wait()
+
 	return nil
 }
 

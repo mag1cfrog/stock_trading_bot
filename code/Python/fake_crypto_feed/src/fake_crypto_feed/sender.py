@@ -96,7 +96,7 @@ async def start_server(start_event: Event, wb_port: int=8765, interval: float = 
     await server.wait_closed()
     
 
-def run_sender(start_event: Event, prometheus_port: int=8000, wb_port: int=8765) -> None:
+def run_sender(start_event: Event, prometheus_port: int=8000, wb_port: int=8765, interval: float=0.01) -> None:
     # Start Prometheus metrics server on port 8000
     start_http_server(prometheus_port)
     
@@ -107,7 +107,7 @@ def run_sender(start_event: Event, prometheus_port: int=8000, wb_port: int=8765)
     # Signal that the server is starting
     # start_event.set()
 
-    loop.run_until_complete(start_server(start_event, wb_port))
+    loop.run_until_complete(start_server(start_event, wb_port, interval))
 
 
 if __name__ == "__main__":

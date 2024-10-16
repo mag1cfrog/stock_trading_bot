@@ -46,7 +46,7 @@ async def collect_metrics() -> None:
         io_read.set(io_r)
         io_write.set(io_w)
 
-        await asyncio.sleep(1)  # Update every 5 seconds
+        await asyncio.sleep(0.1)  # Update every 5 seconds
 
 async def price_feed(websocket: WebSocketServer, _path: str, interval: float) -> None:
     bid_price = random.uniform(10000, 20000)

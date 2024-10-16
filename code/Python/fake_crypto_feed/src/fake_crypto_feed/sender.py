@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import functools
 import json
 import random
 import logging
@@ -47,15 +48,15 @@ async def collect_metrics() -> None:
 
         await asyncio.sleep(1)  # Update every 5 seconds
 
-async def price_feed(websocket: WebSocketServer, path):
+async def price_feed(websocket: WebSocketServer, _path: str, interval: float) -> None:
     bid_price = random.uniform(10000, 20000)
     ask_price = bid_price + random.uniform(5, 15)
 
     while True:
         try:
             jitter = random.uniform(-0.1, 0.1)  # Jitter between -10% to +10%
-            interval = 0.2 * (1 + jitter)
-            await asyncio.sleep(interval)
+            actual_interval = interval * (1 + jitter)
+            await asyncio.sleep(actual_interval)
 
             # Determine price change direction
             direction = random.choice([-1, 1])
@@ -88,8 +89,9 @@ async def price_feed(websocket: WebSocketServer, path):
             error_count.inc()
 
 
-async def start_server(start_event: Event, wb_port: int=8765) -> None:
-    server = await websockets.serve(price_feed, 'localhost', wb_port)
+async def start_server(start_event: Event, wb_port: int=8765, interval: float = 0.01) -> None:
+    handler = functools.partial(price_feed, interval=interval)
+    server = await websockets.serve(handler, 'localhost', wb_port)
     start_event.set()  # Signal that the server is ready
     await server.wait_closed()
     

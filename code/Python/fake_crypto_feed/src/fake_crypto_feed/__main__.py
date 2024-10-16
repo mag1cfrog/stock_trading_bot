@@ -6,11 +6,11 @@ import multiprocessing
 from multiprocessing.synchronize import Event
 
 
-def run_sender(start_event: Event) -> None:
+def run_sender(start_event: Event, interval: float) -> None:
     current_dir = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, current_dir)
     from fake_crypto_feed import sender
-    sender.run_sender(start_event)
+    sender.run_sender(start_event, interval=interval)
 
 
 def run_client(start_event: Event) -> None:
@@ -24,8 +24,9 @@ def run_client(start_event: Event) -> None:
 
 def main() -> None:
     start_event = multiprocessing.Event()
+    interval = 0.001
 
-    sender_process = multiprocessing.Process(target=run_sender, args=(start_event,), name='SenderProcess')
+    sender_process = multiprocessing.Process(target=run_sender, args=(start_event, interval), name='SenderProcess')
     client_process = multiprocessing.Process(target=run_client, args=(start_event,), name='ClientProcess')
 
     sender_process.start()

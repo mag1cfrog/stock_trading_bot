@@ -29,16 +29,16 @@ format_python_files() {
     fi
 }
 
-# Function to regenerate index.md if changes are detected in doc/dev-log
+# Function to regenerate index.md if changes are detected in docs/dev-log
 regenerate_index() {
-    # Check for changes in the doc/dev-log directory
-    if git diff --cached --name-only | grep --quiet "^doc/dev-log/"; then
-        echo "Changes detected in doc/dev-log directory. Regenerating index."
+    # Check for changes in the docs/dev-log directory
+    if git diff --cached --name-only | grep --quiet "^docs/dev-log/"; then
+        echo "Changes detected in docs/dev-log directory. Regenerating index."
 
         # Execute the generate_index.py script
         if python3 $INDEX_SCRIPT; then
             # Add the updated index.md file to the staging area
-            git add doc/dev-log/index.md
+            git add docs/dev-log/index.md
             echo "index.md regenerated and added to commit."
         else
             echo "Failed to regenerate index.md. Aborting commit."

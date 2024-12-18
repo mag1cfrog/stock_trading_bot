@@ -1,0 +1,5 @@
+# Ignore benchmark result files
+results/
+
+# yaml config files
+*.yaml

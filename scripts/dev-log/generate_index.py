@@ -28,7 +28,7 @@ def get_unique_highest_title(file_path):
 
 
 # Path to the dev-log directory
-dev_log_dir = "./doc/dev-log"
+dev_log_dir = "./docs/dev-log"
 index_file_path = os.path.join(dev_log_dir, "index.md")
 
 # Fetch all markdown files

@@ -11,13 +11,16 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from viztracer import VizTracer
+import polars as pl
+# from viztracer import VizTracer
 
 
-TEMP_DIR = Path("temp_benchmark")
-SYMBOL_COUNTS = [1]
-ROW_COUNTS = [1000]
+TEMP_DIR = Path("temp") / Path("storage_design_benchmark")
+SYMBOL_COUNTS = [1, 100]
+ROW_COUNTS = [10000, ]
 APPEND_BATCH_NUMBER = 100
+
+
 
 @contextmanager
 def timer():
@@ -25,7 +28,7 @@ def timer():
     yield lambda: time.perf_counter() - start
 
 class StorageDesignBenchmark:
-    def __init__(self, symbol_counts: list=SYMBOL_COUNTS, row_counts: list=ROW_COUNTS, append_batch_number: int = APPEND_BATCH_NUMBER):
+    def __init__(self, symbol_counts: list=SYMBOL_COUNTS, row_counts: list=ROW_COUNTS, append_batch_number: int = APPEND_BATCH_NUMBER, num_repeats: int=5):
         self.symbol_counts = symbol_counts
         self.row_counts = row_counts
         self.timeframes = ['1min', '5min', '1hour', '1day']
@@ -33,6 +36,7 @@ class StorageDesignBenchmark:
         self.append_data = None
         self.append_batch_number = append_batch_number
         self.results = {}
+        self.num_repeats = num_repeats
 
     def _generate_symbols(self, count):
         """Generate random unique symbol names of 4 characters each."""
@@ -44,27 +48,35 @@ class StorageDesignBenchmark:
 
     def generate_synthetic_data(self):
         # Initial data (smaller dataset for table creation)
-        initial_timestamps = pd.date_range('2020-01-01', periods=self.num_rows//10, freq='min')
+        initial_timestamps = pl.datetime_range(start=pl.datetime(2020, 1, 1), end=pl.datetime(2020, 1, 2), interval='1m', time_unit='ms',
+            closed='left')
         self.initial_data = self._create_dataframe(initial_timestamps)
         
         # Create multiple smaller append batches
         self.append_batches = []
         batch_size = self.num_rows // self.append_batch_number
         for i in range(self.append_batch_number):
-            start_date = pd.Timestamp('2020-04-01') + pd.Timedelta(days=i*7)
-            batch_timestamps = pd.date_range(start_date, periods=batch_size, freq='min')
-            self.append_batches.append(self._create_dataframe(batch_timestamps))
+            start_date = pl.datetime(2020, 4, 1) + pl.duration(days=i*7)
+            end_date = start_date + pl.duration(minutes=batch_size)
+            batch_timestamps = pl.datetime_range(
+                start=start_date,
+                end=end_date,
+                interval='1m',
+                time_unit='ms',
+                closed='left'
+            )
+            batch_data = self._create_dataframe(batch_timestamps)
+            self.append_batches.append(batch_data)
 
     def _create_dataframe(self, timestamps):
-        size = len(timestamps)
-        return pd.DataFrame({
-            'timestamp': timestamps,
-            'open': np.random.rand(size),
-            'high': np.random.rand(size),
-            'low': np.random.rand(size),
-            'close': np.random.rand(size),
-            'volume': np.random.randint(100, 10000, size)
-        })
+        size = pl.select(timestamps).height
+        return pl.select(timestamps.alias('timestamp')).with_columns(
+            pl.Series('open', np.random.rand(size).tolist()),
+            pl.Series('high', np.random.rand(size).tolist()),
+            pl.Series('low', np.random.rand(size).tolist()),
+            pl.Series('close', np.random.rand(size).tolist()),
+            pl.Series('volume', np.random.rand(size).tolist())
+        )
 
     def cleanup(self):
         if TEMP_DIR.exists():
@@ -80,9 +92,8 @@ class StorageDesignBenchmark:
         with timer() as create_timer:
             for symbol in self.stock_symbols:
                 for timeframe in self.timeframes:
-                    conn.register('temp_data', self.initial_data)
+                    temp_data = self.initial_data
                     conn.execute(f"CREATE TABLE {symbol}_{timeframe} AS SELECT * FROM temp_data")
-                    conn.unregister('temp_data')
         create_time = create_timer()
 
         # Test multiple append operations
@@ -92,9 +103,8 @@ class StorageDesignBenchmark:
                 with timer() as batch_timer:
                     for symbol in self.stock_symbols:
                         for timeframe in self.timeframes:
-                            conn.register('append_data', batch_data)
+                            append_data = batch_data
                             conn.execute(f"INSERT INTO {symbol}_{timeframe} SELECT * FROM append_data")
-                            conn.unregister('append_data')
                 append_times.append(batch_timer())
         total_append_time = total_append_timer()
 
@@ -121,7 +131,7 @@ class StorageDesignBenchmark:
                     db_path = TEMP_DIR / f"option2_data/{symbol}/{timeframe}"
                     db_path.mkdir(parents=True, exist_ok=True)
                     conn = duckdb.connect(str(db_path / 'data.duckdb'))
-                    conn.register('temp_data', self.initial_data)
+                    temp_data = self.initial_data
                     conn.execute("CREATE TABLE data AS SELECT * FROM temp_data")
                     conn.close()
         create_time = create_timer()
@@ -134,7 +144,7 @@ class StorageDesignBenchmark:
                     for symbol in self.stock_symbols:
                         for timeframe in self.timeframes:
                             conn = duckdb.connect(str(db_path / 'data.duckdb'))
-                            conn.register('append_data', batch_data)
+                            append_data = batch_data
                             conn.execute("INSERT INTO data SELECT * FROM append_data")
                             conn.close()
                 append_times.append(batch_timer())
@@ -162,7 +172,7 @@ class StorageDesignBenchmark:
             for symbol in self.stock_symbols:
                 db_path = TEMP_DIR / f"option3_{symbol}.duckdb"
                 conn = duckdb.connect(str(db_path))
-                conn.register('temp_data', self.initial_data)
+                temp_data = self.initial_data
                 for timeframe in self.timeframes:
                     conn.execute(f"CREATE TABLE data_{timeframe} AS SELECT * FROM temp_data")
                 conn.close()
@@ -176,7 +186,7 @@ class StorageDesignBenchmark:
                     for symbol in self.stock_symbols:
                         db_path = TEMP_DIR / f"option3_{symbol}.duckdb"
                         conn = duckdb.connect(str(db_path))
-                        conn.register('append_data', batch_data)
+                        append_data = batch_data
                         for timeframe in self.timeframes:
                             conn.execute(f"INSERT INTO data_{timeframe} SELECT * FROM append_data")
                         conn.close()
@@ -200,46 +210,65 @@ class StorageDesignBenchmark:
         }
 
     def run_comprehensive_benchmarks(self):
+
+        # Initialize temp directory
+        self.cleanup()
+        TEMP_DIR.mkdir(parents=True, exist_ok=True)
+
         # Test different combinations of symbols and data sizes
         symbol_counts = self.symbol_counts  # Different number of symbols
         row_counts = self.row_counts  # Different data sizes
         scenarios = list(product(symbol_counts, row_counts))
         
+
         results = {}
         print("Starting comprehensive benchmarks...")
         
         for num_symbols, num_rows in scenarios:
             print(f"\nScenario: {num_symbols} symbols, {num_rows:,} rows")
-            
-            # Reinitialize with new parameters
-            self.num_rows = num_rows
-            self.num_symbols = num_symbols
-            self.stock_symbols = self._generate_symbols(num_symbols)
-            self.generate_synthetic_data()
-            
-            scenario_results = {}
-            self.cleanup()
-            TEMP_DIR.mkdir(exist_ok=True)
-            
+            scenario_key = f"symbols_{num_symbols}_rows_{num_rows}"
+            scenario_results = {f"option_{i}": {'create_times': [], 'append_times': [], 'query_times': [], 'total_times': []} for i in range(1, 4)}
+
+            for repeat in range(self.num_repeats):
+                print(f"  Repeat {repeat + 1}/{self.num_repeats}")
+                # Reinitialize with new parameters
+                self.num_rows = num_rows
+                self.stock_symbols = self._generate_symbols(num_symbols)
+                self.generate_synthetic_data()
+
+                self.cleanup()
+                TEMP_DIR.mkdir(exist_ok=True)
+
+                for option in range(1, 4):
+                    benchmark_func = getattr(self, f"benchmark_option_{option}")
+                    option_results = benchmark_func()
+
+                    # Store individual timings
+                    scenario_results[f"option_{option}"]['create_times'].append(option_results['create_time'])
+                    scenario_results[f"option_{option}"]['append_times'].append(option_results['append_time'])
+                    scenario_results[f"option_{option}"]['query_times'].append(option_results['query_time'])
+                    total_time = option_results['create_time'] + option_results['append_time'] + option_results['query_time']
+                    scenario_results[f"option_{option}"]['total_times'].append(total_time)
+
+            # After repeats, compute averages
             for option in range(1, 4):
-                print(f"Testing Option {option}...")
-                benchmark_func = getattr(self, f"benchmark_option_{option}")
-                option_results = benchmark_func()
-                scenario_results[f"option_{option}"] = option_results
-                
-                print(f"Create time: {option_results['create_time']:.2f}s")
-                print(f"Append time: {option_results['append_time']:.2f}s")
-                print(f"Query time: {option_results['query_time']:.2f}s")
-                print(f"Total time: {
-                    option_results['create_time'] + option_results['append_time'] + option_results['query_time']:.2f
-                    }s")
-            
-            results[f"symbols_{num_symbols}_rows_{num_rows}"] = scenario_results
+                for metric in ['create_times', 'append_times', 'query_times', 'total_times']:
+                    times = scenario_results[f"option_{option}"][metric]
+                    avg_time = sum(times) / len(times)
+                    std_time = (sum((x - avg_time) ** 2 for x in times) / len(times)) ** 0.5
+                    scenario_results[f"option_{option}"][f"avg_{metric[:-1]}"] = avg_time
+                    scenario_results[f"option_{option}"][f"std_{metric[:-1]}"] = std_time
+
+            results[scenario_key] = scenario_results
             
         self.cleanup()
+        self.results = results  # Store results for analysis and visualization
         return results
 
     def analyze_results(self, results):
+        if results is None:
+            results = self.results
+
         print("\nPerformance Analysis:")
         print("=" * 80)
         

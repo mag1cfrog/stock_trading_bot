@@ -13,13 +13,19 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import polars as pl
 # from viztracer import VizTracer
-
+import yaml
 
 TEMP_DIR = Path("temp") / Path("storage_design_benchmark")
-SYMBOL_COUNTS = [1, 100]
-ROW_COUNTS = [10000, ]
-APPEND_BATCH_NUMBER = 100
 
+config_path = Path("tests/benchmarks/bm_sdp.yaml")
+
+with open(config_path, 'r') as file:
+    config = yaml.safe_load(file)
+
+SYMBOL_COUNTS = config.get('SYMBOL_COUNTS', [1, 100])
+ROW_COUNTS = config.get('ROW_COUNTS', [10000])
+APPEND_BATCH_NUMBER = config.get('APPEND_BATCH_NUMBER', 100)
+NUM_REPEATS = config.get('NUM_REPEATS', 5)
 
 
 @contextmanager
@@ -62,8 +68,7 @@ class StorageDesignBenchmark:
                 start=start_date,
                 end=end_date,
                 interval='1m',
-                time_unit='ms',
-                closed='left'
+                time_unit='ms',closed='left'
             )
             batch_data = self._create_dataframe(batch_timestamps)
             self.append_batches.append(batch_data)
@@ -227,7 +232,7 @@ class StorageDesignBenchmark:
         for num_symbols, num_rows in scenarios:
             print(f"\nScenario: {num_symbols} symbols, {num_rows:,} rows")
             scenario_key = f"symbols_{num_symbols}_rows_{num_rows}"
-            scenario_results = {f"option_{i}": {'create_times': [], 'append_times': [], 'query_times': [], 'total_times': []} for i in range(1, 4)}
+            scenario_results = {f"option_{i}": {'create_times': [], 'append_times': [], 'append_times_per_batch': [], 'query_times': [], 'total_times': []} for i in range(1, 4)}
 
             for repeat in range(self.num_repeats):
                 print(f"  Repeat {repeat + 1}/{self.num_repeats}")
@@ -250,6 +255,9 @@ class StorageDesignBenchmark:
                     total_time = option_results['create_time'] + option_results['append_time'] + option_results['query_time']
                     scenario_results[f"option_{option}"]['total_times'].append(total_time)
 
+                    # Store append times per batch
+                    scenario_results[f"option_{option}"]['append_times_per_batch'].append(option_results['append_time_per_batch'])
+
             # After repeats, compute averages
             for option in range(1, 4):
                 for metric in ['create_times', 'append_times', 'query_times', 'total_times']:
@@ -265,29 +273,27 @@ class StorageDesignBenchmark:
         self.results = results  # Store results for analysis and visualization
         return results
 
-    def analyze_results(self, results):
+    def analyze_results(self, results=None):
         if results is None:
             results = self.results
-
         print("\nPerformance Analysis:")
         print("=" * 80)
-        
+
         for scenario, scenario_results in results.items():
             num_symbols = int(scenario.split('_')[1])
             num_rows = int(scenario.split('_')[3])
-            
+
             print(f"\nScenario: {num_symbols} symbols, {num_rows:,} rows")
             print("-" * 50)
-            
+
             for option in range(1, 4):
-                option_results = scenario_results[f"option_{option}"]
-                total_time = option_results['create_time'] + option_results['append_time'] + option_results['query_time']
-                
+                opt_results = scenario_results[f"option_{option}"]
                 print(f"\nOption {option}:")
-                print(f"  Create Time: {option_results['create_time']:.2f}s")
-                print(f"  Append Time: {option_results['append_time']:.2f}s")
-                print(f"  Query Time: {option_results['query_time']:.2f}s")
-                print(f"  Total Time: {total_time:.2f}s")
+                print(f"  Create Time: {opt_results['avg_create_time']:.2f}s ± {opt_results['std_create_time']:.2f}s")
+                print(f"  Append Time: {opt_results['avg_append_time']:.2f}s ± {opt_results['std_append_time']:.2f}s")
+                print(f"  Query Time: {opt_results['avg_query_time']:.2f}s ± {opt_results['std_query_time']:.2f}s")
+                print(f"  Total Time: {opt_results['avg_total_time']:.2f}s ± {opt_results['std_total_time']:.2f}s")
+
     
     def visualize_results(self, results):
         """Create 2D visualizations for benchmark results using plotly."""
@@ -300,15 +306,15 @@ class StorageDesignBenchmark:
             num_symbols = int(scenario.split('_')[1])
             num_rows = int(scenario.split('_')[3])
             for option in range(1, 4):
-                option_results = scenario_results[f"option_{option}"]
+                opt_results = scenario_results[f"option_{option}"]
                 rows.append({
                     'num_symbols': num_symbols,
                     'num_rows': num_rows,
                     'option': f'Option {option}',
-                    'create_time': option_results['create_time'],
-                    'append_time': option_results['append_time'],
-                    'query_time': option_results['query_time'],
-                    'total_time': option_results['create_time'] + option_results['append_time'] + option_results['query_time']
+                    'create_time': opt_results['avg_create_time'],
+                    'append_time': opt_results['avg_append_time'],
+                    'query_time': opt_results['avg_query_time'],
+                    'total_time': opt_results['avg_total_time'],
                 })
         
         df = pd.DataFrame(rows)
@@ -369,15 +375,17 @@ class StorageDesignBenchmark:
             fig.write_html(results_dir / f"benchmark_results_{metric}.html")
             print(f"Benchmark visualization for {title} saved to {results_dir}/benchmark_results_{metric}.html")
 
-        # Add new visualization for append batch performance
         fig_batches = go.Figure()
-        
+    
         for option in range(1, 4):
             batch_times = []
             for scenario, scenario_results in results.items():
                 option_results = scenario_results[f"option_{option}"]
-                batch_times.extend(option_results['append_time_per_batch'])
-            
+                # append_times_per_batch is a list of lists (one list per repeat)
+                append_times_per_batch = option_results.get('append_times_per_batch', [])
+                for per_repeat_batch_times in append_times_per_batch:
+                    batch_times.extend(per_repeat_batch_times)  # Flatten the list
+
             fig_batches.add_trace(go.Box(
                 y=batch_times,
                 name=f'Option {option}',

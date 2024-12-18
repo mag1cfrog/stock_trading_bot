@@ -19,5 +19,3 @@ class StorageManager(Protocol):
     def add_data(self, **kwargs) -> None:
         """Add new data to the storage system."""
         pass
-
-    

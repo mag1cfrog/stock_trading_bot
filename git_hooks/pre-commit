@@ -1,9 +1,12 @@
 #!/bin/sh
+set -e  # Exit immediately on error
 
 echo "Pre-commit hook triggered"
 
 # Path to the generate_index.py script
-INDEX_SCRIPT="./scripts/dev-log/generate_index.py"
+REPO_ROOT=$(git rev-parse --show-toplevel)
+INDEX_SCRIPT="$REPO_ROOT/scripts/dev-log/generate_index.py"
+
 
 # Function to format Python files using Ruff if available
 format_python_files() {
@@ -14,13 +17,13 @@ format_python_files() {
     fi
 
     # Get list of staged Python files in code/Python directory
-    PY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "^code/Python/.*\.py$")
+    PY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^code/.*\.py$" || true)
 
     if [ -n "$PY_FILES" ]; then
         echo "Python files changed. Formatting with Ruff."
         
         # Run Ruff with the --fix flag to automatically format the files
-        ruff fix $PY_FILES
+        ruff format $PY_FILES
 
         # Re-add the formatted Python files to the staging area
         echo "$PY_FILES" | xargs git add

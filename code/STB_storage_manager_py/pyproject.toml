@@ -22,5 +22,6 @@ dev = [
     "polars>=1.17.1",
     "pyarrow>=18.1.0",
     "pyyaml>=6.0.2",
+    "sqlalchemy>=2.0.36",
     "viztracer>=1.0.0",
 ]

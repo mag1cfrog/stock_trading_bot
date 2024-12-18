@@ -21,5 +21,6 @@ dev = [
     "plotly>=5.24.1",
     "polars>=1.17.1",
     "pyarrow>=18.1.0",
+    "pyyaml>=6.0.2",
     "viztracer>=1.0.0",
 ]

@@ -34,7 +34,7 @@ def timer():
     yield lambda: time.perf_counter() - start
 
 class StorageDesignBenchmark:
-    def __init__(self, symbol_counts: list=SYMBOL_COUNTS, row_counts: list=ROW_COUNTS, append_batch_number: int = APPEND_BATCH_NUMBER, num_repeats: int=5):
+    def __init__(self, symbol_counts: list=SYMBOL_COUNTS, row_counts: list=ROW_COUNTS, append_batch_number: int=APPEND_BATCH_NUMBER, num_repeats: int=NUM_REPEATS):
         self.symbol_counts = symbol_counts
         self.row_counts = row_counts
         self.timeframes = ['1min', '5min', '1hour', '1day']
@@ -411,4 +411,4 @@ if __name__ == "__main__":
     benchmark.analyze_results(results)
     benchmark.visualize_results(results)
     # tracer.stop()
-    # tracer.save()
+    # tracer.save("tests/benchmarks/results/benchmark_results.json")

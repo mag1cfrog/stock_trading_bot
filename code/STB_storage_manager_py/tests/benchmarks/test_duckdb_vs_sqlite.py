@@ -151,6 +151,8 @@ class DBBenchmark:
             # Clean up databases after each run
             self.cleanup()
             TEMP_DIR.mkdir(parents=True, exist_ok=True)
+        
+        
 
     def analyze_results(self):
         df = pd.DataFrame(self.results)
@@ -159,8 +161,11 @@ class DBBenchmark:
         print("\nBenchmark Results (Average over runs):")
         print(avg_results)
 
+        self.avg_results = avg_results
+
     def visualize_results(self):
-        df = pd.DataFrame(self.results)
+        # Visualize avg results
+        df = pd.DataFrame(self.avg_results)
         fig = make_subplots(rows=1, cols=3, subplot_titles=("Create Time", "Insert Time", "Query Time"))
 
         metrics = ['create_time', 'insert_time', 'query_time']

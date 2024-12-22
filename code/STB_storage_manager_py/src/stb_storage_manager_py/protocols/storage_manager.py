@@ -12,10 +12,10 @@ class StorageManager(Protocol):
         """Exit the storage manager context."""
         pass
 
-    def init_schema(self, **kwargs) -> None:
+    def _put_data(self, **kwargs) -> None:
         """Initialize the storage schema."""
         pass
 
-    def add_data(self, **kwargs) -> None:
+    def _get_data(self, **kwargs) -> None:
         """Add new data to the storage system."""
         pass

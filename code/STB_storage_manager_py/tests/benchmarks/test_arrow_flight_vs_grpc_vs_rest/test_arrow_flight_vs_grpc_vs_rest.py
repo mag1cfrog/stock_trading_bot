@@ -17,6 +17,8 @@ logging.basicConfig(
 
 
 def generate_fake_data(num_rows, db_file="test_data.duckdb"):
+    from pathlib import Path
+
     logging.info(f"Generating fake data with {num_rows} rows of 64-bit integers.")
     conn = duckdb.connect(db_file)
 
@@ -30,8 +32,15 @@ def generate_fake_data(num_rows, db_file="test_data.duckdb"):
     FROM range(0, {num_rows})
     """
     conn.execute(sql_command)
-    conn.close()
+
     logging.info(f"Fake data generated and stored in {db_file}.")
+    conn.execute("COPY test_data TO 'test_data.parquet'").fetchall()
+    # Get the size of the table in Parquet format in MB
+    table_size_in_parquet = Path("test_data.parquet").stat().st_size / 1024 / 1024
+    logging.info(f"Table size in Parquet(MB): {table_size_in_parquet:.2f}")
+    conn.close()
+    # Clean up the Parquet file
+    Path("test_data.parquet").unlink()
     return db_file
 
 

@@ -5,7 +5,7 @@ import pyarrow as pa
 import pyarrow.flight
 import pyarrow.parquet
 
-TOTAL_ROWS = 10000
+TOTAL_ROWS = 200000
 TOTAL_COLUMNS = 1000
 
 
@@ -148,14 +148,14 @@ def timer():
 def benchmark_simple_flight(data_table: pa.Table):
     print("-" * 80)
     print("Benchmarking simple flight")
-    simple_server = SimpleFlightServer()
+    simple_server = SimpleFlightServer(location="grpc://0.0.0.0:8816")
 
     import threading
 
     server_thread = threading.Thread(target=simple_server.serve)
     server_thread.start()
 
-    client = pa.flight.connect("grpc://0.0.0.0:8815")
+    client = pa.flight.connect("grpc://0.0.0.0:8816")
 
     # Upload a new dataset
 

@@ -9,4 +9,4 @@
 - [Development Log Entry - 2024-10-07](2024-10-07.md) - 2024-10-07 - CryptoQuotesDashVisualizer Prototype Enhancement
 - [Development Log Entry - 2024-12-18](2024-12-18.md) - 2024-12-18 - Database Storage Optimization: DuckDB Pattern Analysis and SQLite Comparison
 - [Development Log Entry - 2024-12-19](2024-12-19.md) - 2024-12-19: Data Transfer Performance Benchmarking
-
+- [Development Log Entry - 2024-12-28](2024-12-28.md) - 2024-12-28: Apache Arrow Flight Performance Benchmarks

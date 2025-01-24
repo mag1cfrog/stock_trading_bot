@@ -40,4 +40,4 @@ Multiple approaches were tested to determine the best way to fetch real-time sto
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
 ## Documentation
-- [Development Log](./doc/dev-log/index.md)
+- [Development Log](./docs/dev-log/index.md)

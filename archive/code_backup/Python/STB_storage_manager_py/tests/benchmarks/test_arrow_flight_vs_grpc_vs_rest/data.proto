@@ -1,0 +1,16 @@
+
+syntax = "proto3";
+
+package data;
+
+service DataService {
+  rpc GetData(Empty) returns (DataResponse);
+}
+
+message Empty {
+}
+
+message DataResponse {
+  repeated int64 data = 1;
+  double prepare_time = 2;
+}

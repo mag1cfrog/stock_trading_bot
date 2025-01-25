@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 pyo3 = { version = "0.23.4", features = ["auto-initialize"] }
+tokio = { version = "1.43.0", features = ["full"] }

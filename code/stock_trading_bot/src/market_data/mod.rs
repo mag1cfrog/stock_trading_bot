@@ -1,7 +1,9 @@
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
 use std::ffi::CString;
 use std::path::Path;
 use tokio::fs;
+use polars::prelude::*;
 
 #[derive(Debug)]
 pub enum MarketDataError {
@@ -81,7 +83,7 @@ impl MarketData {
         Ok(Self { site_packages_path })
     }
 
-    pub fn fetch_historical_bars(&self) -> PyResult<()> {
+    pub fn fetch_historical_bars(&self) -> Result<DataFrame, Box<dyn std::error::Error>> {
         // Initialize Python first without environment vars
         pyo3::prepare_freethreaded_python();
 
@@ -94,11 +96,13 @@ impl MarketData {
             path.call_method1("insert", (0, &self.site_packages_path))?;
 
             let code = r#"
+from datetime import datetime
 import os
+
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
-from datetime import datetime
+import polars as pl
 
 # Should use the virtual environment's packages
 print("Alpaca version:", StockHistoricalDataClient.__module__)
@@ -118,17 +122,33 @@ request_params = StockBarsRequest(
 
 bars = client.get_stock_bars(request_params)
 df = bars.df
-print("Retrieved bars dataframe:")
-print(df)
+
+# Convert to Polars DataFrame
+pl_df = pl.from_pandas(df)
+
+# Write to in-memory Arrow IPC file (Feather format)
+arrow_data = pl_df.write_ipc(
+    file=None,  # Return BytesIO
+    compression='uncompressed',
+    compat_level=pl.CompatLevel.newest()  # Ensures Rust compatibility
+).getvalue()
 "#;
 
-            // let locals = PyDict::new(py);
+            let locals = PyDict::new(py);
             // let globals = PyDict::new(py);
 
             // Convert the code string to CString
             let code = CString::new(code).unwrap();
-            py.run(&code, None, None)?;
-            Ok(())
+            py.run(&code, None, Some(&locals))?;
+            
+            // Get IPC bytes from Python
+            let ipc_bytes: Vec<u8> = locals.get_item("arrow_data").unwrap().expect("Can't get Python arrow data.").extract()?;
+
+            // Read directly into Polars DataFrame
+            let df = IpcReader::new(std::io::Cursor::new(ipc_bytes))
+                .finish()?;
+
+            Ok(df)
         })
     }
 }

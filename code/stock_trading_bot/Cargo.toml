@@ -6,4 +6,5 @@ edition = "2021"
 [dependencies]
 polars = { version = "0.46.0", features = ["ipc"] }
 pyo3 = { version = "0.23.4", features = ["auto-initialize"] }
+thiserror = "2.0.11"
 tokio = { version = "1.43.0", features = ["full"] }

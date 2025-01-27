@@ -1,8 +1,6 @@
 use std::path::Path;
 
-use tokio;
-
-use stock_trading_bot::market_data::MarketData;
+use stock_trading_bot::historical::MarketData;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {

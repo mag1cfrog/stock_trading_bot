@@ -1,4 +1,4 @@
-# stock_trading_bot [![Rust](https://img.shields.io/badge/Maintained%20in-Rust-orange?logo=rust)](https://www.rust-lang.org)
+# stock_trading_bot [![Rust](https://img.shields.io/badge/Developed%20in-Rust-orange?logo=rust)](https://www.rust-lang.org)
 
 **Evolution Notice**: This project has evolved into a Rust-native system. 
 See [Why Rust?](#why-rust) and our [Architecture Evolution Blog](docs/blog/2025-01-rust-architecture-pivot.md).

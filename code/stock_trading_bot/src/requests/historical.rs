@@ -5,6 +5,8 @@ use std::path::Path;
 use tokio::fs;
 use polars::prelude::*;
 
+use crate::models::stockbars::StockBarsParams;
+
 #[derive(Debug)]
 pub enum MarketDataError {
     InvalidPath(String),
@@ -83,7 +85,7 @@ impl StockBarData {
         Ok(Self { site_packages_path })
     }
 
-    pub fn fetch_historical_bars(&self) -> Result<DataFrame, Box<dyn std::error::Error>> {
+    pub fn fetch_historical_bars(&self, params: StockBarsParams) -> Result<DataFrame, Box<dyn std::error::Error>> {
         // Initialize Python first without environment vars
         pyo3::prepare_freethreaded_python();
 
@@ -94,6 +96,9 @@ impl StockBarData {
             let sys = py.import("sys")?;
             let path = sys.getattr("path")?;
             path.call_method1("insert", (0, &self.site_packages_path))?;
+
+            // Convert parameters to Python object
+            let py_request = params.into_pyobject(py)?;
 
             let code = r#"
 from datetime import datetime
@@ -112,15 +117,7 @@ secret_key = os.getenv('APCA_API_SECRET_KEY')
 # Initialize client with environment variables
 client = StockHistoricalDataClient(api_key=alpaca_key, secret_key=secret_key)
 
-# Build request
-request_params = StockBarsRequest(
-    symbol_or_symbols=["AAPL"],
-    timeframe=TimeFrame.Day,
-    start=datetime(2023, 1, 1),
-    end=datetime(2023, 1, 10)
-)
-
-bars = client.get_stock_bars(request_params)
+bars = client.get_stock_bars(request_params) # Use injected params
 df = bars.df
 
 # Convert to Polars DataFrame
@@ -135,6 +132,8 @@ arrow_data = pl_df.write_ipc(
 "#;
 
             let locals = PyDict::new(py);
+            locals.set_item("request_params", py_request)?;
+
             // let globals = PyDict::new(py);
 
             // Convert the code string to CString

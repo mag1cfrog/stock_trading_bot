@@ -1,7 +1,7 @@
 ---
 title: "Evolution of Stock Trading Bot: Embracing Rust for Robust Financial Systems"
 date: 2025-01-15
-author: [Your Name]
+author: Hanbo Wang
 ---
 
 # Evolution of Stock Trading Bot: Embracing Rust for Robust Financial Systems

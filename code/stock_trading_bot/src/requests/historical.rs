@@ -13,11 +13,11 @@ pub enum MarketDataError {
     NoPythonVersionFound(String),
 }
 
-pub struct MarketData {
+pub struct StockBarData {
     site_packages_path: String,
 }
 
-impl MarketData {
+impl StockBarData {
     async fn validate_python_env(path: &Path) -> Result<String, MarketDataError> {
         let site_packages = path.join("site-packages");
         let alpaca_path = site_packages.join("alpaca");

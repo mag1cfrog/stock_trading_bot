@@ -7,7 +7,7 @@ pub enum TimeFrameError {
     InvalidAmount {
         unit: TimeFrameUnit,
         message: String,
-    }
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -16,7 +16,7 @@ pub enum TimeFrameUnit {
     Hour,
     Day,
     Week,
-    Month
+    Month,
 }
 
 #[derive(Debug, Clone)]
@@ -33,27 +33,36 @@ impl TimeFrame {
 
     fn validate(amount: u32, unit: TimeFrameUnit) -> Result<(), TimeFrameError> {
         match unit {
-            TimeFrameUnit::Minute if !(1..=59).contains(&amount) => Err(TimeFrameError::InvalidAmount {
-                unit,
-                message: "Second or Minute units can only be used with amounts between 1-59.".into(),
-            }),
-            TimeFrameUnit::Hour if !(1..=23).contains(&amount) => Err(TimeFrameError::InvalidAmount {
-                unit,
-                message: "Hour units can only be used with amounts 1-23".into(),
-            }),
-            TimeFrameUnit::Day | TimeFrameUnit::Week if amount != 1 => Err(TimeFrameError::InvalidAmount {
-                unit,
-                message: "Day and Week units can only be used with amount 1".into(),
-            }),
-            TimeFrameUnit::Month if ![1, 2, 3, 6, 12].contains(&amount) => Err(TimeFrameError::InvalidAmount {
-                unit,
-                message: "Month units can only be used with amount 1, 2, 3, 6 and 12".into(),
-            }),
+            TimeFrameUnit::Minute if !(1..=59).contains(&amount) => {
+                Err(TimeFrameError::InvalidAmount {
+                    unit,
+                    message: "Second or Minute units can only be used with amounts between 1-59."
+                        .into(),
+                })
+            }
+            TimeFrameUnit::Hour if !(1..=23).contains(&amount) => {
+                Err(TimeFrameError::InvalidAmount {
+                    unit,
+                    message: "Hour units can only be used with amounts 1-23".into(),
+                })
+            }
+            TimeFrameUnit::Day | TimeFrameUnit::Week if amount != 1 => {
+                Err(TimeFrameError::InvalidAmount {
+                    unit,
+                    message: "Day and Week units can only be used with amount 1".into(),
+                })
+            }
+            TimeFrameUnit::Month if ![1, 2, 3, 6, 12].contains(&amount) => {
+                Err(TimeFrameError::InvalidAmount {
+                    unit,
+                    message: "Month units can only be used with amount 1, 2, 3, 6 and 12".into(),
+                })
+            }
             _ => Ok(()),
         }
     }
 
-    // Helper constructors 
+    // Helper constructors
     pub fn minutes(amounts: u32) -> Result<Self, TimeFrameError> {
         Self::new(amounts, TimeFrameUnit::Minute)
     }
@@ -73,7 +82,6 @@ impl TimeFrame {
     pub fn months(amounts: u32) -> Result<Self, TimeFrameError> {
         Self::new(amounts, TimeFrameUnit::Month)
     }
-    
 }
 
 impl<'py> IntoPyObject<'py> for TimeFrameUnit {
@@ -90,10 +98,8 @@ impl<'py> IntoPyObject<'py> for TimeFrameUnit {
             TimeFrameUnit::Day => Ok(unit_enum.getattr("Day")?.into_bound()),
             TimeFrameUnit::Week => Ok(unit_enum.getattr("Week")?.into_bound()),
             TimeFrameUnit::Month => Ok(unit_enum.getattr("Month")?.into_bound()),
-            
         }
     }
-
 }
 
 impl<'py> IntoPyObject<'py> for TimeFrame {
@@ -102,9 +108,7 @@ impl<'py> IntoPyObject<'py> for TimeFrame {
     type Error = pyo3::PyErr;
 
     fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
-        let timeframe_cls = py
-            .import("alpaca.data.timeframe")?
-            .getattr("TimeFrame")?;
+        let timeframe_cls = py.import("alpaca.data.timeframe")?.getattr("TimeFrame")?;
 
         let unit = self.unit.into_pyobject(py)?;
         timeframe_cls.call1((self.amount, unit))
@@ -116,16 +120,19 @@ impl<'source> FromPyObject<'source> for TimeFrame {
         let amount: u32 = ob.getattr("amount")?.extract()?;
         // The Python TimeFrameUnit has a 'value' property that gives us the string representation
         let unit_str: String = ob.getattr("unit_value")?.getattr("value")?.extract()?;
-        
+
         let unit = match unit_str.as_str() {
             "Min" => TimeFrameUnit::Minute,
             "Hour" => TimeFrameUnit::Hour,
             "Day" => TimeFrameUnit::Day,
             "Week" => TimeFrameUnit::Week,
             "Month" => TimeFrameUnit::Month,
-            _ => return Err(pyo3::exceptions::PyValueError::new_err(
-                format!("Invalid TimeFrame unit {}", unit_str.as_str())
-            )),
+            _ => {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "Invalid TimeFrame unit {}",
+                    unit_str.as_str()
+                )))
+            }
         };
 
         Ok(Self { amount, unit })
@@ -155,15 +162,15 @@ mod test {
         // Minutes validation
         assert!(TimeFrame::minutes(0).is_err());
         assert!(TimeFrame::minutes(60).is_err());
-        
+
         // Hours validation
         assert!(TimeFrame::hours(0).is_err());
         assert!(TimeFrame::hours(24).is_err());
-        
+
         // Day/Week validation (only amount 1 allowed)
         assert!(TimeFrame::new(2, TimeFrameUnit::Day).is_err());
         assert!(TimeFrame::new(2, TimeFrameUnit::Week).is_err());
-        
+
         // Months validation
         assert!(TimeFrame::months(4).is_err());
         assert!(TimeFrame::months(5).is_err());
@@ -181,35 +188,50 @@ mod test {
 
         // Test internal values
         match minute_frame {
-            TimeFrame { amount, unit: TimeFrameUnit::Minute } => assert_eq!(amount, 5),
+            TimeFrame {
+                amount,
+                unit: TimeFrameUnit::Minute,
+            } => assert_eq!(amount, 5),
             _ => panic!("Unexpected TimeFrame structure"),
         }
 
         match hour_frame {
-            TimeFrame { amount, unit: TimeFrameUnit::Hour } => assert_eq!(amount, 2),
+            TimeFrame {
+                amount,
+                unit: TimeFrameUnit::Hour,
+            } => assert_eq!(amount, 2),
             _ => panic!("Unexpected TimeFrame structure"),
         }
 
         match day_frame {
-            TimeFrame { amount, unit: TimeFrameUnit::Day } => assert_eq!(amount, 1),
+            TimeFrame {
+                amount,
+                unit: TimeFrameUnit::Day,
+            } => assert_eq!(amount, 1),
             _ => panic!("Unexpected TimeFrame structure"),
         }
 
         match week_frame {
-            TimeFrame { amount, unit: TimeFrameUnit::Week } => assert_eq!(amount, 1),
+            TimeFrame {
+                amount,
+                unit: TimeFrameUnit::Week,
+            } => assert_eq!(amount, 1),
             _ => panic!("Unexpected TimeFrame structure"),
         }
 
         match month_frame {
-            TimeFrame { amount, unit: TimeFrameUnit::Month } => assert_eq!(amount, 3),
+            TimeFrame {
+                amount,
+                unit: TimeFrameUnit::Month,
+            } => assert_eq!(amount, 3),
             _ => panic!("Unexpected TimeFrame structure"),
         }
     }
 
     mod python_conversion_tests {
         use super::*;
-        use std::path::Path;
         use pyo3::Python;
+        use std::path::Path;
 
         fn init_python() {
             // Initialize Python with venv
@@ -220,8 +242,9 @@ mod test {
                 let path = sys.getattr("path").unwrap();
                 path.call_method1(
                     "insert",
-                    (0, venv_path.join("lib/python3.12/site-packages"))
-                ).unwrap();
+                    (0, venv_path.join("lib/python3.12/site-packages")),
+                )
+                .unwrap();
             });
         }
 
@@ -231,25 +254,30 @@ mod test {
             Python::with_gil(|py| {
                 let timeframe = TimeFrame::minutes(5).unwrap();
                 let py_timeframe = timeframe.into_pyobject(py).unwrap();
-                
+
                 assert!(py_timeframe.call_method0("__str__").is_ok());
-                
+
                 // Check amount
                 assert_eq!(
-                    py_timeframe.getattr("amount_value").unwrap().extract::<u32>().unwrap(), 
+                    py_timeframe
+                        .getattr("amount_value")
+                        .unwrap()
+                        .extract::<u32>()
+                        .unwrap(),
                     5
                 );
-                
+
                 // Check unit is Minute
                 let unit = py_timeframe.getattr("unit_value").unwrap();
-                assert_eq!(
-                    unit.to_string(),
-                    "TimeFrameUnit.Minute"
-                );
-                
+                assert_eq!(unit.to_string(), "TimeFrameUnit.Minute");
+
                 // Check string representation
                 assert_eq!(
-                    py_timeframe.call_method0("__str__").unwrap().extract::<String>().unwrap(),
+                    py_timeframe
+                        .call_method0("__str__")
+                        .unwrap()
+                        .extract::<String>()
+                        .unwrap(),
                     "5Min"
                 );
             });
@@ -271,14 +299,16 @@ mod test {
 
                 // Convert it to Rust
                 let rust_timeframe: TimeFrame = py_timeframe.extract().unwrap();
-                
+
                 // Verify the conversion
                 match rust_timeframe {
-                    TimeFrame { amount, unit: TimeFrameUnit::Minute } => assert_eq!(amount, 5),
+                    TimeFrame {
+                        amount,
+                        unit: TimeFrameUnit::Minute,
+                    } => assert_eq!(amount, 5),
                     _ => panic!("Incorrect TimeFrame conversion from Python"),
                 }
             });
         }
     }
 }
-

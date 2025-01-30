@@ -1,10 +1,10 @@
+use polars::prelude::*;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::ffi::CString;
 use std::fmt;
 use std::path::Path;
 use tokio::fs;
-use polars::prelude::*;
 
 use crate::models::stockbars::StockBarsParams;
 
@@ -14,10 +14,7 @@ pub enum MarketDataError {
     MissingSitePackages(String),
     MissingAlpacaPackage(String),
     NoPythonVersionFound(String),
-    AlpacaAPIError {
-        py_type: String,
-        message: String,
-    },
+    AlpacaAPIError { py_type: String, message: String },
     PythonExecutionError(String),
 }
 
@@ -25,10 +22,14 @@ impl fmt::Display for MarketDataError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidPath(path) => write!(f, "Invalid path: {}", path),
-            Self::MissingSitePackages(path) => write!(f, "Missing site-packages directory: {}", path),
+            Self::MissingSitePackages(path) => {
+                write!(f, "Missing site-packages directory: {}", path)
+            }
             Self::MissingAlpacaPackage(path) => write!(f, "Missing Alpaca package: {}", path),
             Self::NoPythonVersionFound(msg) => write!(f, "No Python version found: {}", msg),
-            Self::AlpacaAPIError{ py_type, message } => write!(f, "Alpaca API error({}): {}", py_type, message),
+            Self::AlpacaAPIError { py_type, message } => {
+                write!(f, "Alpaca API error({}): {}", py_type, message)
+            }
             Self::PythonExecutionError(msg) => write!(f, "Python execution error: {}", msg),
         }
     }
@@ -106,7 +107,10 @@ impl StockBarData {
         Ok(Self { site_packages_path })
     }
 
-    pub fn fetch_historical_bars(&self, params: StockBarsParams) -> Result<DataFrame, Box<dyn std::error::Error>> {
+    pub fn fetch_historical_bars(
+        &self,
+        params: StockBarsParams,
+    ) -> Result<DataFrame, Box<dyn std::error::Error>> {
         // Initialize Python first without environment vars
         pyo3::prepare_freethreaded_python();
 
@@ -162,11 +166,14 @@ arrow_data = pl_df.write_ipc(
             match py.run(&code, None, Some(&locals)) {
                 Ok(_) => {
                     // Get IPC bytes from Python
-                    let ipc_bytes: Vec<u8> = locals.get_item("arrow_data").unwrap().expect("Can't get Python arrow data.").extract()?;
+                    let ipc_bytes: Vec<u8> = locals
+                        .get_item("arrow_data")
+                        .unwrap()
+                        .expect("Can't get Python arrow data.")
+                        .extract()?;
 
                     // Read directly into Polars DataFrame
-                    let df = IpcReader::new(std::io::Cursor::new(ipc_bytes))
-                        .finish()?;
+                    let df = IpcReader::new(std::io::Cursor::new(ipc_bytes)).finish()?;
 
                     Ok(df)
                 }
@@ -179,12 +186,17 @@ arrow_data = pl_df.write_ipc(
                         false
                     };
                     // Get error type name with proper conversion
-                    let type_name = e.get_type(py).name()
-                    .map(|name| name.to_string())
-                    .unwrap_or_else(|_| "UnknownError".to_string());
+                    let type_name = e
+                        .get_type(py)
+                        .name()
+                        .map(|name| name.to_string())
+                        .unwrap_or_else(|_| "UnknownError".to_string());
 
                     let err = if is_api_error {
-                        MarketDataError::AlpacaAPIError { py_type: type_name, message: py_err_str }
+                        MarketDataError::AlpacaAPIError {
+                            py_type: type_name,
+                            message: py_err_str,
+                        }
                     } else {
                         MarketDataError::PythonExecutionError(py_err_str)
                     };
@@ -192,7 +204,6 @@ arrow_data = pl_df.write_ipc(
                     Err(Box::new(err) as Box<dyn std::error::Error>)
                 }
             }
-          
         })
     }
 }

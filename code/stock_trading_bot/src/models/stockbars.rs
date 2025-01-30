@@ -1,4 +1,7 @@
-use pyo3::{types::{PyAnyMethods, PyDict}, Bound, IntoPyObject, PyAny, PyErr};
+use pyo3::{
+    types::{PyAnyMethods, PyDict},
+    Bound, IntoPyObject, PyAny, PyErr,
+};
 
 use crate::models::timeframe::TimeFrame;
 use chrono::{DateTime, Utc};
@@ -6,8 +9,8 @@ use chrono::{DateTime, Utc};
 pub struct StockBarsParams {
     pub symbols: Vec<String>,
     pub timeframe: TimeFrame,
-    pub start:DateTime<Utc>,
-    pub end:DateTime<Utc>,
+    pub start: DateTime<Utc>,
+    pub end: DateTime<Utc>,
 }
 
 impl<'py> IntoPyObject<'py> for StockBarsParams {
@@ -45,9 +48,9 @@ mod tests {
     use super::*;
     use std::path::Path;
 
+    use crate::models::timeframe::TimeFrame;
     use chrono::TimeZone;
     use pyo3::Python;
-    use crate::models::timeframe::TimeFrame;
 
     fn init_python() {
         // Initialize Python with venv
@@ -58,8 +61,9 @@ mod tests {
             let path = sys.getattr("path").unwrap();
             path.call_method1(
                 "insert",
-                (0, venv_path.join("lib/python3.12/site-packages"))
-            ).unwrap();
+                (0, venv_path.join("lib/python3.12/site-packages")),
+            )
+            .unwrap();
         });
     }
 
@@ -67,7 +71,6 @@ mod tests {
     fn test_stockbars_params_to_python() {
         init_python();
         Python::with_gil(|py| {
-
             // Prevent deadlock by importing modules upfront
             py.import("alpaca.data.timeframe").unwrap();
             py.import("alpaca.data.requests").unwrap();
@@ -80,20 +83,28 @@ mod tests {
             };
 
             let py_request = params.into_pyobject(py).unwrap();
-            
+
             // Verify the Python object properties
             assert_eq!(
-                py_request.getattr("symbol_or_symbols").unwrap().extract::<Vec<String>>().unwrap(),
+                py_request
+                    .getattr("symbol_or_symbols")
+                    .unwrap()
+                    .extract::<Vec<String>>()
+                    .unwrap(),
                 vec!["AAPL".to_string(), "MSFT".to_string()]
             );
 
             // Verify timeframe conversion
             let timeframe = py_request.getattr("timeframe").unwrap();
             assert_eq!(
-                timeframe.getattr("amount_value").unwrap().extract::<u32>().unwrap(),
+                timeframe
+                    .getattr("amount_value")
+                    .unwrap()
+                    .extract::<u32>()
+                    .unwrap(),
                 5
             );
-            
+
             // Verify dates
             let start = py_request.getattr("start").unwrap();
             let end = py_request.getattr("end").unwrap();

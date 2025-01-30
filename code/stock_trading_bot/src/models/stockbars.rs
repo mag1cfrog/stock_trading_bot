@@ -6,6 +6,7 @@ use pyo3::{
 use crate::models::timeframe::TimeFrame;
 use chrono::{DateTime, Utc};
 
+#[derive(Clone)]
 pub struct StockBarsParams {
     pub symbols: Vec<String>,
     pub timeframe: TimeFrame,

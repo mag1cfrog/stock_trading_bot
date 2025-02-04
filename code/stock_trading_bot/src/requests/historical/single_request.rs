@@ -108,3 +108,31 @@ compat_level=pl.CompatLevel.newest()  # Ensures Rust compatibility
         }
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::{TimeZone, Utc};
+    use crate::models::stockbars::StockBarsParams;
+    use crate::models::timeframe::TimeFrame;
+    use std::path::Path;
+    use crate::requests::historical::StockBarData;
+
+    #[tokio::test]
+    async fn test_historical_data_fetch() {
+        let market_data = StockBarData::new(Path::new("python/venv"))
+            .await
+            .expect("Can't initialize the data fetcher");
+
+        let params = StockBarsParams {
+            symbols: vec!["AAPL".into()],
+            timeframe: TimeFrame::day().unwrap(),
+            start: Utc.with_ymd_and_hms(2025, 1, 1, 9, 30, 0).unwrap(),
+            end: Utc.with_ymd_and_hms(2025, 1, 30, 16, 0, 0).unwrap(),
+        };
+
+        let df = market_data
+            .fetch_historical_bars(params)
+            .expect("Can't get dataframe from py to rs");
+        println!("Test dataframe output: {}", df);
+    }
+}

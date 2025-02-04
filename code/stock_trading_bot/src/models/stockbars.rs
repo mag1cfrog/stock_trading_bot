@@ -47,34 +47,18 @@ impl<'py> IntoPyObject<'py> for StockBarsParams {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::Path;
 
-    use crate::models::timeframe::TimeFrame;
     use chrono::TimeZone;
     use pyo3::Python;
 
-    fn init_python() {
-        // Initialize Python with venv
-        pyo3::prepare_freethreaded_python();
-        Python::with_gil(|py| {
-            let venv_path = Path::new("python/venv");
-            let sys = py.import("sys").unwrap();
-            let path = sys.getattr("path").unwrap();
-            path.call_method1(
-                "insert",
-                (0, venv_path.join("lib/python3.12/site-packages")),
-            )
-            .unwrap();
-        });
-    }
+    use crate::models::timeframe::TimeFrame;
+    use crate::utils::init_python;
 
     #[test]
     fn test_stockbars_params_to_python() {
         init_python();
         Python::with_gil(|py| {
-            // Prevent deadlock by importing modules upfront
-            py.import("alpaca.data.timeframe").unwrap();
-            py.import("alpaca.data.requests").unwrap();
+            
 
             let params = StockBarsParams {
                 symbols: vec!["AAPL".to_string(), "MSFT".to_string()],

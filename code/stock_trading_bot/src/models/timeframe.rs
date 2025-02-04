@@ -231,22 +231,8 @@ mod test {
     mod python_conversion_tests {
         use super::*;
         use pyo3::Python;
-        use std::path::Path;
 
-        fn init_python() {
-            // Initialize Python with venv
-            pyo3::prepare_freethreaded_python();
-            Python::with_gil(|py| {
-                let venv_path = Path::new("python/venv");
-                let sys = py.import("sys").unwrap();
-                let path = sys.getattr("path").unwrap();
-                path.call_method1(
-                    "insert",
-                    (0, venv_path.join("lib/python3.12/site-packages")),
-                )
-                .unwrap();
-            });
-        }
+        use crate::utils::init_python;
 
         #[test]
         fn test_timeframe_to_python() {

@@ -141,6 +141,7 @@ impl<'source> FromPyObject<'source> for TimeFrame {
 
 #[cfg(test)]
 mod test {
+
     use super::*;
 
     #[test]
@@ -231,10 +232,12 @@ mod test {
     mod python_conversion_tests {
         use super::*;
         use pyo3::Python;
+        use serial_test::serial;
 
         use crate::utils::init_python;
 
         #[test]
+        #[serial]
         fn test_timeframe_to_python() {
             init_python();
             Python::with_gil(|py| {
@@ -270,6 +273,7 @@ mod test {
         }
 
         #[test]
+        #[serial]
         fn test_timeframe_from_python() {
             init_python();
             Python::with_gil(|py| {

@@ -50,11 +50,13 @@ mod tests {
 
     use chrono::TimeZone;
     use pyo3::Python;
+    use serial_test::serial;
 
     use crate::models::timeframe::TimeFrame;
     use crate::utils::init_python;
 
     #[test]
+    #[serial]
     fn test_stockbars_params_to_python() {
         init_python();
         Python::with_gil(|py| {
@@ -99,6 +101,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_stockbars_params_creation() {
         let params = StockBarsParams {
             symbols: vec!["AAPL".to_string()],

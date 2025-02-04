@@ -112,12 +112,14 @@ compat_level=pl.CompatLevel.newest()  # Ensures Rust compatibility
 #[cfg(test)]
 mod tests {
     use chrono::{TimeZone, Utc};
+    use serial_test::serial;
     use crate::models::stockbars::StockBarsParams;
     use crate::models::timeframe::TimeFrame;
     use std::path::Path;
     use crate::requests::historical::StockBarData;
 
     #[tokio::test]
+    #[serial]
     async fn test_historical_data_fetch() {
         let market_data = StockBarData::new(Path::new("python/venv"))
             .await

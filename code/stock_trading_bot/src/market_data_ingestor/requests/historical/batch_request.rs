@@ -6,8 +6,8 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 
 use crate::models::stockbars::StockBarsParams;
-use crate::market_data_ingestor::historical::StockBarData;
-use crate::market_data_ingestor::historical::errors::MarketDataError;
+use crate::market_data_ingestor::requests::historical::StockBarData;
+use crate::market_data_ingestor::requests::historical::errors::MarketDataError;
 
 
 pub fn fetch_bars_batch_partial(
@@ -192,7 +192,7 @@ mod tests {
     use crate::models::stockbars::StockBarsParams;
     use crate::models::timeframe::TimeFrame;
     use std::path::Path;
-    use crate::market_data_ingestor::historical::StockBarData;
+    use crate::market_data_ingestor::requests::historical::StockBarData;
 
     #[tokio::test]
     #[serial]

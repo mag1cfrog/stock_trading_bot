@@ -4,9 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+arrow = "54.1.0"
 chrono = "0.4.39"
+deltalake = { version = "0.24.0", features = ["datafusion"] }
 polars = { version = "0.46.0", features = ["ipc"] }
 pyo3 = { version = "0.23.4", features = ["auto-initialize", "chrono"] }
 serial_test = "3.2.0"
 thiserror = "2.0.11"
 tokio = { version = "1.43.0", features = ["full"] }
+
+[dev-dependencies]
+tempfile = "3.16.0"

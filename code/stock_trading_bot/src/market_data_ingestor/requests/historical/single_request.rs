@@ -5,7 +5,7 @@ use polars::prelude::*;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 
-use crate::models::stockbars::StockBarsParams;
+use crate::market_data_ingestor::models::stockbars::StockBarsParams;
 use crate::market_data_ingestor::requests::historical::StockBarData;
 use crate::market_data_ingestor::requests::historical::errors::MarketDataError;
 
@@ -113,8 +113,8 @@ compat_level=pl.CompatLevel.newest()  # Ensures Rust compatibility
 mod tests {
     use chrono::{TimeZone, Utc};
     use serial_test::serial;
-    use crate::models::stockbars::StockBarsParams;
-    use crate::models::timeframe::TimeFrame;
+    use crate::market_data_ingestor::models::stockbars::StockBarsParams;
+    use crate::market_data_ingestor::models::timeframe::TimeFrame;
     use std::path::Path;
     use crate::market_data_ingestor::requests::historical::StockBarData;
 

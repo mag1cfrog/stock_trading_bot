@@ -13,7 +13,7 @@ use std::path::Path;
 use polars::prelude::*;
 use tokio::fs;
 
-use crate::models::stockbars::StockBarsParams;
+use crate::market_data_ingestor::models::stockbars::StockBarsParams;
 
 
 pub struct StockBarData {

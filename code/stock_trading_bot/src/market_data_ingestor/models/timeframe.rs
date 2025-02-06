@@ -234,7 +234,7 @@ mod test {
         use pyo3::Python;
         use serial_test::serial;
 
-        use crate::utils::init_python;
+        use crate::market_data_ingestor::utils::init_python;
 
         #[test]
         #[serial]

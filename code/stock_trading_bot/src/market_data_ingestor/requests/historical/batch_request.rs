@@ -5,7 +5,7 @@ use polars::prelude::*;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 
-use crate::models::stockbars::StockBarsParams;
+use crate::market_data_ingestor::models::stockbars::StockBarsParams;
 use crate::market_data_ingestor::requests::historical::StockBarData;
 use crate::market_data_ingestor::requests::historical::errors::MarketDataError;
 
@@ -189,8 +189,8 @@ for request_params in request_params_list:
 mod tests {
     use chrono::{TimeZone, Utc};
     use serial_test::serial;
-    use crate::models::stockbars::StockBarsParams;
-    use crate::models::timeframe::TimeFrame;
+    use crate::market_data_ingestor::models::stockbars::StockBarsParams;
+    use crate::market_data_ingestor::models::timeframe::TimeFrame;
     use std::path::Path;
     use crate::market_data_ingestor::requests::historical::StockBarData;
 
@@ -202,7 +202,7 @@ mod tests {
             .expect("Can't initialize the data fetcher");
 
         // Create multiple parameter sets
-        let params_list = vec![
+        let params_list = [
             StockBarsParams {
                 symbols: vec!["AAPL".into()],
                 timeframe: TimeFrame::day().unwrap(),

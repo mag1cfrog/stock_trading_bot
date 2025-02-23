@@ -7,8 +7,10 @@ edition = "2021"
 arrow = "54.1.0"
 chrono = "0.4.39"
 deltalake = { version = "0.24.0", features = ["datafusion"] }
+futures = "0.3.31"
 polars = { version = "0.46.0", features = ["ipc"] }
 pyo3 = { version = "0.23.4", features = ["auto-initialize", "chrono"] }
+rand = "0.9.0"
 serial_test = "3.2.0"
 thiserror = "2.0.11"
 tokio = { version = "1.43.0", features = ["full"] }

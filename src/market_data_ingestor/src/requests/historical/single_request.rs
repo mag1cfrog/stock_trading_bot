@@ -5,9 +5,9 @@ use polars::prelude::*;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 
-use crate::market_data_ingestor::models::stockbars::StockBarsParams;
-use crate::market_data_ingestor::requests::historical::StockBarData;
-use crate::market_data_ingestor::requests::historical::errors::MarketDataError;
+use crate::models::stockbars::StockBarsParams;
+use crate::requests::historical::StockBarData;
+use crate::requests::historical::errors::MarketDataError;
 
 pub fn fetch_historical_bars(
     data: &StockBarData,
@@ -113,10 +113,10 @@ compat_level=pl.CompatLevel.newest()  # Ensures Rust compatibility
 mod tests {
     use chrono::{TimeZone, Utc};
     use serial_test::serial;
-    use crate::market_data_ingestor::models::stockbars::StockBarsParams;
-    use crate::market_data_ingestor::models::timeframe::TimeFrame;
+    use crate::models::stockbars::StockBarsParams;
+    use crate::models::timeframe::TimeFrame;
     use std::path::Path;
-    use crate::market_data_ingestor::requests::historical::StockBarData;
+    use crate::requests::historical::StockBarData;
 
     #[tokio::test]
     #[serial]

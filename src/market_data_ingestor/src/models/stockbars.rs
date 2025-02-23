@@ -3,7 +3,7 @@ use pyo3::{
     Bound, IntoPyObject, PyAny, PyErr,
 };
 
-use crate::market_data_ingestor::models::timeframe::TimeFrame;
+use crate::models::timeframe::TimeFrame;
 use chrono::{DateTime, Utc};
 
 #[derive(Clone)]
@@ -52,8 +52,8 @@ mod tests {
     use pyo3::Python;
     use serial_test::serial;
 
-    use crate::market_data_ingestor::models::timeframe::TimeFrame;
-    use crate::market_data_ingestor::utils::init_python;
+    use crate::models::timeframe::TimeFrame;
+    use crate::utils::init_python;
 
     #[test]
     #[serial]

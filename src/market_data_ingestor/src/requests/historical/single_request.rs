@@ -10,19 +10,12 @@ use crate::requests::historical::StockBarData;
 use crate::requests::historical::errors::MarketDataError;
 
 pub fn fetch_historical_bars(
-    data: &StockBarData,
+    _data: &StockBarData,
     params: StockBarsParams,
 ) -> Result<DataFrame, Box<dyn Error>> {
-    // Initialize Python first without environment vars
-    pyo3::prepare_freethreaded_python();
 
     Python::with_gil(|py| {
         // Set up virtual environment paths after Python is initialized
-
-        // Add virtual environment's site-packages to Python's path
-        let sys = py.import("sys")?;
-        let path = sys.getattr("path")?;
-        path.call_method1("insert", (0, &data.site_packages_path))?;
 
         // Convert parameters to Python object
         let py_request = params.into_pyobject(py)?;
@@ -30,6 +23,7 @@ pub fn fetch_historical_bars(
         let code = r#"
 from datetime import datetime
 import os
+import sys
 
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
@@ -38,6 +32,9 @@ import polars as pl
 
 # Should use the virtual environment's packages
 print("Alpaca version:", StockHistoricalDataClient.__module__)
+
+print("Python path:", sys.path)
+print("APCA_API_KEY_ID =", os.getenv('APCA_API_KEY_ID'))
 
 alpaca_key = os.getenv('APCA_API_KEY_ID')
 secret_key = os.getenv('APCA_API_SECRET_KEY')
@@ -115,13 +112,12 @@ mod tests {
     use serial_test::serial;
     use crate::models::stockbars::StockBarsParams;
     use crate::models::timeframe::TimeFrame;
-    use std::path::Path;
     use crate::requests::historical::StockBarData;
 
     #[tokio::test]
     #[serial]
     async fn test_historical_data_fetch() {
-        let market_data = StockBarData::new(Path::new("python/venv"))
+        let market_data = StockBarData::new("/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml")
             .await
             .expect("Can't initialize the data fetcher");
 

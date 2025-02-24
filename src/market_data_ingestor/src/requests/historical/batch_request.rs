@@ -11,7 +11,7 @@ use crate::requests::historical::errors::MarketDataError;
 
 
 pub fn fetch_bars_batch_partial(
-    data: &StockBarData,
+    _data: &StockBarData,
     params_list: &[StockBarsParams],
     max_retries: u32,
     base_delay_ms: u64
@@ -20,9 +20,9 @@ pub fn fetch_bars_batch_partial(
     // Acquire GIL
     Python::with_gil(|py| {
         // Insert site-packages
-        let sys = py.import("sys")?;
-        let py_path = sys.getattr("path")?;
-        py_path.call_method1("insert", (0, &data.site_packages_path))?;
+        // let sys = py.import("sys")?;
+        // let py_path = sys.getattr("path")?;
+        // py_path.call_method1("insert", (0, &data.site_packages_path))?;
 
         // Convert params to Python list
         let py_list = PyList::empty(py);
@@ -191,13 +191,12 @@ mod tests {
     use serial_test::serial;
     use crate::models::stockbars::StockBarsParams;
     use crate::models::timeframe::TimeFrame;
-    use std::path::Path;
     use crate::requests::historical::StockBarData;
 
     #[tokio::test]
     #[serial]
     async fn test_batch_historical_data_fetch() {
-        let market_data = StockBarData::new(Path::new("python/venv"))
+        let market_data = StockBarData::new("/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml")
             .await
             .expect("Can't initialize the data fetcher");
 

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["market_data_ingestor"]
+members = ["market_data_ingestor", "storage_service"]
 
 [profile.release]
 lto = true

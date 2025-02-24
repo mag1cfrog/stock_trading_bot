@@ -19,10 +19,6 @@ pub fn fetch_bars_batch_partial(
 
     // Acquire GIL
     Python::with_gil(|py| {
-        // Insert site-packages
-        // let sys = py.import("sys")?;
-        // let py_path = sys.getattr("path")?;
-        // py_path.call_method1("insert", (0, &data.site_packages_path))?;
 
         // Convert params to Python list
         let py_list = PyList::empty(py);

@@ -15,7 +15,6 @@ pub fn fetch_historical_bars(
 ) -> Result<DataFrame, Box<dyn Error>> {
 
     Python::with_gil(|py| {
-        // Set up virtual environment paths after Python is initialized
 
         // Convert parameters to Python object
         let py_request = params.into_pyobject(py)?;

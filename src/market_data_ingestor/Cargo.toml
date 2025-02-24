@@ -20,7 +20,3 @@ uuid = { version = "1.14.0", features = ["v4"] }
 
 [dev-dependencies]
 serial_test = "3.2.0"
-
-[[bin]]
-name = "market_data_ingestor"
-path = "src/main.rs"

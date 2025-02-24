@@ -6,3 +6,6 @@ members = ["market_data_ingestor", "storage_service"]
 lto = true
 strip = "symbols"
 opt-level = 3
+
+[patch.crates-io]
+# strum = { git = "https://github.com/Peternator7/strum.git", tag = "v0.26.3" }

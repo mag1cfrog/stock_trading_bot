@@ -8,6 +8,7 @@ pub enum MarketDataError {
     NoPythonVersionFound(String),
     AlpacaAPIError { py_type: String, message: String },
     PythonExecutionError(String),
+    EnvError(String),
 }
 
 impl fmt::Display for MarketDataError {
@@ -23,6 +24,7 @@ impl fmt::Display for MarketDataError {
                 write!(f, "Alpaca API error({}): {}", py_type, message)
             }
             Self::PythonExecutionError(msg) => write!(f, "Python execution error: {}", msg),
+            Self::EnvError(msg) => write!(f, "Environment error: {}", msg),
         }
     }
 }

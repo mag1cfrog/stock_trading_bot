@@ -54,11 +54,13 @@ mod tests {
 
     use crate::models::timeframe::TimeFrame;
     use crate::utils::init_python;
-
+    
+    const CONFIG_PATH: &str = "/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml";
+    
     #[test]
     #[serial]
     fn test_stockbars_params_to_python() {
-        init_python();
+        init_python(CONFIG_PATH).unwrap();
         Python::with_gil(|py| {
             
 

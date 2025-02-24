@@ -143,6 +143,7 @@ impl<'source> FromPyObject<'source> for TimeFrame {
 mod test {
 
     use super::*;
+    use log::error;
 
     #[test]
     fn test_valid_timeframe_creation() {
@@ -236,13 +237,40 @@ mod test {
 
         use crate::utils::init_python;
 
+        const CONFIG_PATH: &str = "/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml";
+
         #[test]
         #[serial]
         fn test_timeframe_to_python() {
-            init_python();
+            init_python(CONFIG_PATH).unwrap();
             Python::with_gil(|py| {
+                // Print Python version
+                let sys = py.import("sys").expect("Cannot import sys module");
+                let version = sys.getattr("version").expect("Cannot get Python version");
+                println!("Python version: {}", version);
+
+                // Print PYTHONPATH
+                let sys_path = sys.getattr("path").expect("Cannot get sys.path");
+                println!("Python path: {}", sys_path.str().unwrap());
+                
+                // Try importing pydantic with more debug info
+                match py.import("pydantic") {
+                    Ok(_) => println!("Successfully imported pydantic"),
+                    Err(e) => println!("Failed to import pydantic: {:?}", e),
+                }
+
+                // Try importing pydantic_core with more debug info
+                match py.import("pydantic_core") {
+                    Ok(_) => println!("Successfully imported pydantic_core"),
+                    Err(e) => println!("Failed to import pydantic_core: {:?}", e),
+                }
+
                 let timeframe = TimeFrame::minutes(5).unwrap();
-                let py_timeframe = timeframe.into_pyobject(py).unwrap();
+                let py_timeframe = timeframe.into_pyobject(py)
+                    .map_err(|e| {
+                        error!("Failed to import pydantic_core: {:?}", e);
+                        e
+                    }).unwrap();
 
                 assert!(py_timeframe.call_method0("__str__").is_ok());
 
@@ -275,7 +303,7 @@ mod test {
         #[test]
         #[serial]
         fn test_timeframe_from_python() {
-            init_python();
+            init_python(CONFIG_PATH).unwrap();
             Python::with_gil(|py| {
                 // Create a Python TimeFrame object
                 let timeframe_mod = py.import("alpaca.data.timeframe").unwrap();

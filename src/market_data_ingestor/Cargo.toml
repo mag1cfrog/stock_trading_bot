@@ -5,10 +5,14 @@ edition = "2024"
 
 [dependencies]
 chrono = "0.4.39"
+log = "0.4.26"
+once_cell = "1.20.3"
 polars = { version = "0.46.0", features = ["ipc"] }
 pyo3 = { version = "0.23.4", features = ["auto-initialize", "chrono"] }
+serde = { version = "1.0.218", features = ["derive"] }
 thiserror = "2.0.11"
 tokio = { version = "1.43.0", features = ["full"] }
+toml = "0.8.20"
 
 [dev-dependencies]
 serial_test = "3.2.0"

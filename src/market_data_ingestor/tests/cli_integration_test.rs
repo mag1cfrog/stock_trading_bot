@@ -7,7 +7,8 @@ fn test_single_fetch_cli() -> Result<(), Box<dyn std::error::Error>> {
     // Adjust the config path below as needed (for instance, to a test config file).
     let config_path = "/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml";
     let symbols = "AAPL,MSFT";
-    let timeframe = "5"; // 5 minutes
+    let timeframe_amount = "5"; // 5 minutes
+    let timeframe_unit = "min";
     let start = "2025-01-01T09:30:00Z";
     let end = "2025-01-01T16:00:00Z";
 
@@ -18,8 +19,10 @@ fn test_single_fetch_cli() -> Result<(), Box<dyn std::error::Error>> {
             "single",
             "--symbols",
             symbols,
-            "--timeframe",
-            timeframe,
+            "--amount",
+            timeframe_amount,
+            "--unit",
+            timeframe_unit,
             "--start",
             start,
             "--end",

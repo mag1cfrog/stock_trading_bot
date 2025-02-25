@@ -3,7 +3,7 @@ use std::error::Error;
 
 use chrono::Utc;
 use clap::{Parser, Subcommand};
-use market_data_ingestor::{models::{stockbars::StockBarsParams, timeframe::TimeFrame}, requests::historical::{fetch_historical_bars, StockBarData}};
+use market_data_ingestor::{models::{stockbars::StockBarsParams, timeframe::{TimeFrame, TimeFrameError}}, requests::historical::{fetch_historical_bars, StockBarData}};
 use polars::frame::DataFrame;
 use polars_io::ipc::IpcWriter;
 use polars_io::SerWriter;
@@ -28,9 +28,13 @@ enum Commands {
         #[arg(long)]
         symbols: String,
 
-        /// Timeframe: either a number (for minutes) or a preset like "day" or "week"
-        #[arg(short, long)]
-        timeframe: String,
+        /// Timeframe amount (numeric value)
+        #[arg(long)]
+        amount: u32,
+
+        /// Timeframe unit: m (minute), h (hour), d (day), w (week), M (month)
+        #[arg(long, default_value = "m")]
+        unit: String,
 
         /// Start datetime in ISO8601 format (e.g. "2025-01-01T09:30:00Z")
         #[arg(long)]
@@ -71,6 +75,17 @@ fn write_dataframe_to_temp(df: &mut DataFrame, symbol: &str) -> Result<PathBuf, 
     Ok(output_path)
 }
 
+fn parse_timeframe(amount: u32, unit: &str) -> Result<TimeFrame, Box<dyn Error>> {
+    match unit.trim().to_lowercase().as_str() {
+        "m" | "min" | "minute" => TimeFrame::minutes(amount),
+        "h" | "hr" | "hour" => TimeFrame::hours(amount),
+        "d" | "day" => TimeFrame::day(),
+        "w" | "wk" | "week" => TimeFrame::week(),
+        "M" | "mo" | "month" => TimeFrame::months(amount),
+        _ => Err(TimeFrameError::InvalidInput { message: format!("Invalid timeframe unit: {}", unit) })
+    }.map_err(|e| e.into())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>>{
     let cli = Cli::parse();
 
@@ -82,7 +97,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     match &cli.command {
         Commands::Single { 
             symbols, 
-            timeframe, 
+            amount,
+            unit,
             start, 
             end 
         } => {
@@ -96,15 +112,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
 
             // Parse timeframe; if it parses as a number we'll assume minutes,
             // otherwise interpret some presets.
-            let tf = if let Ok(n) = timeframe.parse::<u32>() {
-                TimeFrame::minutes(n)?
-            } else {
-                match timeframe.as_str() {
-                    "day" => TimeFrame::day()?,
-                    "week" => TimeFrame::week()?,
-                    _ => TimeFrame::minutes(5)?,
-                }
-            };
+            let tf = parse_timeframe(*amount, unit)?;
             let start_dt = start.parse::<chrono::DateTime<chrono::Utc>>()?;
             let end_dt = end.parse::<chrono::DateTime<chrono::Utc>>()?;
 

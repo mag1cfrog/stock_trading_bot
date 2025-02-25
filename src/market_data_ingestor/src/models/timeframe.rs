@@ -8,6 +8,11 @@ pub enum TimeFrameError {
         unit: TimeFrameUnit,
         message: String,
     },
+
+    #[error("Invalid input: {}", message)]
+    InvalidInput {
+        message: String
+    },
 }
 
 #[derive(Debug, Clone)]

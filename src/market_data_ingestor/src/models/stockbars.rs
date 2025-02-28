@@ -37,9 +37,6 @@ impl<'py> IntoPyObject<'py> for StockBarsParams {
         kwargs.set_item("start", self.start)?;
         kwargs.set_item("end", self.end)?;
 
-        // Any additional fields (like limit, feed, etc.) can be set here if you want:
-        // kwargs.set_item("limit", 1000)?;
-
         // Call StockBarsRequest(...) with **kwargs
         request_cls.call((), Some(&kwargs))
     }

@@ -60,7 +60,7 @@ pub enum Commands {
         #[arg(long, default_value = "3")]
         max_retries: u32,
 
-        #[arg(long, default_value = "1000")]
+        #[arg(long, default_value = "300")]
         base_delay_ms: u64,
     },
 }

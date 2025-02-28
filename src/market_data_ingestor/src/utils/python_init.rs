@@ -56,7 +56,7 @@ pub fn init_python(config_path: &str) -> Result<(), Box<dyn Error + Send + Sync>
 }
 
 fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
-    verify_shell_environment()?;
+    // verify_shell_environment()?;
     // Initialize Python with venv
     pyo3::prepare_freethreaded_python();
     Python::with_gil(|py| {
@@ -96,13 +96,13 @@ fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> 
             PyErr::new::<PyValueError, _>(msg)
         })?;
 
-        println!("env retrived by Rust.");
-        // Add this in try_init_python before setting Python environment variables:
-        println!("Rust ENV APCA_KEY: {:?}", std::env::var("APCA_API_KEY_ID"));
-        println!(
-            "Rust ENV SECRET: {:?}",
-            std::env::var("APCA_API_SECRET_KEY")
-        );
+        // println!("env retrived by Rust.");
+        // // Add this in try_init_python before setting Python environment variables:
+        // println!("Rust ENV APCA_KEY: {:?}", std::env::var("APCA_API_KEY_ID"));
+        // println!(
+        //     "Rust ENV SECRET: {:?}",
+        //     std::env::var("APCA_API_SECRET_KEY")
+        // );
         // Set them in Python's environment
         let os = py.import("os")?;
         let environ = os.getattr("environ")?;

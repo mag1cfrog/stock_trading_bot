@@ -24,8 +24,8 @@ impl StockBarData {
     pub async fn new(config_path: &str) -> Result<Self, MarketDataError> {
         let config = read_config(config_path).unwrap();
 
-        crate::utils::python_init::verify_shell_environment()
-            .map_err(|e| MarketDataError::EnvError(e.to_string()))?;
+        // crate::utils::python_init::verify_shell_environment()
+        //     .map_err(|e| MarketDataError::EnvError(e.to_string()))?;
 
         // Initialize Python environment using the utility
         init_python(config_path).unwrap();

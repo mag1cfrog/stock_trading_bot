@@ -14,4 +14,4 @@ tokio = { version = "1.43.0", features = ["full"] }
 tempfile = "3.16.0"
 
 [package.metadata.release]
-pre-release-hook = ["git", "cliff", "-c", "storage_service/cliff.toml", "--include-path", "src/storage_service/**", "-p", "CHANGELOG.md", "--latest"]
+pre-release-hook = ["git", "cliff", "--include-path", "src/storage_service/**", "-o", "CHANGELOG.md", "--latest"]

@@ -64,3 +64,98 @@ pub enum Commands {
         base_delay_ms: u64,
     },
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::CommandFactory;
+
+    #[test]
+    fn test_cli_parsing() {
+        // Test basic CLI parsing
+        let args = vec![
+            "program", 
+            "--config", "config.toml", 
+            "single", 
+            "--symbols", "AAPL",
+            "--amount", "5", 
+            "--start", "2023-01-01T00:00:00Z",
+            "--end", "2023-01-31T00:00:00Z"
+        ];
+        
+        let cli = Cli::parse_from(args);
+        
+        assert_eq!(cli.config, "config.toml");
+        match cli.command {
+            Commands::Single { symbols, amount, unit, start, end } => {
+                assert_eq!(symbols, "AAPL");
+                assert_eq!(amount, 5);
+                assert_eq!(unit, "m"); // Default value
+                assert_eq!(start, "2023-01-01T00:00:00Z");
+                assert_eq!(end, "2023-01-31T00:00:00Z");
+            },
+            _ => panic!("Expected Single command"),
+        }
+    }
+
+    #[test]
+    fn test_batch_command_parsing() {
+        // Test batch CLI parsing
+        let args = vec![
+            "program", 
+            "--config", "config.toml", 
+            "batch",
+            "--source", "file",
+            "--input", "batch_params.json",
+            "--max-retries", "5"
+        ];
+        
+        let cli = Cli::parse_from(args);
+        
+        match cli.command {
+            Commands::Batch { source, input, max_retries, base_delay_ms } => {
+                assert_eq!(source, "file");
+                assert_eq!(input, Some("batch_params.json".to_string()));
+                assert_eq!(max_retries, 5);
+                assert_eq!(base_delay_ms, 1000); // Default value
+            },
+            _ => panic!("Expected Batch command"),
+        }
+    }
+
+    #[test]
+    fn test_batch_param_item_serialization() {
+        // Test BatchParamItem serialization/deserialization
+        let item = BatchParamItem {
+            symbols: "AAPL,MSFT".to_string(),
+            amount: 5,
+            unit: "m".to_string(),
+            start: "2023-01-01T00:00:00Z".to_string(),
+            end: "2023-01-31T00:00:00Z".to_string(),
+        };
+        
+        let json = serde_json::to_string(&item).unwrap();
+        let deserialized: BatchParamItem = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(deserialized.symbols, "AAPL,MSFT");
+        assert_eq!(deserialized.amount, 5);
+        assert_eq!(deserialized.unit, "m");
+        assert_eq!(deserialized.start, "2023-01-01T00:00:00Z");
+        assert_eq!(deserialized.end, "2023-01-31T00:00:00Z");
+    }
+
+    #[test]
+    fn test_cli_validation() {
+        // Verify required arguments are enforced
+        let cmd = Cli::command();
+        
+        // Test that config is required
+        cmd.clone().try_get_matches_from(vec!["program", "single", "--symbols", "AAPL"])
+            .expect_err("Should fail without config");
+            
+        // Test that symbols is required for Single command
+        cmd.clone().try_get_matches_from(vec!["program", "--config", "config.toml", "single"])
+            .expect_err("Should fail without symbols");
+    }
+}

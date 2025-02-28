@@ -24,8 +24,8 @@ pub enum TimeFrameUnit {
 
 #[derive(Debug, Clone)]
 pub struct TimeFrame {
-    amount: u32,
-    unit: TimeFrameUnit,
+    pub amount: u32,
+    pub unit: TimeFrameUnit,
 }
 
 impl TimeFrame {
@@ -65,26 +65,6 @@ impl TimeFrame {
         }
     }
 
-    // Helper constructors
-    pub fn minutes(amounts: u32) -> Result<Self, TimeFrameError> {
-        Self::new(amounts, TimeFrameUnit::Minute)
-    }
-
-    pub fn hours(amounts: u32) -> Result<Self, TimeFrameError> {
-        Self::new(amounts, TimeFrameUnit::Hour)
-    }
-
-    pub fn day() -> Result<Self, TimeFrameError> {
-        Self::new(1, TimeFrameUnit::Day)
-    }
-
-    pub fn week() -> Result<Self, TimeFrameError> {
-        Self::new(1, TimeFrameUnit::Week)
-    }
-
-    pub fn months(amounts: u32) -> Result<Self, TimeFrameError> {
-        Self::new(amounts, TimeFrameUnit::Month)
-    }
 }
 
 impl<'py> IntoPyObject<'py> for TimeFrameUnit {
@@ -148,91 +128,6 @@ mod test {
     use super::*;
     use log::error;
 
-    #[test]
-    fn test_valid_timeframe_creation() {
-        assert!(TimeFrame::minutes(1).is_ok());
-        assert!(TimeFrame::minutes(59).is_ok());
-        assert!(TimeFrame::hours(1).is_ok());
-        assert!(TimeFrame::hours(23).is_ok());
-        assert!(TimeFrame::day().is_ok());
-        assert!(TimeFrame::week().is_ok());
-        assert!(TimeFrame::months(1).is_ok());
-        assert!(TimeFrame::months(3).is_ok());
-        assert!(TimeFrame::months(6).is_ok());
-        assert!(TimeFrame::months(12).is_ok());
-    }
-
-    #[test]
-    fn test_invalid_timeframe_creation() {
-        // Minutes validation
-        assert!(TimeFrame::minutes(0).is_err());
-        assert!(TimeFrame::minutes(60).is_err());
-
-        // Hours validation
-        assert!(TimeFrame::hours(0).is_err());
-        assert!(TimeFrame::hours(24).is_err());
-
-        // Day/Week validation (only amount 1 allowed)
-        assert!(TimeFrame::new(2, TimeFrameUnit::Day).is_err());
-        assert!(TimeFrame::new(2, TimeFrameUnit::Week).is_err());
-
-        // Months validation
-        assert!(TimeFrame::months(4).is_err());
-        assert!(TimeFrame::months(5).is_err());
-        assert!(TimeFrame::months(7).is_err());
-        assert!(TimeFrame::months(13).is_err());
-    }
-
-    #[test]
-    fn test_timeframe_helper_constructors() {
-        let minute_frame = TimeFrame::minutes(5).unwrap();
-        let hour_frame = TimeFrame::hours(2).unwrap();
-        let day_frame = TimeFrame::day().unwrap();
-        let week_frame = TimeFrame::week().unwrap();
-        let month_frame = TimeFrame::months(3).unwrap();
-
-        // Test internal values
-        match minute_frame {
-            TimeFrame {
-                amount,
-                unit: TimeFrameUnit::Minute,
-            } => assert_eq!(amount, 5),
-            _ => panic!("Unexpected TimeFrame structure"),
-        }
-
-        match hour_frame {
-            TimeFrame {
-                amount,
-                unit: TimeFrameUnit::Hour,
-            } => assert_eq!(amount, 2),
-            _ => panic!("Unexpected TimeFrame structure"),
-        }
-
-        match day_frame {
-            TimeFrame {
-                amount,
-                unit: TimeFrameUnit::Day,
-            } => assert_eq!(amount, 1),
-            _ => panic!("Unexpected TimeFrame structure"),
-        }
-
-        match week_frame {
-            TimeFrame {
-                amount,
-                unit: TimeFrameUnit::Week,
-            } => assert_eq!(amount, 1),
-            _ => panic!("Unexpected TimeFrame structure"),
-        }
-
-        match month_frame {
-            TimeFrame {
-                amount,
-                unit: TimeFrameUnit::Month,
-            } => assert_eq!(amount, 3),
-            _ => panic!("Unexpected TimeFrame structure"),
-        }
-    }
-
     mod python_conversion_tests {
         use super::*;
         use pyo3::Python;
@@ -270,7 +165,7 @@ mod test {
                     Err(e) => println!("Failed to import pydantic_core: {:?}", e),
                 }
 
-                let timeframe = TimeFrame::minutes(5).unwrap();
+                let timeframe = TimeFrame::new(5, TimeFrameUnit::Minute).unwrap();
                 let py_timeframe = timeframe
                     .into_pyobject(py)
                     .map_err(|e| {
@@ -335,6 +230,94 @@ mod test {
                     _ => panic!("Incorrect TimeFrame conversion from Python"),
                 }
             });
+        }
+    }
+
+    mod timeframe_creation_tests {
+        use super::*;
+
+        #[test]
+        fn test_valid_minute_timeframe() {
+            let tf = TimeFrame::new(5, TimeFrameUnit::Minute);
+            assert!(tf.is_ok());
+            let tf = tf.unwrap();
+            assert_eq!(tf.amount, 5);
+            assert!(matches!(tf.unit, TimeFrameUnit::Minute));
+        }
+
+        #[test]
+        fn test_valid_hour_timeframe() {
+            let tf = TimeFrame::new(6, TimeFrameUnit::Hour);
+            assert!(tf.is_ok());
+            let tf = tf.unwrap();
+            assert_eq!(tf.amount, 6);
+            assert!(matches!(tf.unit, TimeFrameUnit::Hour));
+        }
+
+        #[test]
+        fn test_valid_day_timeframe() {
+            let tf = TimeFrame::new(1, TimeFrameUnit::Day);
+            assert!(tf.is_ok());
+        }
+
+        #[test]
+        fn test_valid_month_timeframes() {
+            for amount in [1, 2, 3, 6, 12] {
+                let tf = TimeFrame::new(amount, TimeFrameUnit::Month);
+                assert!(tf.is_ok(), "Month with amount {} should be valid", amount);
+            }
+        }
+
+        #[test]
+        fn test_invalid_minute_timeframe() {
+            assert!(TimeFrame::new(0, TimeFrameUnit::Minute).is_err());
+            assert!(TimeFrame::new(60, TimeFrameUnit::Minute).is_err());
+        }
+
+        #[test]
+        fn test_invalid_hour_timeframe() {
+            assert!(TimeFrame::new(0, TimeFrameUnit::Hour).is_err());
+            assert!(TimeFrame::new(24, TimeFrameUnit::Hour).is_err());
+        }
+
+        #[test]
+        fn test_invalid_day_timeframe() {
+            assert!(TimeFrame::new(2, TimeFrameUnit::Day).is_err());
+        }
+
+        #[test]
+        fn test_invalid_week_timeframe() {
+            assert!(TimeFrame::new(2, TimeFrameUnit::Week).is_err());
+        }
+
+        #[test]
+        fn test_invalid_month_timeframe() {
+            for amount in [0, 4, 5, 7, 8, 9, 10, 11, 13] {
+                assert!(
+                    TimeFrame::new(amount, TimeFrameUnit::Month).is_err(),
+                    "Month with amount {} should be invalid",
+                    amount
+                );
+            }
+        }
+        
+        #[test]
+        fn test_error_messages() {
+            match TimeFrame::new(60, TimeFrameUnit::Minute) {
+                Err(TimeFrameError::InvalidAmount { unit, message }) => {
+                    assert!(matches!(unit, TimeFrameUnit::Minute));
+                    assert!(message.contains("Second or Minute"));
+                }
+                _ => panic!("Expected InvalidAmount error"),
+            }
+            
+            match TimeFrame::new(24, TimeFrameUnit::Hour) {
+                Err(TimeFrameError::InvalidAmount { unit, message }) => {
+                    assert!(matches!(unit, TimeFrameUnit::Hour));
+                    assert!(message.contains("Hour units"));
+                }
+                _ => panic!("Expected InvalidAmount error"),
+            }
         }
     }
 }

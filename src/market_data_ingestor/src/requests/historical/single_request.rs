@@ -105,7 +105,7 @@ compat_level=pl.CompatLevel.newest()  # Ensures Rust compatibility
 
 #[cfg(test)]
 mod tests {
-    use crate::models::stockbars::StockBarsParams;
+    use crate::models::{stockbars::StockBarsParams, timeframe::TimeFrameUnit};
     use crate::models::timeframe::TimeFrame;
     use crate::requests::historical::StockBarData;
     use chrono::{TimeZone, Utc};
@@ -122,7 +122,7 @@ mod tests {
 
         let params = StockBarsParams {
             symbols: vec!["AAPL".into()],
-            timeframe: TimeFrame::day().unwrap(),
+            timeframe: TimeFrame::new(1, TimeFrameUnit::Day).unwrap(),
             start: Utc.with_ymd_and_hms(2025, 1, 1, 9, 30, 0).unwrap(),
             end: Utc.with_ymd_and_hms(2025, 1, 30, 16, 0, 0).unwrap(),
         };

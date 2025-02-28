@@ -3,6 +3,7 @@ use std::{error::Error, fs, io};
 
 use serde_json::Value;
 
+use crate::models::timeframe::TimeFrameUnit;
 use crate::models::{
     stockbars::StockBarsParams,
     timeframe::{TimeFrame, TimeFrameError},
@@ -12,11 +13,11 @@ use super::commands::BatchParamItem;
 
 pub fn parse_timeframe(amount: u32, unit: &str) -> Result<TimeFrame, Box<dyn Error>> {
     match unit.trim().to_lowercase().as_str() {
-        "m" | "min" | "minute" => TimeFrame::minutes(amount),
-        "h" | "hr" | "hour" => TimeFrame::hours(amount),
-        "d" | "day" => TimeFrame::day(),
-        "w" | "wk" | "week" => TimeFrame::week(),
-        "M" | "mo" | "month" => TimeFrame::months(amount),
+        "m" | "min" | "minute" => TimeFrame::new(amount, TimeFrameUnit::Minute),
+        "h" | "hr" | "hour" => TimeFrame::new(amount, TimeFrameUnit::Hour),
+        "d" | "day" => TimeFrame::new(amount, TimeFrameUnit::Day),
+        "w" | "wk" | "week" => TimeFrame::new(amount, TimeFrameUnit::Week),
+        "M" | "mo" | "month" => TimeFrame::new(amount, TimeFrameUnit::Month),
         _ => Err(TimeFrameError::InvalidInput {
             message: format!("Invalid timeframe unit: {}", unit),
         }),
@@ -86,4 +87,85 @@ pub fn parse_batch_params_from_file(
     let content = fs::read_to_string(file_path)?;
     let json_value = serde_json::from_str(&content)?;
     parse_batch_params_from_json_value(json_value)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::timeframe::TimeFrameUnit;
+
+    #[test]
+    fn test_parse_timeframe() {
+        // Test various valid timeframe formats
+        let minute_tf = parse_timeframe(5, "m").unwrap();
+        assert!(matches!(
+            minute_tf,
+            TimeFrame { amount: 5, unit: TimeFrameUnit::Minute }
+        ));
+        
+        let hour_tf = parse_timeframe(2, "h").unwrap();
+        assert!(matches!(
+            hour_tf,
+            TimeFrame { amount: 2, unit: TimeFrameUnit::Hour }
+        ));
+        
+        let day_tf = parse_timeframe(1, "d").unwrap();
+        assert!(matches!(
+            day_tf,
+            TimeFrame { amount: 1, unit: TimeFrameUnit::Day }
+        ));
+        
+        // Test error cases
+        assert!(parse_timeframe(2, "d").is_err()); // Day only supports amount=1
+        assert!(parse_timeframe(60, "m").is_err()); // Minutes only up to 59
+        assert!(parse_timeframe(5, "invalid").is_err()); // Invalid unit
+    }
+
+    #[test]
+    fn test_parse_batch_params_from_json_string() {
+        let json_str = r#"[
+            {
+                "symbols": "AAPL",
+                "amount": 5,
+                "unit": "m",
+                "start": "2023-01-01T00:00:00Z",
+                "end": "2023-01-31T00:00:00Z"
+            },
+            {
+                "symbols": "MSFT,GOOGL",
+                "amount": 1,
+                "unit": "d",
+                "start": "2023-01-01T00:00:00Z",
+                "end": "2023-01-31T00:00:00Z"
+            }
+        ]"#;
+        
+        let params_list = parse_batch_params_from_json_string(json_str).unwrap();
+        
+        assert_eq!(params_list.len(), 2);
+        assert_eq!(params_list[0].symbols, vec!["AAPL"]);
+        assert_eq!(params_list[1].symbols, vec!["MSFT", "GOOGL"]);
+    }
+
+    #[test]
+    fn test_parse_batch_params_from_json_value() {
+        let json_value: serde_json::Value = serde_json::from_str(r#"[
+            {
+                "symbols": "AAPL",
+                "amount": 5,
+                "unit": "m",
+                "start": "2023-01-01T00:00:00Z",
+                "end": "2023-01-31T00:00:00Z"
+            }
+        ]"#).unwrap();
+        
+        let params_list = parse_batch_params_from_json_value(json_value).unwrap();
+        
+        assert_eq!(params_list.len(), 1);
+        assert_eq!(params_list[0].symbols, vec!["AAPL"]);
+        assert!(matches!(
+            params_list[0].timeframe,
+            TimeFrame { amount: 5, unit: TimeFrameUnit::Minute }
+        ));
+    }
 }

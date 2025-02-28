@@ -52,7 +52,7 @@ mod tests {
     use pyo3::Python;
     use serial_test::serial;
 
-    use crate::models::timeframe::TimeFrame;
+    use crate::models::timeframe::{TimeFrame, TimeFrameUnit};
     use crate::utils::init_python;
 
     const CONFIG_PATH: &str = "/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml";
@@ -65,7 +65,7 @@ mod tests {
         Python::with_gil(|py| {
             let params = StockBarsParams {
                 symbols: vec!["AAPL".to_string(), "MSFT".to_string()],
-                timeframe: TimeFrame::minutes(5).unwrap(),
+                timeframe: TimeFrame::new(5, TimeFrameUnit::Minute).unwrap(),
                 start: Utc.with_ymd_and_hms(2023, 1, 1, 0, 0, 0).unwrap(),
                 end: Utc.with_ymd_and_hms(2023, 1, 2, 0, 0, 0).unwrap(),
             };
@@ -106,7 +106,7 @@ mod tests {
     fn test_stockbars_params_creation() {
         let params = StockBarsParams {
             symbols: vec!["AAPL".to_string()],
-            timeframe: TimeFrame::minutes(1).unwrap(),
+            timeframe: TimeFrame::new(1, TimeFrameUnit::Minute).unwrap(),
             start: Utc::now(),
             end: Utc::now(),
         };

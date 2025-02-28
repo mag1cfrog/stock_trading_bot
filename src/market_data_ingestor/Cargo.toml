@@ -25,4 +25,4 @@ serial_test = "3.2.0"
 tempfile = "3.17.1"
 
 [package.metadata.release]
-pre-release-hook = ["git", "cliff", "-c", "market_data_ingestor/cliff.toml", "--include-path", "market_data_ingestor/**", "-o", "CHANGELOG.md", "--latest"]
+pre-release-hook = ["git", "cliff", "-c", "market_data_ingestor/cliff.toml", "--include-path", "market_data_ingestor/**", "-p", "/home/hanbo/repo/stock_trading_bot/src/market_data_ingestor/CHANGELOG.md", "--latest"]

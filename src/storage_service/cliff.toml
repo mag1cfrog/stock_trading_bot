@@ -1,7 +1,7 @@
 [changelog]
 header = """
 # Changelog
-All notable changes to market_data_ingestor will be documented in this file.
+All notable changes to storage_service will be documented in this file.
 """
 body = """
 {% if version %}## {{ version }}{% if date %} ({{ date }}){% endif %}{% else %}## [Unreleased]{% endif %}

@@ -1,5 +1,0 @@
-[package.market_data_ingestor]
-pre-release-hook = ["bash", "/home/hanbo/repo/stock_trading_bot/src/hook-debug.sh"]
-
-[package.storage_service]
-pre-release-hook = ["git", "cliff", "-w", "/home/hanbo/repo/stock_trading_bot/", "-c", "src/storage_service/cliff.toml", "--include-path", "src/storage_service/**", "-p", "src/storage_service/CHANGELOG.md", "--latest"]

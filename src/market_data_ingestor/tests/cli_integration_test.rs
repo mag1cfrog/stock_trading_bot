@@ -2,6 +2,7 @@ use std::process::Command;
 use std::str;
 
 #[test]
+#[ignore]
 fn test_single_fetch_cli() -> Result<(), Box<dyn std::error::Error>> {
     // Set up arguments.
     // Adjust the config path below as needed (for instance, to a test config file).

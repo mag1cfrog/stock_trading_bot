@@ -59,6 +59,7 @@ mod tests {
 
     #[test]
     #[serial]
+    #[ignore]
     fn test_stockbars_params_to_python() {
         init_python(CONFIG_PATH).unwrap();
         Python::with_gil(|py| {

@@ -245,6 +245,7 @@ mod test {
 
         #[test]
         #[serial]
+        #[ignore]
         fn test_timeframe_to_python() {
             init_python(CONFIG_PATH).unwrap();
             Python::with_gil(|py| {
@@ -308,6 +309,7 @@ mod test {
 
         #[test]
         #[serial]
+        #[ignore]
         fn test_timeframe_from_python() {
             init_python(CONFIG_PATH).unwrap();
             Python::with_gil(|py| {

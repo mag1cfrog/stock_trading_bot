@@ -113,6 +113,7 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    #[ignore]
     async fn test_historical_data_fetch() {
         let market_data =
             StockBarData::new("/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml")

@@ -16,7 +16,7 @@ body = """
 
 [git]
 conventional_commits = true
-filter_unconventional = true
+filter_unconventional = false
 commit_parsers = [
   { message = "^feat", group = "Features" },
   { message = "^fix", group = "Bug Fixes" },

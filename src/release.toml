@@ -1,6 +1,3 @@
-[workspace]
-# No workspace-wide version bump
-
 [package.market_data_ingestor]
 pre-release-hook = ["bash", "/home/hanbo/repo/stock_trading_bot/src/hook-debug.sh"]
 

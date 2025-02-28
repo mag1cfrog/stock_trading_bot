@@ -9,21 +9,18 @@ use crate::models::stockbars::StockBarsParams;
 use crate::requests::historical::StockBarData;
 use crate::requests::historical::errors::MarketDataError;
 
-
 pub fn fetch_bars_batch_partial(
     _data: &StockBarData,
     params_list: &[StockBarsParams],
     max_retries: u32,
-    base_delay_ms: u64
+    base_delay_ms: u64,
 ) -> Result<Vec<Result<DataFrame, MarketDataError>>, Box<dyn Error>> {
-
     // Acquire GIL
     Python::with_gil(|py| {
-
         // Convert params to Python list
         let py_list = PyList::empty(py);
         for param in params_list {
-            let py_request = param.clone().into_pyobject(py)?; 
+            let py_request = param.clone().into_pyobject(py)?;
             py_list.append(py_request)?;
         }
 
@@ -106,18 +103,25 @@ for request_params in request_params_list:
                 // Extract results_list from locals
                 let py_results_list = locals
                     .get_item("results_list")
-                    .map_err(|e| MarketDataError::PythonExecutionError(
-                        format!("Could not find `results_list` in Python locals: {}", e)
-                    ))?
-                    .ok_or_else(|| MarketDataError::PythonExecutionError(
-                        "Python variable `results_list` was not set".into()
-                    ))?; // Convert Option to Result;
-                
-                let py_results_list: &Bound<'_, PyList> = py_results_list
-                    .downcast()
-                    .map_err(|e| MarketDataError::PythonExecutionError(
-                        format!("results_list is not a Python list: {}", e)
-                    ))?;
+                    .map_err(|e| {
+                        MarketDataError::PythonExecutionError(format!(
+                            "Could not find `results_list` in Python locals: {}",
+                            e
+                        ))
+                    })?
+                    .ok_or_else(|| {
+                        MarketDataError::PythonExecutionError(
+                            "Python variable `results_list` was not set".into(),
+                        )
+                    })?; // Convert Option to Result;
+
+                let py_results_list: &Bound<'_, PyList> =
+                    py_results_list.downcast().map_err(|e| {
+                        MarketDataError::PythonExecutionError(format!(
+                            "results_list is not a Python list: {}",
+                            e
+                        ))
+                    })?;
 
                 // We'll parse each entry in results_list into a Rust `Result<DataFrame, MarketDataError>`.
                 let mut out = Vec::with_capacity(params_list.len());
@@ -156,13 +160,12 @@ for request_params in request_params_list:
                 }
 
                 Ok(out)
-            },
+            }
             Err(e) => {
                 // Means the entire snippet crashed unexpectedly (like missing package, bad Python, etc.)
                 let py_err_str = e.to_string();
                 let name_result = e.get_type(py).name();
-                let type_name = name_result
-                    .unwrap();
+                let type_name = name_result.unwrap();
 
                 let is_api_error = type_name.contains("APIError")?
                     || py_err_str.to_lowercase().contains("apierror");
@@ -183,18 +186,19 @@ for request_params in request_params_list:
 
 #[cfg(test)]
 mod tests {
-    use chrono::{TimeZone, Utc};
-    use serial_test::serial;
     use crate::models::stockbars::StockBarsParams;
     use crate::models::timeframe::TimeFrame;
     use crate::requests::historical::StockBarData;
+    use chrono::{TimeZone, Utc};
+    use serial_test::serial;
 
     #[tokio::test]
     #[serial]
     async fn test_batch_historical_data_fetch() {
-        let market_data = StockBarData::new("/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml")
-            .await
-            .expect("Can't initialize the data fetcher");
+        let market_data =
+            StockBarData::new("/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml")
+                .await
+                .expect("Can't initialize the data fetcher");
 
         // Create multiple parameter sets
         let params_list = [
@@ -209,7 +213,7 @@ mod tests {
                 timeframe: TimeFrame::day().unwrap(),
                 start: Utc.with_ymd_and_hms(2023, 1, 1, 9, 30, 0).unwrap(),
                 end: Utc.with_ymd_and_hms(2023, 1, 30, 16, 0, 0).unwrap(),
-            }
+            },
         ];
 
         let results = market_data
@@ -225,7 +229,9 @@ mod tests {
         }
 
         // Assert at least one success
-        assert!(results.iter().any(|r| r.is_ok()), "At least one request should succeed");
-
-}
+        assert!(
+            results.iter().any(|r| r.is_ok()),
+            "At least one request should succeed"
+        );
+    }
 }

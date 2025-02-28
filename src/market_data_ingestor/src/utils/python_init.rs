@@ -3,17 +3,16 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use log::error;
-use std::sync::OnceLock; 
-use pyo3::exceptions::PyValueError;
-use pyo3::Python;
-use pyo3::types::PyAnyMethods;
 use pyo3::PyErr;
+use pyo3::Python;
+use pyo3::exceptions::PyValueError;
+use pyo3::types::PyAnyMethods;
 use serde::Deserialize;
-
+use std::sync::OnceLock;
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub python_venv_path: String
+    pub python_venv_path: String,
 }
 
 pub fn read_config(config_path: &str) -> Result<Config, Box<dyn Error + Send + Sync>> {
@@ -36,8 +35,7 @@ pub fn read_config(config_path: &str) -> Result<Config, Box<dyn Error + Send + S
     Ok(config)
 }
 
-static INIT: OnceLock<Result<(), Box<dyn Error+ Send + Sync>>> = OnceLock::new();  // <--- Track result
-
+static INIT: OnceLock<Result<(), Box<dyn Error + Send + Sync>>> = OnceLock::new(); // <--- Track result
 
 pub fn init_python(config_path: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
     // Read and parse the TOML config file.
@@ -58,13 +56,10 @@ pub fn init_python(config_path: &str) -> Result<(), Box<dyn Error + Send + Sync>
 }
 
 fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
-
     verify_shell_environment()?;
     // Initialize Python with venv
     pyo3::prepare_freethreaded_python();
     Python::with_gil(|py| {
-
-        
         let venv_path = Path::new(&config.python_venv_path);
         let lib_dir = venv_path.join("lib");
 
@@ -73,19 +68,20 @@ fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> 
 
         let sys = py.import("sys").expect("Cannot import sys module");
 
-        let sys_path = sys.getattr("path")
-            .expect("Cannot get sys.path");
+        let sys_path = sys.getattr("path").expect("Cannot get sys.path");
 
-        sys_path.call_method1("insert", (0, site_packages_path))
+        sys_path
+            .call_method1("insert", (0, site_packages_path))
             .expect("Failed to insert site-packages path");
-        
+
         // Get environment variables in Rust
         // Verify environment variables exist in Rust process
         let api_key = std::env::var("APCA_API_KEY_ID").map_err(|e| {
             let msg = format!(
                 "APCA_API_KEY_ID not found in environment. \
                 Make sure to source your zsh config!\n\
-                Original error: {}", e
+                Original error: {}",
+                e
             );
             PyErr::new::<PyValueError, _>(msg)
         })?;
@@ -94,7 +90,8 @@ fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> 
             let msg = format!(
                 "APCA_API_SECRET_KEY not found in environment. \
                 Did you reload your shell after adding to .zshenv?\n\
-                Original error: {}", e
+                Original error: {}",
+                e
             );
             PyErr::new::<PyValueError, _>(msg)
         })?;
@@ -102,7 +99,10 @@ fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> 
         println!("env retrived by Rust.");
         // Add this in try_init_python before setting Python environment variables:
         println!("Rust ENV APCA_KEY: {:?}", std::env::var("APCA_API_KEY_ID"));
-        println!("Rust ENV SECRET: {:?}", std::env::var("APCA_API_SECRET_KEY"));
+        println!(
+            "Rust ENV SECRET: {:?}",
+            std::env::var("APCA_API_SECRET_KEY")
+        );
         // Set them in Python's environment
         let os = py.import("os")?;
         let environ = os.getattr("environ")?;
@@ -127,8 +127,6 @@ fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> 
             error!("Python path: {:?}", sys_path.call_method0("__str__"));
             e
         })?;
-
-        
 
         Ok(())
     })
@@ -157,9 +155,9 @@ pub fn verify_shell_environment() -> Result<(), Box<dyn Error + Send + Sync>> {
     for (k, v) in std::env::vars() {
         println!("- {}={}", k, v);
     }
-    
+
     let required_vars = ["APCA_API_KEY_ID", "APCA_API_SECRET_KEY"];
-    
+
     for var in required_vars {
         std::env::var(var).map_err(|_e| {
             format!(
@@ -172,6 +170,6 @@ pub fn verify_shell_environment() -> Result<(), Box<dyn Error + Send + Sync>> {
             )
         })?;
     }
-    
+
     Ok(())
 }

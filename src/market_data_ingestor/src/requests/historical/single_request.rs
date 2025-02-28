@@ -13,9 +13,7 @@ pub fn fetch_historical_bars(
     _data: &StockBarData,
     params: StockBarsParams,
 ) -> Result<DataFrame, Box<dyn Error>> {
-
     Python::with_gil(|py| {
-
         // Convert parameters to Python object
         let py_request = params.into_pyobject(py)?;
 
@@ -107,18 +105,19 @@ compat_level=pl.CompatLevel.newest()  # Ensures Rust compatibility
 
 #[cfg(test)]
 mod tests {
-    use chrono::{TimeZone, Utc};
-    use serial_test::serial;
     use crate::models::stockbars::StockBarsParams;
     use crate::models::timeframe::TimeFrame;
     use crate::requests::historical::StockBarData;
+    use chrono::{TimeZone, Utc};
+    use serial_test::serial;
 
     #[tokio::test]
     #[serial]
     async fn test_historical_data_fetch() {
-        let market_data = StockBarData::new("/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml")
-            .await
-            .expect("Can't initialize the data fetcher");
+        let market_data =
+            StockBarData::new("/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml")
+                .await
+                .expect("Can't initialize the data fetcher");
 
         let params = StockBarsParams {
             symbols: vec!["AAPL".into()],

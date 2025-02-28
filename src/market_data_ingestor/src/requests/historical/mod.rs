@@ -13,8 +13,7 @@ use polars::prelude::*;
 
 use crate::models::stockbars::StockBarsParams;
 use crate::utils::init_python;
-use crate::utils::python_init::{read_config, Config};
-
+use crate::utils::python_init::{Config, read_config};
 
 #[allow(unused)]
 pub struct StockBarData {
@@ -22,9 +21,7 @@ pub struct StockBarData {
 }
 
 impl StockBarData {
-
     pub async fn new(config_path: &str) -> Result<Self, MarketDataError> {
-
         let config = read_config(config_path).unwrap();
 
         crate::utils::python_init::verify_shell_environment()
@@ -47,7 +44,7 @@ impl StockBarData {
         &self,
         params_list: &[StockBarsParams],
         max_retries: u32,
-        base_delay_ms: u64
+        base_delay_ms: u64,
     ) -> Result<Vec<Result<DataFrame, MarketDataError>>, Box<dyn Error>> {
         fetch_bars_batch_partial(self, params_list, max_retries, base_delay_ms)
     }

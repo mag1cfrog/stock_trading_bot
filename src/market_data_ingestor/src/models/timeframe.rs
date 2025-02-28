@@ -1,4 +1,4 @@
-use pyo3::{types::PyAnyMethods, Bound, BoundObject, FromPyObject, IntoPyObject, PyAny, Python};
+use pyo3::{Bound, BoundObject, FromPyObject, IntoPyObject, PyAny, Python, types::PyAnyMethods};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -10,9 +10,7 @@ pub enum TimeFrameError {
     },
 
     #[error("Invalid input: {}", message)]
-    InvalidInput {
-        message: String
-    },
+    InvalidInput { message: String },
 }
 
 #[derive(Debug, Clone)]
@@ -136,7 +134,7 @@ impl<'source> FromPyObject<'source> for TimeFrame {
                 return Err(pyo3::exceptions::PyValueError::new_err(format!(
                     "Invalid TimeFrame unit {}",
                     unit_str.as_str()
-                )))
+                )));
             }
         };
 
@@ -242,7 +240,8 @@ mod test {
 
         use crate::utils::init_python;
 
-        const CONFIG_PATH: &str = "/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml";
+        const CONFIG_PATH: &str =
+            "/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml";
 
         #[test]
         #[serial]
@@ -257,7 +256,7 @@ mod test {
                 // Print PYTHONPATH
                 let sys_path = sys.getattr("path").expect("Cannot get sys.path");
                 println!("Python path: {}", sys_path.str().unwrap());
-                
+
                 // Try importing pydantic with more debug info
                 match py.import("pydantic") {
                     Ok(_) => println!("Successfully imported pydantic"),
@@ -271,11 +270,13 @@ mod test {
                 }
 
                 let timeframe = TimeFrame::minutes(5).unwrap();
-                let py_timeframe = timeframe.into_pyobject(py)
+                let py_timeframe = timeframe
+                    .into_pyobject(py)
                     .map_err(|e| {
                         error!("Failed to import pydantic_core: {:?}", e);
                         e
-                    }).unwrap();
+                    })
+                    .unwrap();
 
                 assert!(py_timeframe.call_method0("__str__").is_ok());
 

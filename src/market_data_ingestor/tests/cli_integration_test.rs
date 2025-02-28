@@ -12,23 +12,24 @@ fn test_single_fetch_cli() -> Result<(), Box<dyn std::error::Error>> {
     let start = "2025-01-01T09:30:00Z";
     let end = "2025-01-01T16:00:00Z";
 
-    let output = Command::new("/home/hanbo/repo/stock_trading_bot/src/target/debug/market_data_ingestor")
-        .args([
-            "--config",
-            config_path,
-            "single",
-            "--symbols",
-            symbols,
-            "--amount",
-            timeframe_amount,
-            "--unit",
-            timeframe_unit,
-            "--start",
-            start,
-            "--end",
-            end,
-        ])
-        .output()?;
+    let output =
+        Command::new("/home/hanbo/repo/stock_trading_bot/src/target/debug/market_data_ingestor")
+            .args([
+                "--config",
+                config_path,
+                "single",
+                "--symbols",
+                symbols,
+                "--amount",
+                timeframe_amount,
+                "--unit",
+                timeframe_unit,
+                "--start",
+                start,
+                "--end",
+                end,
+            ])
+            .output()?;
 
     // If the process failed, print its stderr.
     if !output.status.success() {

@@ -1,6 +1,6 @@
 use pyo3::{
-    types::{PyAnyMethods, PyDict},
     Bound, IntoPyObject, PyAny, PyErr,
+    types::{PyAnyMethods, PyDict},
 };
 
 use crate::models::timeframe::TimeFrame;
@@ -54,16 +54,14 @@ mod tests {
 
     use crate::models::timeframe::TimeFrame;
     use crate::utils::init_python;
-    
+
     const CONFIG_PATH: &str = "/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml";
-    
+
     #[test]
     #[serial]
     fn test_stockbars_params_to_python() {
         init_python(CONFIG_PATH).unwrap();
         Python::with_gil(|py| {
-            
-
             let params = StockBarsParams {
                 symbols: vec!["AAPL".to_string(), "MSFT".to_string()],
                 timeframe: TimeFrame::minutes(5).unwrap(),

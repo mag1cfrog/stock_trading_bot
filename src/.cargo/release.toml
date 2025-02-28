@@ -2,7 +2,7 @@
 # No workspace-wide version bump
 
 [package.market_data_ingestor]
-post-release-hook = ["git", "cliff", "-w", "/home/hanbo/repo/stock_trading_bot/",  "-c", "src/market_data_ingestor/cliff.toml", "--include-path", "src/market_data_ingestor/**", "-p", "src/market_data_ingestor/CHANGELOG.md", "--latest"]
+pre-release-hook = ["git", "cliff", "-w", "/home/hanbo/repo/stock_trading_bot/",  "-c", "src/market_data_ingestor/cliff.toml", "--include-path", "src/market_data_ingestor/**", "-p", "src/market_data_ingestor/CHANGELOG.md", "--latest"]
 
 
 [package.storage_service]

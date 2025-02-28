@@ -64,7 +64,6 @@ impl TimeFrame {
             _ => Ok(()),
         }
     }
-
 }
 
 impl<'py> IntoPyObject<'py> for TimeFrameUnit {
@@ -300,7 +299,7 @@ mod test {
                 );
             }
         }
-        
+
         #[test]
         fn test_error_messages() {
             match TimeFrame::new(60, TimeFrameUnit::Minute) {
@@ -310,7 +309,7 @@ mod test {
                 }
                 _ => panic!("Expected InvalidAmount error"),
             }
-            
+
             match TimeFrame::new(24, TimeFrameUnit::Hour) {
                 Err(TimeFrameError::InvalidAmount { unit, message }) => {
                     assert!(matches!(unit, TimeFrameUnit::Hour));

@@ -100,21 +100,30 @@ mod tests {
         let minute_tf = parse_timeframe(5, "m").unwrap();
         assert!(matches!(
             minute_tf,
-            TimeFrame { amount: 5, unit: TimeFrameUnit::Minute }
+            TimeFrame {
+                amount: 5,
+                unit: TimeFrameUnit::Minute
+            }
         ));
-        
+
         let hour_tf = parse_timeframe(2, "h").unwrap();
         assert!(matches!(
             hour_tf,
-            TimeFrame { amount: 2, unit: TimeFrameUnit::Hour }
+            TimeFrame {
+                amount: 2,
+                unit: TimeFrameUnit::Hour
+            }
         ));
-        
+
         let day_tf = parse_timeframe(1, "d").unwrap();
         assert!(matches!(
             day_tf,
-            TimeFrame { amount: 1, unit: TimeFrameUnit::Day }
+            TimeFrame {
+                amount: 1,
+                unit: TimeFrameUnit::Day
+            }
         ));
-        
+
         // Test error cases
         assert!(parse_timeframe(2, "d").is_err()); // Day only supports amount=1
         assert!(parse_timeframe(60, "m").is_err()); // Minutes only up to 59
@@ -139,9 +148,9 @@ mod tests {
                 "end": "2023-01-31T00:00:00Z"
             }
         ]"#;
-        
+
         let params_list = parse_batch_params_from_json_string(json_str).unwrap();
-        
+
         assert_eq!(params_list.len(), 2);
         assert_eq!(params_list[0].symbols, vec!["AAPL"]);
         assert_eq!(params_list[1].symbols, vec!["MSFT", "GOOGL"]);
@@ -149,7 +158,8 @@ mod tests {
 
     #[test]
     fn test_parse_batch_params_from_json_value() {
-        let json_value: serde_json::Value = serde_json::from_str(r#"[
+        let json_value: serde_json::Value = serde_json::from_str(
+            r#"[
             {
                 "symbols": "AAPL",
                 "amount": 5,
@@ -157,15 +167,20 @@ mod tests {
                 "start": "2023-01-01T00:00:00Z",
                 "end": "2023-01-31T00:00:00Z"
             }
-        ]"#).unwrap();
-        
+        ]"#,
+        )
+        .unwrap();
+
         let params_list = parse_batch_params_from_json_value(json_value).unwrap();
-        
+
         assert_eq!(params_list.len(), 1);
         assert_eq!(params_list[0].symbols, vec!["AAPL"]);
         assert!(matches!(
             params_list[0].timeframe,
-            TimeFrame { amount: 5, unit: TimeFrameUnit::Minute }
+            TimeFrame {
+                amount: 5,
+                unit: TimeFrameUnit::Minute
+            }
         ));
     }
 }

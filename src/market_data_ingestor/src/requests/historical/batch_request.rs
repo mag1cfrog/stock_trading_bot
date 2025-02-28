@@ -186,8 +186,8 @@ for request_params in request_params_list:
 
 #[cfg(test)]
 mod tests {
-    use crate::models::{stockbars::StockBarsParams, timeframe::TimeFrameUnit};
     use crate::models::timeframe::TimeFrame;
+    use crate::models::{stockbars::StockBarsParams, timeframe::TimeFrameUnit};
     use crate::requests::historical::StockBarData;
     use chrono::{TimeZone, Utc};
     use serial_test::serial;

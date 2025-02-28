@@ -2,9 +2,8 @@
 # No workspace-wide version bump
 
 [package.market_data_ingestor]
-pre-release-hook = ["git", "cliff", "-o", "src/market_data_ingestor/CHANGELOG.md", "--include-path", "src/market_data_ingestor/", "--tag", "market_data_ingestor-v{{version}}"]
-tag-name = "market_data_ingestor-v{{version}}"
+post-release-hook = ["git", "cliff", "--include-path", "src/market_data_ingestor/**", "-p", "src/market_data_ingestor/CHANGELOG.md", "--latest", "--template-package", "market_data_ingestor"]
+
 
 [package.storage_service]
-pre-release-hook = ["git", "cliff", "-o", "src/storage_service/CHANGELOG.md", "--include-path", "src/storage_service/", "--tag", "storage_service-v{{version}}"]
-tag-name = "storage_service-v{{version}}"
+pre-release-hook = ["git", "cliff", "--include-path", "src/storage_service/**", "-p", "src/storage_service/CHANGELOG.md", "--latest", "--template-package", "storage_service"]

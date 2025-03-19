@@ -16,4 +16,4 @@ See [Why Rust?](#why-rust) and our [Architecture Evolution Blog](docs/blog/2025-
 
 ## Development Progress
 - **2025 Q1**: Core trading engine migration to Rust  
-- **2024**: Python/Go prototypes ([see legacy code](archive/))  
+- **2024**: Python/Go prototypes ([see legacy code](archive/))

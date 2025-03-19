@@ -1,6 +1,5 @@
-use std::fmt;
 use crate::{io::errors::IOError, requests::historical::MarketDataError};
-
+use std::fmt;
 
 #[derive(Debug)]
 pub enum IngestorError {

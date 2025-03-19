@@ -16,9 +16,9 @@ pub enum IOError {
 impl From<io::Error> for IOError {
     fn from(err: io::Error) -> Self {
         // Default path handling without context
-        Self::FileWriteError { 
+        Self::FileWriteError {
             path: PathBuf::from("<unknown>"),
-            error: err.to_string() 
+            error: err.to_string(),
         }
     }
 }
@@ -32,14 +32,23 @@ impl From<PolarsError> for IOError {
 impl fmt::Display for IOError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::FileCreationError { path, error } => 
-                write!(f, "Failed to create file at {}: {}", path.display(), error),
-            Self::DirectoryCreationError { path, error } => 
-                write!(f, "Failed to create directory at {}: {}", path.display(), error),
-            Self::FileWriteError { path, error } => 
-                write!(f, "Failed to write to file at {}: {}", path.display(), error),
+            Self::FileCreationError { path, error } => {
+                write!(f, "Failed to create file at {}: {}", path.display(), error)
+            }
+            Self::DirectoryCreationError { path, error } => write!(
+                f,
+                "Failed to create directory at {}: {}",
+                path.display(),
+                error
+            ),
+            Self::FileWriteError { path, error } => write!(
+                f,
+                "Failed to write to file at {}: {}",
+                path.display(),
+                error
+            ),
             Self::InvalidSymbol(msg) => write!(f, "Invalid symbol: {}", msg),
-            Self::DataFrameError(msg) => write!(f, "DataFrame processing error: {}", msg)
+            Self::DataFrameError(msg) => write!(f, "DataFrame processing error: {}", msg),
         }
     }
 }

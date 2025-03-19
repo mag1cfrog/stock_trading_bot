@@ -39,7 +39,10 @@ impl StockBarData {
     // Enhanced API: Direct memory methods
 
     /// Fetches historical bars data and returns it directly as a DataFrame
-    pub fn fetch_historical_bars_to_memory(&self, params: StockBarsParams) -> Result<DataFrame, MarketDataError> {
+    pub fn fetch_historical_bars_to_memory(
+        &self,
+        params: StockBarsParams,
+    ) -> Result<DataFrame, MarketDataError> {
         fetch_historical_bars(self, params)
     }
 
@@ -57,13 +60,15 @@ impl StockBarData {
 
     /// Fetches historical bars and writes to a temporary file, returning the file path
     pub fn fetch_historical_bars_to_file(&self, params: StockBarsParams) -> FilePathResult {
-        let symbol = params.symbols.first()
+        let symbol = params
+            .symbols
+            .first()
             .ok_or_else(|| IngestorError::SystemError("No symbols provided".to_string()))?;
         let mut df = fetch_historical_bars(self, params.clone())?;
-        
+
         // Write to file (returns IOError)
         let path = write_dataframe_to_temp(&mut df, symbol)?;
-        
+
         // Both errors automatically convert to IngestorError
         Ok(path)
     }
@@ -77,18 +82,21 @@ impl StockBarData {
     ) -> Result<Vec<FilePathResult>, IngestorError> {
         let results = fetch_bars_batch_partial(self, params_list, max_retries, base_delay_ms)?;
 
-        let mut file_results: Vec<Result<PathBuf, IngestorError>> = Vec::with_capacity(results.len());
+        let mut file_results: Vec<Result<PathBuf, IngestorError>> =
+            Vec::with_capacity(results.len());
 
         for (i, result) in results.into_iter().enumerate() {
             match result {
                 Ok(mut df) => {
-                    if let Some(symbol) = params_list.get(i).and_then(|p|p.symbols.first()) {
+                    if let Some(symbol) = params_list.get(i).and_then(|p| p.symbols.first()) {
                         match write_dataframe_to_temp(&mut df, symbol) {
                             Ok(path) => file_results.push(Ok(path)),
                             Err(e) => file_results.push(Err(IngestorError::from(e))),
                         }
                     } else {
-                        file_results.push(Err(IngestorError::IO(IOError::InvalidSymbol("Missing symbol for batch item".to_string()))));
+                        file_results.push(Err(IngestorError::IO(IOError::InvalidSymbol(
+                            "Missing symbol for batch item".to_string(),
+                        ))));
                     }
                 }
                 Err(e) => file_results.push(Err(IngestorError::from(e))),
@@ -96,7 +104,6 @@ impl StockBarData {
         }
 
         Ok(file_results)
-
     }
 
     // Original methods (for backward compatibility)

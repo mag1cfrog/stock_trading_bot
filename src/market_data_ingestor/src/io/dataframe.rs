@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::fs::File;
 use std::path::PathBuf;
 use std::{env, fs};
@@ -9,10 +8,12 @@ use polars_io::SerWriter;
 use polars_io::ipc::IpcWriter;
 use uuid::Uuid;
 
+use super::errors::IOError;
+
 pub fn write_dataframe_to_temp(
     df: &mut DataFrame,
     symbol: &str,
-) -> Result<PathBuf, Box<dyn Error>> {
+) -> Result<PathBuf, IOError> {
     // Determine the base temporary directory. By default, this is /tmp in Debian.
     let mut base_temp = env::temp_dir();
     // Create a subfolder for our application, e.g. /tmp/market_data_ingestor

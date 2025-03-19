@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::ffi::CString;
 
 use polars::prelude::*;
@@ -14,7 +13,7 @@ pub fn fetch_bars_batch_partial(
     params_list: &[StockBarsParams],
     max_retries: u32,
     base_delay_ms: u64,
-) -> Result<Vec<Result<DataFrame, MarketDataError>>, Box<dyn Error>> {
+) -> Result<Vec<Result<DataFrame, MarketDataError>>, MarketDataError> {
     // Acquire GIL
     Python::with_gil(|py| {
         // Convert params to Python list
@@ -178,7 +177,7 @@ for request_params in request_params_list:
                 } else {
                     MarketDataError::PythonExecutionError(py_err_str)
                 };
-                Err(Box::new(err).into())
+                Err(err)
             }
         }
     })

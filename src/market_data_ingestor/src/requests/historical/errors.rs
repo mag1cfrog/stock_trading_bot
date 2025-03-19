@@ -1,5 +1,8 @@
 use std::fmt;
 
+use polars::error::PolarsError;
+use pyo3::PyErr;
+
 #[derive(Debug)]
 pub enum MarketDataError {
     InvalidPath(String),
@@ -9,6 +12,21 @@ pub enum MarketDataError {
     AlpacaAPIError { py_type: String, message: String },
     PythonExecutionError(String),
     EnvError(String),
+    PyInterfaceError(String),
+    DataFrameError(String),
+}
+
+// Add From implementations for automatic conversions
+impl From<PyErr> for MarketDataError {
+    fn from(err: PyErr) -> Self {
+        Self::PyInterfaceError(err.to_string())
+    }
+}
+
+impl From<PolarsError> for MarketDataError {
+    fn from(err: PolarsError) -> Self {
+        Self::DataFrameError(err.to_string())
+    }
 }
 
 impl fmt::Display for MarketDataError {
@@ -25,6 +43,8 @@ impl fmt::Display for MarketDataError {
             }
             Self::PythonExecutionError(msg) => write!(f, "Python execution error: {}", msg),
             Self::EnvError(msg) => write!(f, "Environment error: {}", msg),
+            Self::PyInterfaceError(msg) => write!(f, "Python interface error: {}", msg),
+            Self::DataFrameError(msg) => write!(f, "DataFrame processing error: {}", msg),
         }
     }
 }

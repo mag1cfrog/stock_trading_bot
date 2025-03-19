@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::ffi::CString;
 
 use polars::prelude::*;
@@ -12,7 +11,7 @@ use crate::requests::historical::errors::MarketDataError;
 pub fn fetch_historical_bars(
     _data: &StockBarData,
     params: StockBarsParams,
-) -> Result<DataFrame, Box<dyn Error>> {
+) -> Result<DataFrame, MarketDataError> {
     Python::with_gil(|py| {
         // Convert parameters to Python object
         let py_request = params.into_pyobject(py)?;
@@ -97,7 +96,7 @@ compat_level=pl.CompatLevel.newest()  # Ensures Rust compatibility
                     MarketDataError::PythonExecutionError(py_err_str)
                 };
 
-                Err(Box::new(err) as Box<dyn std::error::Error>)
+                Err(err)
             }
         }
     })

@@ -28,11 +28,11 @@ pub struct StockBarData {
     config: Config,
 }
 
-pub type InMemoryResult = Result<DataFrame, MarketDataError>;
+pub type InMemoryResult = Result<DataFrame, IngestorError>;
 pub type FilePathResult = Result<PathBuf, IngestorError>;
 
 impl StockBarData {
-    pub async fn new(config_path: &str) -> Result<Self, MarketDataError> {
+    pub async fn new(config_path: &str) -> Result<Self, IngestorError> {
         let config = read_config(config_path).unwrap();
 
         // Initialize Python environment using the utility
@@ -47,8 +47,8 @@ impl StockBarData {
     pub fn fetch_historical_bars_to_memory(
         &self,
         params: StockBarsParams,
-    ) -> Result<DataFrame, MarketDataError> {
-        fetch_historical_bars(self, params)
+    ) -> Result<DataFrame, IngestorError> {
+        fetch_historical_bars(self, params).map_err(Into::into)
     }
 
     /// Fetches batch historical data and returns results directly
@@ -57,8 +57,15 @@ impl StockBarData {
         params_list: &[StockBarsParams],
         max_retries: u32,
         base_delay_ms: u64,
-    ) -> Result<Vec<Result<DataFrame, MarketDataError>>, MarketDataError> {
+    ) -> Result<Vec<Result<DataFrame, IngestorError>>, IngestorError> {
         fetch_bars_batch_partial(self, params_list, max_retries, base_delay_ms)
+            .map_err(Into::into)
+            .map(|results| {
+                results
+                    .into_iter()
+                    .map(|res| res.map_err(Into::into))  
+                    .collect()
+            })
     }
 
     // File-based methods (for backward compatibility)
@@ -115,8 +122,8 @@ impl StockBarData {
     pub fn fetch_historical_bars(
         &self,
         params: StockBarsParams,
-    ) -> Result<DataFrame, MarketDataError> {
-        fetch_historical_bars(self, params)
+    ) -> Result<DataFrame, IngestorError> {
+        fetch_historical_bars(self, params).map_err(Into::into)
     }
 
     pub fn fetch_bars_batch_partial(
@@ -124,7 +131,15 @@ impl StockBarData {
         params_list: &[StockBarsParams],
         max_retries: u32,
         base_delay_ms: u64,
-    ) -> Result<Vec<Result<DataFrame, MarketDataError>>, MarketDataError> {
+    ) -> Result<Vec<Result<DataFrame, IngestorError>>, IngestorError> {
         fetch_bars_batch_partial(self, params_list, max_retries, base_delay_ms)
+            .map_err(Into::into)
+            .map(|results| {
+                results
+                    .into_iter()
+                    .map(|res| res.map_err(Into::into))
+                    .collect()
+            })
+                
     }
 }

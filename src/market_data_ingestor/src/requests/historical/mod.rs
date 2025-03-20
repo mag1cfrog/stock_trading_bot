@@ -1,3 +1,8 @@
+/// Historical market data fetching functionality.
+/// 
+/// This module provides multiple ways to fetch market data:
+/// - Memory-based methods: Return data directly as DataFrames
+/// - File-based methods: Write data to temporary files and return paths
 mod errors;
 pub use errors::MarketDataError;
 

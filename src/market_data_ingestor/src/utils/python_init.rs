@@ -55,6 +55,23 @@ pub fn init_python(config_path: &str) -> Result<(), Box<dyn Error + Send + Sync>
     }
 }
 
+// New function that accepts Config directly
+pub fn init_python_with_config(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
+    // Use the same OnceLock mechanism to ensure Python is only initialized once
+    let result = INIT.get_or_init(|| {
+        let result = try_init_python(config);
+        if let Err(e) = &result {
+            error!("Failed to initialize Python: {:?}", e);
+        }
+        result
+    });
+
+    match result {
+        Ok(_) => Ok(()),
+        Err(e) => Err(Box::new(e.as_ref().to_owned())),
+    }
+}
+
 fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
     // verify_shell_environment()?;
     // Initialize Python with venv

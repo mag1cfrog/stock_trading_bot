@@ -21,7 +21,7 @@ use crate::io::dataframe::write_dataframe_to_temp;
 use crate::io::errors::IOError;
 use crate::models::stockbars::StockBarsParams;
 use crate::utils::init_python;
-use crate::utils::python_init::{Config, read_config};
+use crate::utils::python_init::{init_python_with_config, read_config, Config};
 
 #[allow(unused)]
 pub struct StockBarData {
@@ -38,6 +38,15 @@ impl StockBarData {
         // Initialize Python environment using the utility
         init_python(config_path).unwrap();
 
+        Ok(Self { config })
+    }
+
+    // New method that accepts Config directly
+    pub async fn with_config(config: Config) -> Result<Self, IngestorError> {
+        // Initialize Python environment with the provided config
+        init_python_with_config(&config)
+            .map_err(|e| IngestorError::SystemError(format!("Python initialization error: {}", e)))?;
+        
         Ok(Self { config })
     }
 

@@ -1,5 +1,5 @@
 /// Historical market data fetching functionality.
-/// 
+///
 /// This module provides multiple ways to fetch market data:
 /// - Memory-based methods: Return data directly as DataFrames
 /// - File-based methods: Write data to temporary files and return paths
@@ -63,7 +63,7 @@ impl StockBarData {
             .map(|results| {
                 results
                     .into_iter()
-                    .map(|res| res.map_err(Into::into))  
+                    .map(|res| res.map_err(Into::into))
                     .collect()
             })
     }
@@ -140,6 +140,5 @@ impl StockBarData {
                     .map(|res| res.map_err(Into::into))
                     .collect()
             })
-                
     }
 }

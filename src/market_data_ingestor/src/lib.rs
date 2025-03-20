@@ -2,6 +2,7 @@ use errors::IngestorError;
 use requests::historical::StockBarData;
 use utils::python_init::Config;
 
+#[cfg(feature = "cli")]
 pub mod cli;
 pub mod errors;
 pub mod io;

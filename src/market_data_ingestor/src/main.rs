@@ -1,4 +1,6 @@
+#[cfg(feature = "cli")]
 use clap::Parser;
+#[cfg(feature = "cli")]
 use market_data_ingestor::{
     cli::{
         commands::{Cli, Commands},
@@ -9,6 +11,7 @@ use market_data_ingestor::{
     requests::historical::{StockBarData, fetch_historical_bars},
 };
 
+#[cfg(feature = "cli")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
@@ -106,4 +109,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     Ok(())
+}
+
+#[cfg(not(feature = "cli"))]
+fn main() {
+    eprintln!("The CLI functionality is not enabled. Recompile with the 'cli' feature.");
+    std::process::exit(1);
 }

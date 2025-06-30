@@ -1,3 +1,4 @@
+#[cfg(feature = "alpaca-python-sdk")]
 use pyo3::{
     Bound, IntoPyObject, PyAny, PyErr,
     types::{PyAnyMethods, PyDict},
@@ -14,6 +15,7 @@ pub struct StockBarsParams {
     pub end: DateTime<Utc>,
 }
 
+#[cfg(feature = "alpaca-python-sdk")]
 impl<'py> IntoPyObject<'py> for StockBarsParams {
     type Target = PyAny;
     type Output = Bound<'py, Self::Target>;

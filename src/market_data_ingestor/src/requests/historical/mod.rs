@@ -6,10 +6,14 @@
 mod errors;
 pub use errors::MarketDataError;
 
+#[cfg(feature = "alpaca-python-sdk")]
 mod single_request;
+#[cfg(feature = "alpaca-python-sdk")]
 pub use single_request::fetch_historical_bars;
 
+#[cfg(feature = "alpaca-python-sdk")]
 mod batch_request;
+#[cfg(feature = "alpaca-python-sdk")]
 pub use batch_request::fetch_bars_batch_partial;
 
 use std::path::PathBuf;
@@ -27,6 +31,7 @@ use crate::utils::python_init::{init_python_with_config, read_config, Config};
 
 #[allow(unused)]
 pub struct StockBarData {
+    #[cfg(feature = "alpaca-python-sdk")]
     config: Config,
 }
 

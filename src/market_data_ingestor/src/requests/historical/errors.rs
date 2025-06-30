@@ -1,6 +1,7 @@
 use std::fmt;
 
 use polars::error::PolarsError;
+#[cfg(feature = "alpaca-python-sdk")]
 use pyo3::PyErr;
 
 #[derive(Debug)]
@@ -16,6 +17,7 @@ pub enum MarketDataError {
     DataFrameError(String),
 }
 
+#[cfg(feature = "alpaca-python-sdk")]
 // Add From implementations for automatic conversions
 impl From<PyErr> for MarketDataError {
     fn from(err: PyErr) -> Self {

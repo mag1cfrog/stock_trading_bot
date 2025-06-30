@@ -1,3 +1,4 @@
+#[cfg(feature = "alpaca-python-sdk")]
 use errors::IngestorError;
 #[cfg(feature = "alpaca-python-sdk")]
 use requests::historical::StockBarData;

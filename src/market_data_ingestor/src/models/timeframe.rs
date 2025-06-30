@@ -100,7 +100,7 @@ impl<'py> IntoPyObject<'py> for TimeFrame {
     }
 }
 
-#[cfg(feature = "alpaca-python-sdk")]
+#[cfg(all(test, feature = "alpaca-python-sdk"))]
 impl<'source> FromPyObject<'source> for TimeFrame {
     fn extract_bound(ob: &Bound<'source, PyAny>) -> pyo3::PyResult<Self> {
         let amount: u32 = ob.getattr("amount")?.extract()?;
@@ -125,7 +125,7 @@ impl<'source> FromPyObject<'source> for TimeFrame {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alpaca-python-sdk"))]
 mod test {
 
     use super::*;

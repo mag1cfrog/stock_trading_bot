@@ -21,8 +21,11 @@ use std::path::PathBuf;
 use polars::prelude::*;
 
 use crate::errors::IngestorError;
+#[cfg(feature = "alpaca-python-sdk")]
 use crate::io::dataframe::write_dataframe_to_temp;
+#[cfg(feature = "alpaca-python-sdk")]
 use crate::io::errors::IOError;
+#[cfg(feature = "alpaca-python-sdk")]
 use crate::models::stockbars::StockBarsParams;
 #[cfg(feature = "alpaca-python-sdk")]
 use crate::utils::init_python;

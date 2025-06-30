@@ -43,7 +43,7 @@ impl<'py> IntoPyObject<'py> for StockBarsParams {
         request_cls.call((), Some(&kwargs))
     }
 }
-#[cfg(test)]
+#[cfg(all(test, feature = "alpaca-python-sdk"))]
 mod tests {
     use super::*;
 

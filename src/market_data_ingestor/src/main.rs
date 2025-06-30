@@ -1,6 +1,6 @@
 #[cfg(feature = "cli")]
 use clap::Parser;
-#[cfg(feature = "cli")]
+#[cfg(all(feature = "cli", feature = "alpaca-python-sdk"))]
 use market_data_ingestor::{
     cli::{
         commands::{Cli, Commands},
@@ -11,7 +11,7 @@ use market_data_ingestor::{
     requests::historical::{StockBarData, fetch_historical_bars},
 };
 
-#[cfg(feature = "cli")]
+#[cfg(all(feature = "cli", feature = "alpaca-python-sdk"))]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
@@ -111,8 +111,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[cfg(all(feature = "cli", not(feature = "alpaca-python-sdk")))]
+fn main() {
+    eprintln!("This command requires the 'alpaca-python-sdk' feature. Please recompile with '--features alpaca-python-sdk'.");
+    std::process::exit(1);
+}
+
 #[cfg(not(feature = "cli"))]
 fn main() {
-    eprintln!("The CLI functionality is not enabled. Recompile with the 'cli' feature.");
-    std::process::exit(1);
+// ...existing code...
 }

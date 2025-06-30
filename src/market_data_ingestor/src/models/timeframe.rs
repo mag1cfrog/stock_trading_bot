@@ -1,3 +1,4 @@
+#[cfg(feature = "alpaca-python-sdk")]
 use pyo3::{Bound, BoundObject, FromPyObject, IntoPyObject, PyAny, Python, types::PyAnyMethods};
 use thiserror::Error;
 
@@ -66,6 +67,7 @@ impl TimeFrame {
     }
 }
 
+#[cfg(feature = "alpaca-python-sdk")]
 impl<'py> IntoPyObject<'py> for TimeFrameUnit {
     type Target = PyAny;
     type Output = Bound<'py, Self::Target>;
@@ -84,6 +86,7 @@ impl<'py> IntoPyObject<'py> for TimeFrameUnit {
     }
 }
 
+#[cfg(feature = "alpaca-python-sdk")]
 impl<'py> IntoPyObject<'py> for TimeFrame {
     type Target = PyAny;
     type Output = Bound<'py, Self::Target>;
@@ -97,6 +100,7 @@ impl<'py> IntoPyObject<'py> for TimeFrame {
     }
 }
 
+#[cfg(all(test, feature = "alpaca-python-sdk"))]
 impl<'source> FromPyObject<'source> for TimeFrame {
     fn extract_bound(ob: &Bound<'source, PyAny>) -> pyo3::PyResult<Self> {
         let amount: u32 = ob.getattr("amount")?.extract()?;
@@ -121,7 +125,7 @@ impl<'source> FromPyObject<'source> for TimeFrame {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alpaca-python-sdk"))]
 mod test {
 
     use super::*;

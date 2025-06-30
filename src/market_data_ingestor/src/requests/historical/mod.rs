@@ -6,10 +6,14 @@
 mod errors;
 pub use errors::MarketDataError;
 
+#[cfg(feature = "alpaca-python-sdk")]
 mod single_request;
+#[cfg(feature = "alpaca-python-sdk")]
 pub use single_request::fetch_historical_bars;
 
+#[cfg(feature = "alpaca-python-sdk")]
 mod batch_request;
+#[cfg(feature = "alpaca-python-sdk")]
 pub use batch_request::fetch_bars_batch_partial;
 
 use std::path::PathBuf;
@@ -17,14 +21,20 @@ use std::path::PathBuf;
 use polars::prelude::*;
 
 use crate::errors::IngestorError;
+#[cfg(feature = "alpaca-python-sdk")]
 use crate::io::dataframe::write_dataframe_to_temp;
+#[cfg(feature = "alpaca-python-sdk")]
 use crate::io::errors::IOError;
+#[cfg(feature = "alpaca-python-sdk")]
 use crate::models::stockbars::StockBarsParams;
+#[cfg(feature = "alpaca-python-sdk")]
 use crate::utils::init_python;
+#[cfg(feature = "alpaca-python-sdk")]
 use crate::utils::python_init::{init_python_with_config, read_config, Config};
 
 #[allow(unused)]
 pub struct StockBarData {
+    #[cfg(feature = "alpaca-python-sdk")]
     config: Config,
 }
 
@@ -32,6 +42,7 @@ pub type InMemoryResult = Result<DataFrame, IngestorError>;
 pub type FilePathResult = Result<PathBuf, IngestorError>;
 
 impl StockBarData {
+    #[cfg(feature = "alpaca-python-sdk")]
     pub async fn new(config_path: &str) -> Result<Self, IngestorError> {
         let config = read_config(config_path).unwrap();
 
@@ -42,6 +53,7 @@ impl StockBarData {
     }
 
     // New method that accepts Config directly
+    #[cfg(feature = "alpaca-python-sdk")]
     pub async fn with_config(config: Config) -> Result<Self, IngestorError> {
         // Initialize Python environment with the provided config
         init_python_with_config(&config)
@@ -53,6 +65,7 @@ impl StockBarData {
     // Enhanced API: Direct memory methods
 
     /// Fetches historical bars data and returns it directly as a DataFrame
+    #[cfg(feature = "alpaca-python-sdk")]
     pub fn fetch_historical_bars_to_memory(
         &self,
         params: StockBarsParams,
@@ -61,6 +74,7 @@ impl StockBarData {
     }
 
     /// Fetches batch historical data and returns results directly
+    #[cfg(feature = "alpaca-python-sdk")]
     pub fn fetch_bars_batch_to_memory(
         &self,
         params_list: &[StockBarsParams],
@@ -80,6 +94,7 @@ impl StockBarData {
     // File-based methods (for backward compatibility)
 
     /// Fetches historical bars and writes to a temporary file, returning the file path
+    #[cfg(feature = "alpaca-python-sdk")]
     pub fn fetch_historical_bars_to_file(&self, params: StockBarsParams) -> FilePathResult {
         let symbol = params
             .symbols
@@ -95,6 +110,7 @@ impl StockBarData {
     }
 
     /// Batch fetches historical data and writes successful results to temporary files
+    #[cfg(feature = "alpaca-python-sdk")]
     pub fn fetch_batch_to_files(
         &self,
         params_list: &[StockBarsParams],
@@ -128,6 +144,7 @@ impl StockBarData {
     }
 
     // Original methods (for backward compatibility)
+    #[cfg(feature = "alpaca-python-sdk")]
     pub fn fetch_historical_bars(
         &self,
         params: StockBarsParams,
@@ -135,6 +152,7 @@ impl StockBarData {
         fetch_historical_bars(self, params).map_err(Into::into)
     }
 
+    #[cfg(feature = "alpaca-python-sdk")]
     pub fn fetch_bars_batch_partial(
         &self,
         params_list: &[StockBarsParams],

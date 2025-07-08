@@ -12,17 +12,15 @@ use crate::models::{
 use super::commands::BatchParamItem;
 
 pub fn parse_timeframe(amount: u32, unit: &str) -> Result<TimeFrame, Box<dyn Error>> {
-    match unit.trim().to_lowercase().as_str() {
+    let unit = match unit.trim().to_lowercase().as_str() {
         "m" | "min" | "minute" => TimeFrame::new(amount, TimeFrameUnit::Minute),
         "h" | "hr" | "hour" => TimeFrame::new(amount, TimeFrameUnit::Hour),
         "d" | "day" => TimeFrame::new(amount, TimeFrameUnit::Day),
         "w" | "wk" | "week" => TimeFrame::new(amount, TimeFrameUnit::Week),
         "M" | "mo" | "month" => TimeFrame::new(amount, TimeFrameUnit::Month),
-        _ => Err(TimeFrameError::InvalidInput {
-            message: format!("Invalid timeframe unit: {}", unit),
-        }),
-    }
-    .map_err(|e| e.into())
+        _ => return Err(TimeFrameError::InvalidInput { message: format!("Invalid timeframe unit: {}", unit)}),
+    };
+    Ok(TimeFrame::new(amount, unit))
 }
 
 #[cfg(feature = "alpaca-python-sdk")]

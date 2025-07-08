@@ -1,3 +1,30 @@
+//! Provider abstraction for market data sources.
+//!
+//! This module defines the [`DataProvider`] trait, which serves as a unified interface
+//! for fetching time-series bar data from any market data vendor (e.g., Alpaca, Polygon.io).
+//!
+//! Each concrete provider implementation (such as Alpaca or Polygon) should implement
+//! [`DataProvider`] to handle vendor-specific API logic and validation.
+//!
+//! The trait is designed for async usage and supports dynamic dispatch (`dyn DataProvider`)
+//! for runtime selection of providers.
+//!
+//! # Example
+//!
+//! ```rust
+//! # use market_data_ingestor::models::{bar::Bar, request_params::BarsRequestParams};
+//! # use market_data_ingestor::providers::DataProvider;
+//! # use async_trait::async_trait;
+//! struct MyProvider;
+//! #[async_trait]
+//! impl DataProvider for MyProvider {
+//!     async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<Bar>, anyhow::Error> {
+//!         // Implementation here...
+//!         Ok(vec![])
+//!     }
+//! }
+//! ```
+//! 
 use async_trait::async_trait;
 
 use crate::{errors::IngestorError, models::{bar::Bar, request_params::BarsRequestParams}};

@@ -14,7 +14,7 @@ pub enum TimeFrameError {
     InvalidInput { message: String },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TimeFrameUnit {
     Minute,
     Hour,
@@ -23,19 +23,20 @@ pub enum TimeFrameUnit {
     Month,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TimeFrame {
     pub amount: u32,
     pub unit: TimeFrameUnit,
 }
 
 impl TimeFrame {
-    pub fn new(amount: u32, unit: TimeFrameUnit) -> Result<Self, TimeFrameError> {
-        Self::validate(amount, unit.clone())?;
-        Ok(Self { amount, unit })
+    pub fn new(amount: u32, unit: TimeFrameUnit) -> Self {
+        // Self::validate(amount, unit.clone())?;
+        // Ok(Self { amount, unit })
+        Self { amount, unit }
     }
 
-    fn validate(amount: u32, unit: TimeFrameUnit) -> Result<(), TimeFrameError> {
+    fn _validate(amount: u32, unit: TimeFrameUnit) -> Result<(), TimeFrameError> {
         match unit {
             TimeFrameUnit::Minute if !(1..=59).contains(&amount) => {
                 Err(TimeFrameError::InvalidAmount {

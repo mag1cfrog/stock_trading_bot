@@ -12,7 +12,7 @@ mod tests {
     use async_trait::async_trait;
     use chrono::Utc;
 
-    use crate::models::{asset::AssetClass, timeframe::TimeFrame};
+    use crate::models::{asset::AssetClass, timeframe::{TimeFrame, TimeFrameUnit}};
 
     use super::*;
     

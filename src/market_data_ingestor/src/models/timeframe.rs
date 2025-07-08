@@ -14,7 +14,7 @@ pub enum TimeFrameError {
     InvalidInput { message: String },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TimeFrameUnit {
     Minute,
     Hour,
@@ -23,7 +23,7 @@ pub enum TimeFrameUnit {
     Month,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TimeFrame {
     pub amount: u32,
     pub unit: TimeFrameUnit,

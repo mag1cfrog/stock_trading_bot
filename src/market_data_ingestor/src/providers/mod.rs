@@ -18,7 +18,7 @@
 //! struct MyProvider;
 //! #[async_trait]
 //! impl DataProvider for MyProvider {
-//!     async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<Bar>, anyhow::Error> {
+//!     async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, anyhow::Error> {
 //!         // Implementation here...
 //!         Ok(vec![])
 //!     }

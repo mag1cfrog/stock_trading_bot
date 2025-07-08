@@ -7,7 +7,7 @@ use crate::models::{bar::Bar, timeframe::TimeFrame};
 /// This struct groups a vector of [`Bar`]s with their corresponding symbol
 /// and [`TimeFrame`], making the data set self-describing.
 #[derive(Debug, Clone, PartialEq)]
-pub struct TimeSeries {
+pub struct BarSeries {
     /// The symbol this data represents (e.g., "AAPL", "ESU24").
     pub symbol: String,
     /// The time interval for each bar in the series.

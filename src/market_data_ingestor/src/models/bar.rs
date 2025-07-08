@@ -1,12 +1,33 @@
+//! Canonical in-memory representation of a time-series bar (OHLCV).
+//!
+//! This struct is used as the standard output for all [`DataProvider`](crate::providers::DataProvider)
+//! implementations, regardless of asset class (stocks, futures, crypto, etc.).
+
 use chrono::{DateTime, Utc};
 
+/// A single time-series bar (OHLCV) for a given symbol and timestamp.
+///
+/// This struct is vendor-agnostic and is used throughout the data ingestion pipeline.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Bar {
+    /// The symbol this bar represents (e.g., "AAPL", "ESU24", "BTC-USD").
     pub symbol: String,
+
+    /// The timestamp for this bar (UTC).
     pub timestamp: DateTime<Utc>,
+
+    /// Opening price.
     pub open: f64,
+
+    /// Highest price during the bar interval.
     pub high: f64,
+
+    /// Lowest price during the bar interval.
     pub low: f64,
+
+    /// Closing price.
     pub close: f64,
+
+    /// Volume traded during the bar interval.
     pub volume: f64,
 }

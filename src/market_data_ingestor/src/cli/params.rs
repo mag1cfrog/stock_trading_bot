@@ -25,6 +25,7 @@ pub fn parse_timeframe(amount: u32, unit: &str) -> Result<TimeFrame, Box<dyn Err
     .map_err(|e| e.into())
 }
 
+#[cfg(feature = "alpaca-python-sdk")]
 pub fn parse_batch_params_from_stdin() -> Result<Vec<StockBarsParams>, Box<dyn Error>> {
     let mut buffer = Vec::new();
     io::stdin().read_to_end(&mut buffer)?;
@@ -41,6 +42,7 @@ pub fn parse_batch_params_from_stdin() -> Result<Vec<StockBarsParams>, Box<dyn E
     }
 }
 
+#[cfg(feature = "alpaca-python-sdk")]
 pub fn parse_batch_params_from_json_string(
     json_str: &str,
 ) -> Result<Vec<StockBarsParams>, Box<dyn Error>> {
@@ -48,6 +50,7 @@ pub fn parse_batch_params_from_json_string(
     parse_batch_params_from_json_value(json_value)
 }
 
+#[cfg(feature = "alpaca-python-sdk")]
 pub fn parse_batch_params_from_json_value(
     json_value: Value,
 ) -> Result<Vec<StockBarsParams>, Box<dyn Error>> {
@@ -81,6 +84,7 @@ pub fn parse_batch_params_from_json_value(
     Ok(params_list)
 }
 
+#[cfg(feature = "alpaca-python-sdk")]
 pub fn parse_batch_params_from_file(
     file_path: &str,
 ) -> Result<Vec<StockBarsParams>, Box<dyn Error>> {
@@ -130,6 +134,7 @@ mod tests {
         assert!(parse_timeframe(5, "invalid").is_err()); // Invalid unit
     }
 
+    #[cfg(feature = "alpaca-python-sdk")]
     #[test]
     fn test_parse_batch_params_from_json_string() {
         let json_str = r#"[
@@ -156,6 +161,7 @@ mod tests {
         assert_eq!(params_list[1].symbols, vec!["MSFT", "GOOGL"]);
     }
 
+    #[cfg(feature = "alpaca-python-sdk")]
     #[test]
     fn test_parse_batch_params_from_json_value() {
         let json_value: serde_json::Value = serde_json::from_str(

@@ -1,4 +1,4 @@
-#[cfg(feature = "alpaca-python-sdk")]
+#![cfg(feature = "alpaca-python-sdk")]
 use pyo3::{
     Bound, IntoPyObject, PyAny, PyErr,
     types::{PyAnyMethods, PyDict},

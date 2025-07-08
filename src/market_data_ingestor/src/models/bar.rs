@@ -5,13 +5,11 @@
 
 use chrono::{DateTime, Utc};
 
-/// A single time-series bar (OHLCV) for a given symbol and timestamp.
+/// A single time-series bar (OHLCV) for a given timestamp.
 ///
 /// This struct is vendor-agnostic and is used throughout the data ingestion pipeline.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Bar {
-    /// The symbol this bar represents (e.g., "AAPL", "ESU24", "BTC-USD").
-    pub symbol: String,
 
     /// The timestamp for this bar (UTC).
     pub timestamp: DateTime<Utc>,

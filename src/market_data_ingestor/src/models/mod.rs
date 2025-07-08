@@ -1,4 +1,5 @@
 pub mod asset;
+pub mod bar;
 pub mod request_params;
 #[cfg(feature = "alpaca-python-sdk")]
 pub mod stockbars;

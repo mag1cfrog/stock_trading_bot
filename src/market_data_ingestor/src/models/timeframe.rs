@@ -36,36 +36,36 @@ impl TimeFrame {
         Self { amount, unit }
     }
 
-    // fn validate(amount: u32, unit: TimeFrameUnit) -> Result<(), TimeFrameError> {
-    //     match unit {
-    //         TimeFrameUnit::Minute if !(1..=59).contains(&amount) => {
-    //             Err(TimeFrameError::InvalidAmount {
-    //                 unit,
-    //                 message: "Second or Minute units can only be used with amounts between 1-59."
-    //                     .into(),
-    //             })
-    //         }
-    //         TimeFrameUnit::Hour if !(1..=23).contains(&amount) => {
-    //             Err(TimeFrameError::InvalidAmount {
-    //                 unit,
-    //                 message: "Hour units can only be used with amounts 1-23".into(),
-    //             })
-    //         }
-    //         TimeFrameUnit::Day | TimeFrameUnit::Week if amount != 1 => {
-    //             Err(TimeFrameError::InvalidAmount {
-    //                 unit,
-    //                 message: "Day and Week units can only be used with amount 1".into(),
-    //             })
-    //         }
-    //         TimeFrameUnit::Month if ![1, 2, 3, 6, 12].contains(&amount) => {
-    //             Err(TimeFrameError::InvalidAmount {
-    //                 unit,
-    //                 message: "Month units can only be used with amount 1, 2, 3, 6 and 12".into(),
-    //             })
-    //         }
-    //         _ => Ok(()),
-    //     }
-    // }
+    fn _validate(amount: u32, unit: TimeFrameUnit) -> Result<(), TimeFrameError> {
+        match unit {
+            TimeFrameUnit::Minute if !(1..=59).contains(&amount) => {
+                Err(TimeFrameError::InvalidAmount {
+                    unit,
+                    message: "Second or Minute units can only be used with amounts between 1-59."
+                        .into(),
+                })
+            }
+            TimeFrameUnit::Hour if !(1..=23).contains(&amount) => {
+                Err(TimeFrameError::InvalidAmount {
+                    unit,
+                    message: "Hour units can only be used with amounts 1-23".into(),
+                })
+            }
+            TimeFrameUnit::Day | TimeFrameUnit::Week if amount != 1 => {
+                Err(TimeFrameError::InvalidAmount {
+                    unit,
+                    message: "Day and Week units can only be used with amount 1".into(),
+                })
+            }
+            TimeFrameUnit::Month if ![1, 2, 3, 6, 12].contains(&amount) => {
+                Err(TimeFrameError::InvalidAmount {
+                    unit,
+                    message: "Month units can only be used with amount 1, 2, 3, 6 and 12".into(),
+                })
+            }
+            _ => Ok(()),
+        }
+    }
 }
 
 #[cfg(feature = "alpaca-python-sdk")]

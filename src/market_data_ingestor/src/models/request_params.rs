@@ -14,9 +14,12 @@ pub struct BarsRequestParams {
 
     /// The time interval for each bar (e.g., 1 minute, 1 day).
     ///
-    /// This uses the [`TimeFrame`](crate::models::timeframe::TimeFrame) struct, which enforces valid combinations of amount and unit
-    /// (e.g., 1-59 for minutes, 1-23 for hours, only 1 for days/weeks, and 1/2/3/6/12 for months).
-    /// See [`TimeFrame::new`](crate::models::timeframe::TimeFrame::new) for details and validation rules.
+    /// This uses the [`TimeFrame`](crate::models::timeframe::TimeFrame) struct, which is a universal
+    /// representation of bar intervals (amount and unit). **Validation of allowed values is performed
+    /// by each data provider implementation, according to their own API rules.**
+    ///
+    /// For example, some providers may only allow certain combinations (like 1-59 for minutes, or
+    /// only 1 for days), while others may be more flexible.
     pub timeframe: TimeFrame,
 
     /// Start of the requested time range (inclusive, UTC).

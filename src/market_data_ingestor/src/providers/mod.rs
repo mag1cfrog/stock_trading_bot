@@ -1,0 +1,66 @@
+use async_trait::async_trait;
+
+use crate::{errors::IngestorError, models::{bar::Bar, request_params::BarsRequestParams}};
+
+#[async_trait]
+pub trait DataProvider {
+    async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<Bar>, IngestorError>;
+}
+
+#[cfg(test)]
+mod tests {
+    use async_trait::async_trait;
+    use chrono::Utc;
+
+    use crate::models::{asset::AssetClass, timeframe::TimeFrame};
+
+    use super::*;
+    
+    struct AlpacaProvider;
+    struct PolygonProvider;
+
+    #[async_trait]
+    impl DataProvider for AlpacaProvider {
+        async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<Bar>, IngestorError> {
+            println!("Fetching from alapca for symbols: {:?}", params.symbols);
+            Ok(vec![])
+        }
+    }
+
+    #[async_trait]
+    impl DataProvider for PolygonProvider {
+        async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<Bar>, IngestorError> {
+            println!("Fetching from Polygon.io for symbols: {:?}", params.symbols);
+            Ok(vec![]) // Return dummy data
+        }
+    }
+
+    // This function decides AT RUNTIME which provider to give back.
+    // It can only work because it returns a `Box<dyn DataProvider>`.
+    fn get_provider(name: &str) -> Box<dyn DataProvider> {
+        if name == "alpaca" {
+            Box::new(AlpacaProvider)
+        } else {
+            Box::new(PolygonProvider)
+        }
+    }
+
+    #[tokio::test]
+    async fn test_dynamic_provider() {
+        // We get a provider, but we don't know or care which one it is.
+        // We just know it implements `DataProvider`.
+        let provider = get_provider("polygon");
+
+        let params = BarsRequestParams {
+            symbols: vec!["ESU24".to_string()],
+            timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
+            start: Utc::now(),
+            end: Utc::now(),
+            asset_class: AssetClass::Futures,
+        };
+
+        // We can call `fetch_bars` because it's part of the trait contract.
+        let result = provider.fetch_bars(params).await;
+        assert!(result.is_ok());
+    }
+}

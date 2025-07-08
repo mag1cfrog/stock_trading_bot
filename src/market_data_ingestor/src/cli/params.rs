@@ -17,7 +17,7 @@ pub fn parse_timeframe(amount: u32, unit: &str) -> Result<TimeFrame, Box<dyn Err
         "h" | "hr" | "hour" => TimeFrame::new(amount, TimeFrameUnit::Hour),
         "d" | "day" => TimeFrame::new(amount, TimeFrameUnit::Day),
         "w" | "wk" | "week" => TimeFrame::new(amount, TimeFrameUnit::Week),
-        "M" | "mo" | "month" => TimeFrame::new(amount, TimeFrameUnit::Month),
+        "mo" | "month" => TimeFrame::new(amount, TimeFrameUnit::Month),
         _ => return Err(TimeFrameError::InvalidInput { message: format!("Invalid timeframe unit: {}", unit)}),
     };
     Ok(TimeFrame::new(amount, unit))

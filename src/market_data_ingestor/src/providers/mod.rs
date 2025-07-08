@@ -49,7 +49,7 @@ mod tests {
     #[async_trait]
     impl DataProvider for AlpacaProvider {
         async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, IngestorError> {
-            println!("Fetching from alapca for symbols: {:?}", params.symbols);
+            println!("Fetching from alpaca for symbols: {:?}", params.symbols);
             Ok(vec![])
         }
     }

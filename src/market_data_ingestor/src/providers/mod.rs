@@ -12,14 +12,22 @@
 //! # Example
 //!
 //! ```rust
-//! # use market_data_ingestor::models::{bar::Bar, request_params::BarsRequestParams};
-//! # use market_data_ingestor::providers::DataProvider;
-//! # use async_trait::async_trait;
+//! use async_trait::async_trait;
+//! use market_data_ingestor::models::{
+//!     bar_series::BarSeries,
+//!     request_params::BarsRequestParams,
+//! };
+//! use market_data_ingestor::providers::DataProvider;
+//! use market_data_ingestor::errors::Error;
+//!
 //! struct MyProvider;
+//!
 //! #[async_trait]
 //! impl DataProvider for MyProvider {
-//!     async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, anyhow::Error> {
-//!         // Implementation here...
+//!     async fn fetch_bars(
+//!         &self,
+//!         _params: BarsRequestParams,
+//!     ) -> Result<Vec<BarSeries>, Error> {
 //!         Ok(vec![])
 //!     }
 //! }

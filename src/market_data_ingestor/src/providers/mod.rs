@@ -18,7 +18,7 @@
 //!     request_params::BarsRequestParams,
 //! };
 //! use market_data_ingestor::providers::DataProvider;
-//! use market_data_ingestor::errors::IngestorError; // or anyhow::Error
+//! use market_data_ingestor::errors::Error;
 //!
 //! struct MyProvider;
 //!
@@ -27,7 +27,7 @@
 //!     async fn fetch_bars(
 //!         &self,
 //!         _params: BarsRequestParams,
-//!     ) -> Result<Vec<BarSeries>, IngestorError> {
+//!     ) -> Result<Vec<BarSeries>, Error> {
 //!         Ok(vec![])
 //!     }
 //! }

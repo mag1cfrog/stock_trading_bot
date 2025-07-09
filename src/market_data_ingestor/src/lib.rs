@@ -1,5 +1,5 @@
 #[cfg(feature = "alpaca-python-sdk")]
-use errors::IngestorError;
+use legacy_errors::IngestorError;
 #[cfg(feature = "alpaca-python-sdk")]
 use requests::historical::StockBarData;
 #[cfg(feature = "alpaca-python-sdk")]
@@ -7,8 +7,10 @@ use utils::python_init::Config;
 
 #[cfg(feature = "cli")]
 pub mod cli;
-pub mod errors;
+#[cfg(feature = "alpaca-python-sdk")]
+pub mod legacy_errors;
 pub mod io;
+pub mod errors;
 pub mod models;
 pub mod providers;
 pub mod requests;

@@ -1,3 +1,4 @@
+#![cfg(all(test, feature = "cli", feature = "alpaca-python-sdk"))]
 use std::process::Command;
 use std::str;
 

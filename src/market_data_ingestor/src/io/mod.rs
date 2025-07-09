@@ -1,2 +1,3 @@
 pub mod dataframe;
-pub mod errors;
+#[cfg(feature = "alpaca-python-sdk")]
+pub mod legacy_errors;

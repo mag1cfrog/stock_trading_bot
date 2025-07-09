@@ -1,33 +1,27 @@
-use crate::{io::errors::IOError, requests::historical::MarketDataError};
-use std::fmt;
+use thiserror::Error;
 
-#[derive(Debug)]
-pub enum IngestorError {
-    Market(MarketDataError),
-    IO(IOError),
-    SystemError(String),
+use crate::providers::ProviderError;
+
+/// The unified error type for the `market_data_ingestor` crate.
+#[derive(Debug, Error)]
+pub enum Error {
+    /// An error originating from a data provider (e.g., API error, validation).
+    #[error(transparent)]
+    Provider(#[from] ProviderError),
+
+    /// An error originating from a data sink (e.g., file I/O, database write).
+    #[error("Sink error: {0}")]
+    Sink(String),
+
+    /// An error related to configuration.
+    #[error("Configuration error: {0}")]
+    Config(String),
+
+    /// A generic I/O error.
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    /// An error from the Polars library.
+    #[error("Polars operation failed: {0}")]
+    Polars(#[from] polars::prelude::PolarsError),
 }
-
-impl From<MarketDataError> for IngestorError {
-    fn from(err: MarketDataError) -> Self {
-        Self::Market(err)
-    }
-}
-
-impl From<IOError> for IngestorError {
-    fn from(err: IOError) -> Self {
-        Self::IO(err)
-    }
-}
-
-impl fmt::Display for IngestorError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Market(err) => write!(f, "Market data error: {}", err),
-            Self::IO(err) => write!(f, "I/O error: {}", err),
-            Self::SystemError(msg) => write!(f, "System error: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for IngestorError {}

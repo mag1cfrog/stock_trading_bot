@@ -1,3 +1,4 @@
+#![cfg(feature = "alpaca-python-sdk")]
 use std::io::Read;
 use std::{error::Error, fs, io};
 

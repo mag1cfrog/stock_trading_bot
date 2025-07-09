@@ -34,6 +34,8 @@
 //! ```
 //! 
 
+pub mod alpaca_rest;
+
 use async_trait::async_trait;
 use thiserror::Error;
 

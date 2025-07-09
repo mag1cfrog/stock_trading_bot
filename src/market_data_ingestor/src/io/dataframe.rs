@@ -1,3 +1,4 @@
+#![cfg(feature = "alpaca-python-sdk")]
 use std::fs::File;
 use std::path::PathBuf;
 use std::{env, fs};

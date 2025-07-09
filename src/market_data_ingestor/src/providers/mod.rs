@@ -31,8 +31,23 @@ use thiserror::Error;
 
 use crate::{errors::Error, models::{bar_series::BarSeries, request_params::BarsRequestParams}};
 
+/// Trait for fetching time-series bar data from a market data provider.
+///
+/// Implement this trait for each concrete data vendor (e.g., Alpaca, Polygon).
+/// The trait is designed for async usage and supports dynamic dispatch (`dyn DataProvider`)
+/// for runtime selection of providers.
 #[async_trait]
 pub trait DataProvider {
+    /// Fetches time-series bar data for the given request parameters.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - The parameters specifying symbols, timeframe, and date range.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<BarSeries>)` - A vector of bar series, one per symbol.
+    /// * `Err(Error)` - If the request fails, returns a unified error type.
     async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, Error>;
 }
 

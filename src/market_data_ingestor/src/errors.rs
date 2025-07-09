@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::providers::errors::ProviderError;
+use crate::providers::ProviderError;
 
 /// The unified error type for the `market_data_ingestor` crate.
 #[derive(Debug, Error)]

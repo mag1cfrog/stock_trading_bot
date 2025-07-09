@@ -6,24 +6,23 @@ edition = "2024"
 [features]
 default = []
 cli = ["clap"]
-alpaca-python-sdk = ["pyo3"] 
+alpaca-python-sdk = ["pyo3", "bincode", "serde_json", "tokio"] 
 
 [dependencies]
 async-trait = "0.1.88"
-bincode = "2.0.1"
+bincode = {version = "2.0.1", optional = true}
 chrono = "0.4.39"
 clap = { version = "4.5.30", features = ["derive"], optional = true }
 futures = "0.3.31"
 log = "0.4.26"
 once_cell = "1.20.3"
 polars = { version = "0.46.0", features = ["ipc", "polars-io"] }
-polars-io = "0.46.0"
 pyo3 = { version = "0.24.0", features = ["auto-initialize", "chrono"], optional = true }
 reqwest = "0.12.22"
 serde = { version = "1.0.218", features = ["derive"] }
-serde_json = "1.0.139"
+serde_json = {version = "1.0.139", optional = true }
 thiserror = "2.0.11"
-tokio = { version = "1.43.0", features = ["full"] }
+tokio = { version = "1.43.0", features = ["full"], optional = true }
 toml = "0.8.20"
 uuid = { version = "1.14.0", features = ["v4"] }
 

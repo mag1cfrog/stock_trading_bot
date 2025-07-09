@@ -1,11 +1,13 @@
 use thiserror::Error;
 
+use crate::providers::errors::ProviderError;
+
 /// The unified error type for the `market_data_ingestor` crate.
 #[derive(Debug, Error)]
 pub enum Error {
     /// An error originating from a data provider (e.g., API error, validation).
-    #[error("Provider error: {0}")]
-    Provider(String),
+    #[error(transparent)]
+    Provider(#[from] ProviderError),
 
     /// An error originating from a data sink (e.g., file I/O, database write).
     #[error("Sink error: {0}")]

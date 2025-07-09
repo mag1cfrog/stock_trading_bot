@@ -25,6 +25,8 @@
 //! }
 //! ```
 //! 
+pub mod errors;
+
 use async_trait::async_trait;
 
 use crate::{errors::Error, models::{bar_series::BarSeries, request_params::BarsRequestParams}};

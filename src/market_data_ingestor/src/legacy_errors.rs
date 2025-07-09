@@ -1,4 +1,4 @@
-use crate::{io::errors::IOError, requests::historical::MarketDataError};
+use crate::{io::legacy_errors::IOError, requests::historical::MarketDataError};
 use std::fmt;
 
 #[derive(Debug)]

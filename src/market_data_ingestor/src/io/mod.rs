@@ -1,2 +1,2 @@
 pub mod dataframe;
-pub mod errors;
+pub mod legacy_errors;

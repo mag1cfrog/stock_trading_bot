@@ -8,7 +8,7 @@ use polars_io::SerWriter;
 use polars_io::ipc::IpcWriter;
 use uuid::Uuid;
 
-use super::errors::IOError;
+use super::legacy_errors::IOError;
 
 pub fn write_dataframe_to_temp(df: &mut DataFrame, symbol: &str) -> Result<PathBuf, IOError> {
     // Determine the base temporary directory. By default, this is /tmp in Debian.

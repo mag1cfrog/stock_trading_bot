@@ -27,7 +27,7 @@
 //! 
 use async_trait::async_trait;
 
-use crate::{errors::IngestorError, models::{bar_series::BarSeries, request_params::BarsRequestParams}};
+use crate::{legacy_errors::IngestorError, models::{bar_series::BarSeries, request_params::BarsRequestParams}};
 
 #[async_trait]
 pub trait DataProvider {

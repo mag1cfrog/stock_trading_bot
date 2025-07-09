@@ -3,8 +3,8 @@
 /// This module provides multiple ways to fetch market data:
 /// - Memory-based methods: Return data directly as DataFrames
 /// - File-based methods: Write data to temporary files and return paths
-mod errors;
-pub use errors::MarketDataError;
+mod legacy_errors;
+pub use legacy_errors::MarketDataError;
 
 #[cfg(feature = "alpaca-python-sdk")]
 mod single_request;
@@ -20,11 +20,11 @@ use std::path::PathBuf;
 
 use polars::prelude::*;
 
-use crate::errors::IngestorError;
+use crate::legacy_errors::IngestorError;
 #[cfg(feature = "alpaca-python-sdk")]
 use crate::io::dataframe::write_dataframe_to_temp;
 #[cfg(feature = "alpaca-python-sdk")]
-use crate::io::errors::IOError;
+use crate::io::legacy_errors::IOError;
 #[cfg(feature = "alpaca-python-sdk")]
 use crate::models::stockbars::StockBarsParams;
 #[cfg(feature = "alpaca-python-sdk")]

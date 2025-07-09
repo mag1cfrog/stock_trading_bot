@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::providers::ProviderError;
+use crate::{io::sink::SinkError, providers::ProviderError};
 
 /// The unified error type for the `market_data_ingestor` crate.
 #[derive(Debug, Error)]
@@ -10,8 +10,8 @@ pub enum Error {
     Provider(#[from] ProviderError),
 
     /// An error originating from a data sink (e.g., file I/O, database write).
-    #[error("Sink error: {0}")]
-    Sink(String),
+    #[error(transparent)]
+    Sink(#[from] SinkError),
 
     /// An error related to configuration.
     #[error("Configuration error: {0}")]

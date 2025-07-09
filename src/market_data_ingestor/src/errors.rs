@@ -18,10 +18,10 @@ pub enum Error {
     Config(String),
 
     /// A generic I/O error.
-    #[error("I/O error")]
+    #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
     /// An error from the Polars library.
-    #[error("Polars operation failed")]
+    #[error("Polars operation failed: {0}")]
     Polars(#[from] polars::prelude::PolarsError),
 }

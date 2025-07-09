@@ -10,6 +10,7 @@ pub mod cli;
 #[cfg(feature = "alpaca-python-sdk")]
 pub mod legacy_errors;
 pub mod io;
+pub mod errors;
 pub mod models;
 pub mod providers;
 pub mod requests;

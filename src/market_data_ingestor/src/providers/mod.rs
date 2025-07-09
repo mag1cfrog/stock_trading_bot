@@ -27,11 +27,11 @@
 //! 
 use async_trait::async_trait;
 
-use crate::{legacy_errors::IngestorError, models::{bar_series::BarSeries, request_params::BarsRequestParams}};
+use crate::{errors::Error, models::{bar_series::BarSeries, request_params::BarsRequestParams}};
 
 #[async_trait]
 pub trait DataProvider {
-    async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, IngestorError>;
+    async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, Error>;
 }
 
 #[cfg(test)]
@@ -48,7 +48,7 @@ mod tests {
 
     #[async_trait]
     impl DataProvider for AlpacaProvider {
-        async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, IngestorError> {
+        async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, Error> {
             println!("Fetching from alpaca for symbols: {:?}", params.symbols);
             Ok(vec![])
         }
@@ -56,7 +56,7 @@ mod tests {
 
     #[async_trait]
     impl DataProvider for PolygonProvider {
-        async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, IngestorError> {
+        async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, Error> {
             println!("Fetching from Polygon.io for symbols: {:?}", params.symbols);
             Ok(vec![]) // Return dummy data
         }

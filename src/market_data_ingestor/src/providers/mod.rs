@@ -37,6 +37,7 @@
 pub mod alpaca_rest;
 
 use async_trait::async_trait;
+use shared_utils::env::MissingEnvVarError;
 use thiserror::Error;
 
 use crate::{errors::Error, models::{bar_series::BarSeries, request_params::BarsRequestParams}};
@@ -61,6 +62,17 @@ pub trait DataProvider {
     async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, Error>;
 }
 
+#[derive(Debug, Error)]
+pub enum ProviderInitError {
+    /// missed environment variable.
+    #[error(transparent)]
+    MissingEnvVar(#[from] MissingEnvVarError),
+
+    /// failed to init reqwest client
+    #[error(transparent)] 
+    ClientBuild(#[from] reqwest::Error),
+}
+
 /// Errors that can occur within a `DataProvider` implementation.
 #[derive(Debug, Error)]
 pub enum ProviderError {
@@ -79,4 +91,8 @@ pub enum ProviderError {
     /// An internal error occurred while processing data within the provider.
     #[error("Internal provider error: {0}")]
     Internal(String),
+
+    /// An error during provider configuration or initialization.
+    #[error(transparent)]
+    Init(#[from] ProviderInitError),
 }

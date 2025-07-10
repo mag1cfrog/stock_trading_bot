@@ -16,7 +16,6 @@ pub enum SinkError {
     /// A generic I/O error.
     #[error(transparent)]
     Io(#[from] std::io::Error),
-
 }
 
 #[async_trait]

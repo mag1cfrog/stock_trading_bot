@@ -1,7 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{models::{request_params::{BarsRequestParams, ProviderParams}, timeframe::{TimeFrame, TimeFrameUnit}}, providers::ProviderError};
-
+use crate::{
+    models::{
+        request_params::{BarsRequestParams, ProviderParams},
+        timeframe::{TimeFrame, TimeFrameUnit},
+    },
+    providers::ProviderError,
+};
 
 /// Specifies the corporate action adjustment for stock data.
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -94,9 +99,9 @@ pub fn construct_params(params: &BarsRequestParams) -> Vec<(String, String)> {
     let timeframe = format_timeframe_str(&params.timeframe);
 
     let alpaca_params = match &params.provider_specific {
-            ProviderParams::Alpaca(p) => p.clone(),
-            _ => AlpacaBarsParams::default(),
-        };
+        ProviderParams::Alpaca(p) => p.clone(),
+        _ => AlpacaBarsParams::default(),
+    };
 
     let mut query_params = vec![
         ("symbols".to_string(), symbols),
@@ -107,10 +112,16 @@ pub fn construct_params(params: &BarsRequestParams) -> Vec<(String, String)> {
 
     // Add optional parameters if they exist
     if let Some(adjustment) = alpaca_params.adjustment {
-        query_params.push(("adjustment".to_string(), serde_json::to_string(&adjustment).unwrap().replace('"', "")));
+        query_params.push((
+            "adjustment".to_string(),
+            serde_json::to_string(&adjustment).unwrap().replace('"', ""),
+        ));
     }
     if let Some(feed) = alpaca_params.feed {
-        query_params.push(("feed".to_string(), serde_json::to_string(&feed).unwrap().replace('"', "")));
+        query_params.push((
+            "feed".to_string(),
+            serde_json::to_string(&feed).unwrap().replace('"', ""),
+        ));
     }
     if let Some(currency) = alpaca_params.currency {
         query_params.push(("currency".to_string(), currency));
@@ -119,7 +130,10 @@ pub fn construct_params(params: &BarsRequestParams) -> Vec<(String, String)> {
         query_params.push(("limit".to_string(), limit.to_string()));
     }
     if let Some(sort) = alpaca_params.sort {
-        query_params.push(("sort".to_string(), serde_json::to_string(&sort).unwrap().replace('"', "")));
+        query_params.push((
+            "sort".to_string(),
+            serde_json::to_string(&sort).unwrap().replace('"', ""),
+        ));
     }
 
     query_params

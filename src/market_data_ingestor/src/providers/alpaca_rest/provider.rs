@@ -1,12 +1,19 @@
 use async_trait::async_trait;
 use indexmap::IndexMap;
-use reqwest::{header, Client};
+use reqwest::{Client, header};
 use secrecy::{ExposeSecret, SecretString};
 use shared_utils::env::get_env_var;
 
-use crate::{models::{bar::Bar, bar_series::BarSeries, request_params::BarsRequestParams}, providers::{alpaca_rest::{params::{construct_params, validate_timeframe}, response::{AlpacaBar, AlpacaResponse}}, DataProvider, ProviderError, ProviderInitError}};
-
-
+use crate::{
+    models::{bar::Bar, bar_series::BarSeries, request_params::BarsRequestParams},
+    providers::{
+        DataProvider, ProviderError, ProviderInitError,
+        alpaca_rest::{
+            params::{construct_params, validate_timeframe},
+            response::{AlpacaBar, AlpacaResponse},
+        },
+    },
+};
 
 const BASE_URL: &str = "https://data.alpaca.markets/v2/stocks/bars";
 
@@ -45,11 +52,9 @@ impl AlpacaProvider {
     }
 }
 
-
-
 #[async_trait]
 impl DataProvider for AlpacaProvider {
-    async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, ProviderError>{
+    async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, ProviderError> {
         // Validate the timeframe before proceeding.
         validate_timeframe(&params.timeframe)?;
 
@@ -62,7 +67,12 @@ impl DataProvider for AlpacaProvider {
                 query_params.push(("page_token".to_string(), token.clone()));
             }
 
-            let response = self.client.get(BASE_URL).query(&query_params).send().await?;
+            let response = self
+                .client
+                .get(BASE_URL)
+                .query(&query_params)
+                .send()
+                .await?;
 
             if !response.status().is_success() {
                 let error_msg = response

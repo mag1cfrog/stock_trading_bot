@@ -32,7 +32,7 @@
 //!     }
 //! }
 //! ```
-//! 
+//!
 
 pub mod alpaca_rest;
 
@@ -40,7 +40,7 @@ use async_trait::async_trait;
 use shared_utils::env::MissingEnvVarError;
 use thiserror::Error;
 
-use crate::{models::{bar_series::BarSeries, request_params::BarsRequestParams}};
+use crate::models::{bar_series::BarSeries, request_params::BarsRequestParams};
 
 /// Trait for fetching time-series bar data from a market data provider.
 ///
@@ -69,7 +69,7 @@ pub enum ProviderInitError {
     MissingEnvVar(#[from] MissingEnvVarError),
 
     /// failed to init reqwest client
-    #[error(transparent)] 
+    #[error(transparent)]
     ClientBuild(#[from] reqwest::Error),
 
     /// API key contains invalid characters.

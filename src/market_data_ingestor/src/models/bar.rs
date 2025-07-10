@@ -10,7 +10,6 @@ use chrono::{DateTime, Utc};
 /// This struct is vendor-agnostic and is used throughout the data ingestion pipeline.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Bar {
-
     /// The timestamp for this bar (UTC).
     pub timestamp: DateTime<Utc>,
 

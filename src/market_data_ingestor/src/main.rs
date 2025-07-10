@@ -113,11 +113,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg(all(feature = "cli", not(feature = "alpaca-python-sdk")))]
 fn main() {
-    eprintln!("This command requires the 'alpaca-python-sdk' feature. Please recompile with '--features alpaca-python-sdk'.");
+    eprintln!(
+        "This command requires the 'alpaca-python-sdk' feature. Please recompile with '--features alpaca-python-sdk'."
+    );
     std::process::exit(1);
 }
 
 #[cfg(not(feature = "cli"))]
 fn main() {
-// ...existing code...
+    // ...existing code...
 }

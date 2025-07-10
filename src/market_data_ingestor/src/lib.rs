@@ -7,10 +7,10 @@ use utils::python_init::Config;
 
 #[cfg(feature = "cli")]
 pub mod cli;
+pub mod errors;
+pub mod io;
 #[cfg(feature = "alpaca-python-sdk")]
 pub mod legacy_errors;
-pub mod io;
-pub mod errors;
 pub mod models;
 pub mod providers;
 pub mod requests;

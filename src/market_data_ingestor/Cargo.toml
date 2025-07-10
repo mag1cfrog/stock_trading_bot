@@ -17,6 +17,7 @@ bincode = {version = "2.0.1", optional = true}
 chrono = "0.4.39"
 clap = { version = "4.5.30", features = ["derive"], optional = true }
 futures = { version = "0.3.31", optional = true }
+indexmap = { version = "2.10.0", features = ["serde"] }
 log = { version = "0.4.26", optional = true }
 polars = { version = "0.46.0", features = ["ipc", "polars-io"], optional = true }
 pyo3 = { version = "0.24.0", features = ["auto-initialize", "chrono"], optional = true }

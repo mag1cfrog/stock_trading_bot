@@ -40,7 +40,7 @@ use async_trait::async_trait;
 use shared_utils::env::MissingEnvVarError;
 use thiserror::Error;
 
-use crate::{errors::Error, models::{bar_series::BarSeries, request_params::BarsRequestParams}};
+use crate::{models::{bar_series::BarSeries, request_params::BarsRequestParams}};
 
 /// Trait for fetching time-series bar data from a market data provider.
 ///
@@ -59,7 +59,7 @@ pub trait DataProvider {
     ///
     /// * `Ok(Vec<BarSeries>)` - A vector of bar series, one per symbol.
     /// * `Err(Error)` - If the request fails, returns a unified error type.
-    async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, Error>;
+    async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, ProviderError>;
 }
 
 #[derive(Debug, Error)]

@@ -28,4 +28,10 @@ pub struct Bar {
 
     /// Volume traded during the bar interval.
     pub volume: f64,
+
+    /// Trade count for the bar. Not all providers supply this.
+    pub trade_count: Option<u64>,
+
+    /// Volume-weighted average price. Not all providers supply this.
+    pub vwap: Option<f64>,
 }

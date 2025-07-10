@@ -118,8 +118,7 @@ impl DataProvider for AlpacaProvider {
 
         let alpaca_response = response
             .json::<AlpacaResponse>()
-            .await
-            .map_err(|e| ProviderError::Internal(format!("JSON deserialization error: {}", e)))?;
+            .await?;
 
         // Convert the HashMap into a Vec<BarSeries>
         let result: Vec<BarSeries> = alpaca_response

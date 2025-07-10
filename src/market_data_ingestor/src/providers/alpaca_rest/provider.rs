@@ -1,9 +1,10 @@
 use async_trait::async_trait;
+use indexmap::IndexMap;
 use reqwest::{header, Client};
 use secrecy::{ExposeSecret, SecretString};
 use shared_utils::env::get_env_var;
 
-use crate::{models::{bar::Bar, bar_series::BarSeries, request_params::BarsRequestParams, timeframe::TimeFrame}, providers::{alpaca_rest::{params::{construct_params, validate_timeframe}, response::AlpacaResponse}, DataProvider, ProviderError, ProviderInitError}};
+use crate::{models::{bar::Bar, bar_series::BarSeries, request_params::BarsRequestParams}, providers::{alpaca_rest::{params::{construct_params, validate_timeframe}, response::{AlpacaBar, AlpacaResponse}}, DataProvider, ProviderError, ProviderInitError}};
 
 
 
@@ -52,42 +53,47 @@ impl DataProvider for AlpacaProvider {
         // Validate the timeframe before proceeding.
         validate_timeframe(&params.timeframe)?;
 
-        let query_params = construct_params(&params);
+        let mut all_bars: IndexMap<String, Vec<AlpacaBar>> = IndexMap::new();
+        let mut next_page_token: Option<String> = None;
 
-        let response = self
-            .client
-            .get(BASE_URL)
-            .query(&query_params)
-            .send()
-            .await?;
+        loop {
+            let mut query_params = construct_params(&params);
+            if let Some(token) = &next_page_token {
+                query_params.push(("page_token".to_string(), token.clone()));
+            }
 
-        if !response.status().is_success() {
-            let error_msg = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown API error".to_string());
-            return Err(ProviderError::Api(error_msg));
+            let response = self.client.get(BASE_URL).query(&query_params).send().await?;
+
+            if !response.status().is_success() {
+                let error_msg = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Unknown API error".to_string());
+                return Err(ProviderError::Api(error_msg));
+            }
+
+            let alpaca_response = response.json::<AlpacaResponse>().await?;
+
+            // Merge the bars from the current page into our collection.
+            for (symbol, bars) in alpaca_response.bars {
+                all_bars.entry(symbol).or_default().extend(bars);
+            }
+
+            // If there's a next page token, use it for the next iteration. Otherwise, we're done.
+            if let Some(token) = alpaca_response.next_page_token {
+                next_page_token = Some(token);
+            } else {
+                break;
+            }
         }
 
-        let alpaca_response = response
-            .json::<AlpacaResponse>()
-            .await?;
-
-        // Convert the HashMap into a Vec<BarSeries>
-        let result = alpaca_response_to_bar_series_vec(alpaca_response, &params.timeframe);
-
-        Ok(result)
-    }
-}
-
-fn alpaca_response_to_bar_series_vec(ar: AlpacaResponse, tf: &TimeFrame) -> Vec<BarSeries> {
-    ar
-        .bars
-        .into_iter()
-        .map(|(symbol, alpaca_bars)|{
-            let bars = alpaca_bars
-                .into_iter()
-                .map(|ab| Bar {
+        // Convert the accumulated bars into the final Vec<BarSeries>
+        let result = all_bars
+            .into_iter()
+            .map(|(symbol, alpaca_bars)| {
+                let bars = alpaca_bars
+                    .into_iter()
+                    .map(|ab| Bar {
                         timestamp: ab.timestamp,
                         open: ab.open,
                         high: ab.high,
@@ -97,12 +103,16 @@ fn alpaca_response_to_bar_series_vec(ar: AlpacaResponse, tf: &TimeFrame) -> Vec<
                         trade_count: Some(ab.trade_count),
                         vwap: Some(ab.vwap),
                     })
-                .collect();
+                    .collect();
 
-            BarSeries {
-                symbol,
-                timeframe: tf.clone(),
-                bars,
-            }
-        }).collect()
+                BarSeries {
+                    symbol,
+                    timeframe: params.timeframe.clone(),
+                    bars,
+                }
+            })
+            .collect();
+
+        Ok(result)
+    }
 }

@@ -138,3 +138,68 @@ pub fn construct_params(params: &BarsRequestParams) -> Vec<(String, String)> {
 
     query_params
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{asset::AssetClass, timeframe::TimeFrame};
+    use chrono::Utc;
+
+    #[test]
+    fn test_validate_timeframe_valid() {
+        assert!(validate_timeframe(&TimeFrame::new(5, TimeFrameUnit::Minute)).is_ok());
+        assert!(validate_timeframe(&TimeFrame::new(1, TimeFrameUnit::Hour)).is_ok());
+        assert!(validate_timeframe(&TimeFrame::new(1, TimeFrameUnit::Day)).is_ok());
+        assert!(validate_timeframe(&TimeFrame::new(1, TimeFrameUnit::Week)).is_ok());
+        assert!(validate_timeframe(&TimeFrame::new(3, TimeFrameUnit::Month)).is_ok());
+    }
+
+    #[test]
+    fn test_validate_timeframe_invalid() {
+        assert!(validate_timeframe(&TimeFrame::new(60, TimeFrameUnit::Minute)).is_err());
+        assert!(validate_timeframe(&TimeFrame::new(0, TimeFrameUnit::Minute)).is_err());
+        assert!(validate_timeframe(&TimeFrame::new(24, TimeFrameUnit::Hour)).is_err());
+        assert!(validate_timeframe(&TimeFrame::new(2, TimeFrameUnit::Day)).is_err());
+        assert!(validate_timeframe(&TimeFrame::new(5, TimeFrameUnit::Month)).is_err());
+    }
+
+    #[test]
+    fn test_construct_params_basic() {
+        let params = BarsRequestParams {
+            symbols: vec!["AAPL".to_string(), "MSFT".to_string()],
+            timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
+            start: Utc::now(),
+            end: Utc::now(),
+            asset_class: AssetClass::UsEquity,
+            provider_specific: ProviderParams::None,
+        };
+
+        let query = construct_params(&params);
+        let query_map: std::collections::HashMap<_, _> = query.into_iter().collect();
+
+        assert_eq!(query_map.get("symbols").unwrap(), "AAPL,MSFT");
+        assert_eq!(query_map.get("timeframe").unwrap(), "1Day");
+    }
+
+    #[test]
+    fn test_construct_params_with_specifics() {
+        let params = BarsRequestParams {
+            symbols: vec!["SPY".to_string()],
+            timeframe: TimeFrame::new(15, TimeFrameUnit::Minute),
+            start: Utc::now(),
+            end: Utc::now(),
+            asset_class: AssetClass::UsEquity,
+            provider_specific: ProviderParams::Alpaca(AlpacaBarsParams {
+                limit: Some(100),
+                sort: Some(Sort::Desc),
+                ..Default::default()
+            }),
+        };
+
+        let query = construct_params(&params);
+        let query_map: std::collections::HashMap<_, _> = query.into_iter().collect();
+
+        assert_eq!(query_map.get("limit").unwrap(), "100");
+        assert_eq!(query_map.get("sort").unwrap(), "desc");
+    }
+}

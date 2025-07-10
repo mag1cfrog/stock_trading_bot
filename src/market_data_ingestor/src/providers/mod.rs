@@ -82,7 +82,7 @@ pub enum ProviderInitError {
 pub enum ProviderError {
     /// An error during an API request (e.g., network failure, timeout).
     #[error("API request failed: {0}")]
-    Request(#[from] reqwest::Error),
+    Reqwest(#[from] reqwest::Error),
 
     /// The provider's API returned a specific error message (e.g., invalid API key).
     #[error("API error: {0}")]

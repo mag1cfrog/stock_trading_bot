@@ -3,7 +3,7 @@ use reqwest::{header, Client};
 use secrecy::{ExposeSecret, SecretString};
 use shared_utils::env::get_env_var;
 
-use crate::{models::{bar::Bar, bar_series::BarSeries, request_params::{BarsRequestParams}, timeframe::{TimeFrame}}, providers::{alpaca_rest::{params::construct_params, response::AlpacaResponse}, DataProvider, ProviderError, ProviderInitError}};
+use crate::{models::{bar::Bar, bar_series::BarSeries, request_params::BarsRequestParams, timeframe::TimeFrame}, providers::{alpaca_rest::{params::{construct_params, validate_timeframe}, response::AlpacaResponse}, DataProvider, ProviderError, ProviderInitError}};
 
 
 
@@ -49,7 +49,9 @@ impl AlpacaProvider {
 #[async_trait]
 impl DataProvider for AlpacaProvider {
     async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, ProviderError>{
-        // TODO: Implement Alpaca-specific timeframe validation here.
+        // Validate the timeframe before proceeding.
+        validate_timeframe(&params.timeframe)?;
+
         let query_params = construct_params(&params);
 
         let response = self

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::models::{request_params::{BarsRequestParams, ProviderParams}, timeframe::{TimeFrame, TimeFrameUnit}};
+use crate::{models::{request_params::{BarsRequestParams, ProviderParams}, timeframe::{TimeFrame, TimeFrameUnit}}, providers::ProviderError};
 
 
 /// Specifies the corporate action adjustment for stock data.
@@ -57,6 +57,36 @@ fn format_timeframe_str(tf: &TimeFrame) -> String {
         TimeFrameUnit::Month => "Month",
     };
     format!("{}{}", tf.amount, unit_str)
+}
+
+pub fn validate_timeframe(tf: &TimeFrame) -> Result<(), ProviderError> {
+    match tf.unit {
+        TimeFrameUnit::Minute if !(1..=59).contains(&tf.amount) => {
+            Err(ProviderError::Validation(format!(
+                "Alpaca supports 1-59 for Minute timeframes, but got {}",
+                tf.amount
+            )))
+        }
+        TimeFrameUnit::Hour if !(1..=23).contains(&tf.amount) => {
+            Err(ProviderError::Validation(format!(
+                "Alpaca supports 1-23 for Hour timeframes, but got {}",
+                tf.amount
+            )))
+        }
+        TimeFrameUnit::Day | TimeFrameUnit::Week if tf.amount != 1 => {
+            Err(ProviderError::Validation(format!(
+                "Alpaca only supports an amount of 1 for Day and Week timeframes, but got {}",
+                tf.amount
+            )))
+        }
+        TimeFrameUnit::Month if ![1, 2, 3, 4, 6, 12].contains(&tf.amount) => {
+            Err(ProviderError::Validation(format!(
+                "Alpaca only supports amounts of 1, 2, 3, 4, 6, or 12 for Month timeframes, but got {}",
+                tf.amount
+            )))
+        }
+        _ => Ok(()),
+    }
 }
 
 pub fn construct_params(params: &BarsRequestParams) -> Vec<(String, String)> {

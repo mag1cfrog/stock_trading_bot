@@ -6,7 +6,7 @@ use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use shared_utils::env::get_env_var;
 
-use crate::{models::{bar::Bar, bar_series::BarSeries, request_params::BarsRequestParams, timeframe::{TimeFrame, TimeFrameUnit}}, providers::{DataProvider, ProviderError, ProviderInitError}};
+use crate::{models::{bar::Bar, bar_series::BarSeries, request_params::{BarsRequestParams, ProviderParams}, timeframe::{TimeFrame, TimeFrameUnit}}, providers::{DataProvider, ProviderError, ProviderInitError}};
 
 const BASE_URL: &str = "https://data.alpaca.markets/v2/stocks/bars";
 
@@ -137,19 +137,40 @@ impl DataProvider for AlpacaProvider {
 
         // TODO: Implement pagination using `next_page_token`.
         // This initial implementation only fetches the first page.
+
+        let alpaca_params = match &params.provider_specific {
+            ProviderParams::Alpaca(p) => p.clone(),
+            _ => AlpacaBarsParams::default(),
+        };
+
+        let mut query_params = vec![
+            ("symbols".to_string(), symbols),
+            ("timeframe".to_string(), timeframe),
+            ("start".to_string(), params.start.to_rfc3339()),
+            ("end".to_string(), params.end.to_rfc3339()),
+        ];
+
+        // Add optional parameters if they exist
+        if let Some(adjustment) = alpaca_params.adjustment {
+            query_params.push(("adjustment".to_string(), serde_json::to_string(&adjustment).unwrap().replace('"', "")));
+        }
+        if let Some(feed) = alpaca_params.feed {
+            query_params.push(("feed".to_string(), serde_json::to_string(&feed).unwrap().replace('"', "")));
+        }
+        if let Some(currency) = alpaca_params.currency {
+            query_params.push(("currency".to_string(), currency));
+        }
+        if let Some(limit) = alpaca_params.limit {
+            query_params.push(("limit".to_string(), limit.to_string()));
+        }
+        if let Some(sort) = alpaca_params.sort {
+            query_params.push(("sort".to_string(), serde_json::to_string(&sort).unwrap().replace('"', "")));
+        }
+
         let response = self
             .client
             .get(BASE_URL)
-            .query(&[
-                ("symbols", symbols.as_str()),
-                ("timeframe", &timeframe),
-                ("start", &params.start.to_rfc3339()),
-                ("end", &params.end.to_rfc3339()),
-                ("limit", "10000"),
-                ("adjustment", "raw"),
-                ("feed", "sip"),
-                ("sort", "asc"),
-            ])
+            .query(&query_params)
             .send()
             .await?;
 

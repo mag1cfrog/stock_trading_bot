@@ -7,10 +7,9 @@ edition = "2024"
 default = []
 cli = ["clap"]
 alpaca-python-sdk = [
-    "pyo3", "bincode", "serde_json", "tokio", "uuid", "polars",
+    "pyo3", "bincode", "tokio", "uuid", "polars",
     "futures", "log"
-] 
-serde_json = ["dep:serde_json"]
+]
 
 [dependencies]
 async-trait = "0.1.88"

@@ -3,7 +3,7 @@ use reqwest::{header, Client};
 use secrecy::{ExposeSecret, SecretString};
 use shared_utils::env::get_env_var;
 
-use crate::{models::{bar::Bar, bar_series::BarSeries, request_params::{BarsRequestParams, ProviderParams}, timeframe::{TimeFrame, TimeFrameUnit}}, providers::{alpaca_rest::{params::{construct_params, AlpacaBarsParams}, response::AlpacaResponse}, DataProvider, ProviderError, ProviderInitError}};
+use crate::{models::{bar::Bar, bar_series::BarSeries, request_params::{BarsRequestParams}, timeframe::{TimeFrame}}, providers::{alpaca_rest::{params::construct_params, response::AlpacaResponse}, DataProvider, ProviderError, ProviderInitError}};
 
 
 
@@ -72,13 +72,20 @@ impl DataProvider for AlpacaProvider {
             .await?;
 
         // Convert the HashMap into a Vec<BarSeries>
-        let result: Vec<BarSeries> = alpaca_response
-            .bars
-            .into_iter()
-            .map(|(symbol, alpaca_bars)| {
-                let bars = alpaca_bars
-                    .into_iter()
-                    .map(|ab| Bar {
+        let result = alpaca_response_to_bar_series_vec(alpaca_response, &params.timeframe);
+
+        Ok(result)
+    }
+}
+
+fn alpaca_response_to_bar_series_vec(ar: AlpacaResponse, tf: &TimeFrame) -> Vec<BarSeries> {
+    ar
+        .bars
+        .into_iter()
+        .map(|(symbol, alpaca_bars)|{
+            let bars = alpaca_bars
+                .into_iter()
+                .map(|ab| Bar {
                         timestamp: ab.timestamp,
                         open: ab.open,
                         high: ab.high,
@@ -88,16 +95,12 @@ impl DataProvider for AlpacaProvider {
                         trade_count: Some(ab.trade_count),
                         vwap: Some(ab.vwap),
                     })
-                    .collect();
+                .collect();
 
-                BarSeries {
-                    symbol,
-                    timeframe: params.timeframe.clone(),
-                    bars,
-                }
-            })
-            .collect();
-
-        Ok(result)
-    }
+            BarSeries {
+                symbol,
+                timeframe: tf.clone(),
+                bars,
+            }
+        }).collect()
 }

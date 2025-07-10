@@ -1,12 +1,9 @@
 use thiserror::Error;
 
-/// Errors related to application configuration.
+/// An environment variable required by the application is not set.
 #[derive(Debug, Error)]
-pub enum ConfigError {
-    /// An environment variable required by the application is not set.
-    #[error("Missing environment variable: {0}")]
-    MissingEnvVar(String),
-}
+#[error("Missing environment variable: {0}")]
+pub struct MissingEnvVarError(pub String);
 
 /// Reads an environment variable, returning a structured error if it's missing.
 ///
@@ -15,6 +12,6 @@ pub enum ConfigError {
 ///
 /// # Arguments
 /// * `name` - The name of the environment variable to read.
-pub fn get_env_var(name: &str) -> Result<String, ConfigError> {
-    std::env::var(name).map_err(|_| ConfigError::MissingEnvVar(name.to_string()))
+pub fn get_env_var(name: &str) -> Result<String, MissingEnvVarError> {
+    std::env::var(name).map_err(|_| MissingEnvVarError(name.to_string()))
 }

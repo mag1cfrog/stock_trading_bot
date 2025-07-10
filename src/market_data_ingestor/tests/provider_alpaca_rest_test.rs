@@ -55,3 +55,47 @@ async fn test_alpaca_provider_fetch_bars() {
         assert!(aapl_series.bars[0].timestamp > aapl_series.bars[1].timestamp);
     }
 }
+
+#[tokio::test]
+#[serial]
+#[ignore]
+async fn test_alpaca_provider_pagination() {
+    // This test requires APCA_API_KEY_ID and APCA_API_SECRET_KEY to be set in the environment.
+    if std::env::var("APCA_API_KEY_ID").is_err() || std::env::var("APCA_API_SECRET_KEY").is_err() {
+        println!("Skipping test_alpaca_provider_pagination: API keys not set.");
+        return;
+    }
+
+    let provider = AlpacaProvider::new().expect("Failed to create AlpacaProvider");
+    const PAGE_LIMIT: u32 = 200;
+
+    let params = BarsRequestParams {
+        symbols: vec!["SPY".to_string()], // Use a liquid asset
+        timeframe: TimeFrame::new(1, TimeFrameUnit::Minute),
+        start: Utc::now() - Duration::days(7), // Request a long period
+        end: Utc::now() - Duration::days(1),
+        asset_class: AssetClass::UsEquity,
+        provider_specific: ProviderParams::Alpaca(AlpacaBarsParams {
+            limit: Some(PAGE_LIMIT), // Set a small limit to force pagination
+            ..Default::default()
+        }),
+    };
+
+    let result = provider.fetch_bars(params).await;
+
+    assert!(result.is_ok(), "fetch_bars returned an error: {:?}", result.err());
+
+    let bar_series_vec = result.unwrap();
+    assert_eq!(bar_series_vec.len(), 1, "Expected 1 BarSeries for SPY");
+
+    let spy_series = &bar_series_vec[0];
+    assert!(!spy_series.bars.is_empty(), "Expected to fetch bars for SPY");
+
+    // The key assertion: if we got more bars than the page limit, pagination must have worked.
+    assert!(
+        spy_series.bars.len() > PAGE_LIMIT as usize,
+        "Expected more bars than the page limit ({}), but got {}. Pagination may have failed.",
+        PAGE_LIMIT,
+        spy_series.bars.len()
+    );
+}

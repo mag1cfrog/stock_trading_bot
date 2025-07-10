@@ -71,6 +71,10 @@ pub enum ProviderInitError {
     /// failed to init reqwest client
     #[error(transparent)] 
     ClientBuild(#[from] reqwest::Error),
+
+    /// API key contains invalid characters.
+    #[error("Invalid API key format: {0}")]
+    InvalidApiKey(#[from] reqwest::header::InvalidHeaderValue),
 }
 
 /// Errors that can occur within a `DataProvider` implementation.

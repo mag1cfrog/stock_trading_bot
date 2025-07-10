@@ -23,11 +23,11 @@ impl AlpacaProvider {
         let mut headers = header::HeaderMap::new();
         headers.insert(
             "APCA-API-KEY-ID",
-            header::HeaderValue::from_str(api_key.expose_secret()).unwrap(),
+            header::HeaderValue::from_str(api_key.expose_secret())?,
         );
         headers.insert(
             "APCA_API_SECRET_KEY",
-            header::HeaderValue::from_str(secret_key.expose_secret()).unwrap(),
+            header::HeaderValue::from_str(secret_key.expose_secret())?,
         );
 
         let client = Client::builder().default_headers(headers).build()?;

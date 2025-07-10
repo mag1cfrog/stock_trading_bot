@@ -1,13 +1,14 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
-use crate::models::{asset::AssetClass, timeframe::TimeFrame};
+use crate::{models::{asset::AssetClass, timeframe::TimeFrame}, providers::alpaca_rest::AlpacaBarsParams};
 
 /// Universal parameters for requesting time-series bar data from any market data provider.
 ///
 /// This struct is designed to be vendor-agnostic and supports multiple asset classes
 /// (e.g., stocks, futures, crypto). It is intended as the standard input for all
 /// [`DataProvider`](../requests/provider.rs) implementations.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BarsRequestParams {
     /// List of symbols to request (e.g., `["AAPL"]`, `["ESU24"]`, `["BTC-USD"]`).
     pub symbols: Vec<String>,
@@ -36,4 +37,20 @@ pub struct BarsRequestParams {
     ///
     /// This helps providers route the request to the correct API or endpoint.
     pub asset_class: AssetClass,
+
+    /// Optional, provider-specific parameters.
+    #[serde(default)]
+    pub provider_specific: ProviderParams,
+}
+
+/// An enum to hold provider-specific request parameters.
+///
+/// This allows callers to specify detailed, per-request options for a
+/// particular provider without cluttering the universal `BarsRequestParams`.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub enum ProviderParams {
+    #[default]
+    None,
+    Alpaca(AlpacaBarsParams),
+    // Add other providers here later, e.g., Polygon(PolygonBarsParams)
 }

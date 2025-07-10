@@ -1,5 +1,6 @@
 #[cfg(feature = "alpaca-python-sdk")]
 use pyo3::{Bound, BoundObject, FromPyObject, IntoPyObject, PyAny, Python, types::PyAnyMethods};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -14,7 +15,7 @@ pub enum TimeFrameError {
     InvalidInput { message: String },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum TimeFrameUnit {
     Minute,
     Hour,
@@ -23,7 +24,7 @@ pub enum TimeFrameUnit {
     Month,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct TimeFrame {
     pub amount: u32,
     pub unit: TimeFrameUnit,

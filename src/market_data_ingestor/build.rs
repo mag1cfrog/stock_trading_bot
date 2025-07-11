@@ -41,9 +41,8 @@ fn main() {
 
         // Install dependencies into the new virtual environment.
         let pip_status = Command::new("uv")
-            .arg("pip")
-            .arg("install")
-            .arg("alpaca-trade-api")
+            .arg("add")
+            .arg("alpaca-py")
             .arg("polars[pandas]") // Needed for pl.from_pandas()
             .current_dir(python_project_path)
             .status()

@@ -7,7 +7,7 @@ edition = "2024"
 default = []
 cli = ["clap"]
 alpaca-python-sdk = [
-    "pyo3", "bincode", "uuid", "polars",
+    "pyo3", "bincode", "uuid", "polars", "polars-io",
     "futures", "log"
 ]
 
@@ -20,6 +20,7 @@ futures = { version = "0.3.31", optional = true }
 indexmap = { version = "2.10.0", features = ["serde"] }
 log = { version = "0.4.26", optional = true }
 polars = { version = "0.46.0", features = ["ipc", "polars-io"], optional = true }
+polars-io = { version = "0.46.0", optional = true }
 pyo3 = { version = "0.24.0", features = ["auto-initialize", "chrono"], optional = true }
 reqwest = { version = "0.12.22", features = ["json"] }
 secrecy = "0.10.3"

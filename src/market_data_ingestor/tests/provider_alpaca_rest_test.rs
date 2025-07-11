@@ -1,17 +1,26 @@
-#![cfg(test)]
+#![cfg(all(test, feature = "alpaca-python-sdk"))]
 use chrono::{Duration, Utc};
 use market_data_ingestor::{
     models::{
         asset::AssetClass,
+        bar::Bar,
+        bar_series::BarSeries,
         request_params::{BarsRequestParams, ProviderParams},
+        stockbars::StockBarsParams as LegacyParams,
         timeframe::{TimeFrame, TimeFrameUnit},
     },
     providers::{
-        alpaca_rest::{params::{AlpacaBarsParams, Sort}, provider::AlpacaProvider},
+        alpaca_rest::{
+            params::{AlpacaBarsParams, Sort},
+            provider::AlpacaProvider,
+        },
         DataProvider,
     },
+    requests::historical::StockBarData,
 };
+use polars::prelude::*;
 use serial_test::serial;
+use std::collections::HashMap;
 
 #[tokio::test]
 #[serial]
@@ -97,5 +106,115 @@ async fn test_alpaca_provider_pagination() {
         "Expected more bars than the page limit ({}), but got {}. Pagination may have failed.",
         PAGE_LIMIT,
         spy_series.bars.len()
+    );
+}
+
+// Helper function to convert a DataFrame from the legacy client to Vec<BarSeries>
+fn dataframe_to_bar_series(
+    df: &DataFrame,
+    timeframe: TimeFrame,
+) -> Result<Vec<BarSeries>, Box<dyn std::error::Error>> {
+    let mut series_map: HashMap<String, Vec<Bar>> = HashMap::new();
+
+    // Get typed columns from the DataFrame
+    let symbol_col = df.column("symbol")?.str()?;
+    let timestamp_col = df.column("timestamp")?.datetime()?;
+    let open_col = df.column("open")?.f64()?;
+    let high_col = df.column("high")?.f64()?;
+    let low_col = df.column("low")?.f64()?;
+    let close_col = df.column("close")?.f64()?;
+    let volume_col = df.column("volume")?.f64()?;
+    let trade_count_col = df.column("trade_count")?.u64()?;
+    let vwap_col = df.column("vwap")?.f64()?;
+
+    for i in 0..df.height() {
+        let symbol = symbol_col.get(i).unwrap().to_string();
+        let bar = Bar {
+            timestamp: timestamp_col.get(i).unwrap().into(),
+            open: open_col.get(i).unwrap(),
+            high: high_col.get(i).unwrap(),
+            low: low_col.get(i).unwrap(),
+            close: close_col.get(i).unwrap(),
+            volume: volume_col.get(i).unwrap(),
+            trade_count: trade_count_col.get(i),
+            vwap: vwap_col.get(i),
+        };
+        series_map.entry(symbol).or_default().push(bar);
+    }
+
+    let mut result: Vec<BarSeries> = series_map
+        .into_iter()
+        .map(|(symbol, mut bars)| {
+            bars.sort_by_key(|b| b.timestamp); // Ensure consistent order
+            BarSeries {
+                symbol,
+                timeframe: timeframe.clone(),
+                bars,
+            }
+        })
+        .collect();
+
+    result.sort_by(|a, b| a.symbol.cmp(&b.symbol)); // Ensure consistent order
+    Ok(result)
+}
+
+#[tokio::test]
+#[serial]
+#[ignore]
+async fn test_compare_rust_and_python_providers() {
+    // This test requires APCA_API_KEY_ID and APCA_API_SECRET_KEY to be set.
+    if std::env::var("APCA_API_KEY_ID").is_err() || std::env::var("APCA_API_SECRET_KEY").is_err() {
+        println!("Skipping test_compare_rust_and_python_providers: API keys not set.");
+        return;
+    }
+
+    // --- 1. Define Common Request Parameters ---
+    let symbols = vec!["AAPL".to_string(), "MSFT".to_string()];
+    let timeframe = TimeFrame::new(1, TimeFrameUnit::Day);
+    let start = Utc::now() - Duration::days(20);
+    let end = Utc::now() - Duration::days(1);
+
+    // --- 2. Fetch with new Rust-native AlpacaProvider ---
+    let rust_provider = AlpacaProvider::new().expect("Failed to create AlpacaProvider");
+    let rust_params = BarsRequestParams {
+        symbols: symbols.clone(),
+        timeframe: timeframe.clone(),
+        start,
+        end,
+        asset_class: AssetClass::UsEquity,
+        provider_specific: ProviderParams::Alpaca(AlpacaBarsParams {
+            sort: Some(Sort::Asc), // Ensure ascending order for comparison
+            ..Default::default()
+        }),
+    };
+    let mut rust_result = rust_provider
+        .fetch_bars(rust_params)
+        .await
+        .expect("Rust provider failed to fetch bars");
+    rust_result.sort_by(|a, b| a.symbol.cmp(&b.symbol)); // Ensure consistent order
+
+    // --- 3. Fetch with legacy Python-based StockBarData client ---
+    let config_path = "/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml";
+    let python_client = StockBarData::new(config_path)
+        .await
+        .expect("Failed to create legacy Python client");
+    let python_params = LegacyParams {
+        symbols: symbols.clone(),
+        timeframe: timeframe.clone(),
+        start,
+        end,
+    };
+    let python_df = python_client
+        .fetch_historical_bars_to_memory(python_params)
+        .expect("Python client failed to fetch bars");
+
+    // --- 4. Convert legacy DataFrame to Vec<BarSeries> for comparison ---
+    let python_result =
+        dataframe_to_bar_series(&python_df, timeframe).expect("Failed to convert DataFrame");
+
+    // --- 5. Assert that the results are identical ---
+    assert_eq!(
+        rust_result, python_result,
+        "Data from Rust provider does not match data from Python provider"
     );
 }

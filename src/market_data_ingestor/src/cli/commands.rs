@@ -1,4 +1,3 @@
-#![cfg(feature = "alpaca-python-sdk")]
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 

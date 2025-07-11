@@ -47,8 +47,8 @@ impl fmt::Display for IOError {
                 path.display(),
                 error
             ),
-            Self::InvalidSymbol(msg) => write!(f, "Invalid symbol: {}", msg),
-            Self::DataFrameError(msg) => write!(f, "DataFrame processing error: {}", msg),
+            Self::InvalidSymbol(msg) => write!(f, "Invalid symbol: {msg}", ),
+            Self::DataFrameError(msg) => write!(f, "DataFrame processing error: {msg}", ),
         }
     }
 }

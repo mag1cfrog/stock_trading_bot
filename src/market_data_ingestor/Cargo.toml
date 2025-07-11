@@ -13,7 +13,7 @@ alpaca-python-sdk = [
 
 [dependencies]
 async-trait = "0.1.88"
-bincode = {version = "2.0.1", optional = true}
+bincode = { version = "2.0.1", features = ["serde"], optional = true }
 chrono = { version = "0.4.39", features = ["serde"] }
 clap = { version = "4.5.30", features = ["derive"], optional = true }
 futures = { version = "0.3.31", optional = true }

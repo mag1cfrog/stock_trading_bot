@@ -31,7 +31,6 @@ import polars as pl
 print("Alpaca version:", StockHistoricalDataClient.__module__)
 
 print("Python path:", sys.path)
-print("APCA_API_KEY_ID =", os.getenv('APCA_API_KEY_ID'))
 
 alpaca_key = os.getenv('APCA_API_KEY_ID')
 secret_key = os.getenv('APCA_API_SECRET_KEY')
@@ -40,6 +39,9 @@ client = StockHistoricalDataClient(api_key=alpaca_key, secret_key=secret_key)
 
 bars = client.get_stock_bars(request_params) # Use injected params
 df = bars.df
+
+# IMPORTANT: Reset index to make timestamp and symbol available as columns
+df = df.reset_index()
 
 # Convert to Polars DataFrame
 pl_df = pl.from_pandas(df)

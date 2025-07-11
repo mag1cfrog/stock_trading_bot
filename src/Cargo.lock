@@ -2700,6 +2700,7 @@ dependencies = [
  "polars",
  "polars-io",
  "pyo3",
+ "pyo3-build-config",
  "reqwest",
  "secrecy",
  "serde",

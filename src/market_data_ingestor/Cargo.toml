@@ -36,5 +36,8 @@ uuid = { version = "1.14.0", features = ["v4"], optional = true }
 serial_test = "3.2.0"
 tempfile = "3.17.1"
 
+[build-dependencies]
+pyo3-build-config = "0.24.0"
+
 [package.metadata.release]
 pre-release-hook = ["git", "cliff", "-c", "market_data_ingestor/cliff.toml", "--include-path", "src/market_data_ingestor/**", "-p", "CHANGELOG.md", "--latest"]

@@ -30,8 +30,8 @@ fn main() {
 
         // Create the virtual environment using `uv init`.
         let venv_status = Command::new("uv")
-            .arg("init")
-            .arg(python_project_path)
+            .arg("venv")
+            .arg(&venv_path)
             .status()
             .expect("Failed to execute 'uv venv'.");
 
@@ -41,7 +41,8 @@ fn main() {
 
         // Install dependencies into the new virtual environment.
         let pip_status = Command::new("uv")
-            .arg("add")
+            .arg("pip")
+            .arg("install")
             .arg("alpaca-py")
             .arg("polars[pandas]") // Needed for pl.from_pandas()
             .current_dir(python_project_path)

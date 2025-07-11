@@ -148,6 +148,7 @@ fn dataframe_to_bar_series(
 
     let vwap_col = df.column("vwap")?.f64()?;
 
+    #[allow(clippy::needless_range_loop)]
     for i in 0..df.height() {
         let symbol = symbol_col.get(i).unwrap().to_string();
         let bar = Bar {

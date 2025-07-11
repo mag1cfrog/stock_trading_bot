@@ -20,7 +20,9 @@ use market_data_ingestor::{
 };
 use polars::prelude::*;
 use serial_test::serial;
-use std::collections::HashMap;
+use std::io::Write;
+use tempfile::NamedTempFile;
+use std::{collections::HashMap, path::Path};
 
 #[tokio::test]
 #[serial]
@@ -114,17 +116,36 @@ fn dataframe_to_bar_series(
     df: &DataFrame,
     timeframe: TimeFrame,
 ) -> Result<Vec<BarSeries>, Box<dyn std::error::Error>> {
+    println!("DataFrame columns: {:?}", df.get_column_names());
+    println!("DataFrame shape: {:?}", df.shape());
+    
     let mut series_map: HashMap<String, Vec<Bar>> = HashMap::new();
 
-    // Get typed columns from the DataFrame
-    let symbol_col = df.column("symbol")?.str()?;
+    // After reset_index(), we should have both timestamp and symbol as columns
     let timestamp_col = df.column("timestamp")?.datetime()?;
+    let symbol_col = df.column("symbol")?.str()?;
     let open_col = df.column("open")?.f64()?;
     let high_col = df.column("high")?.f64()?;
     let low_col = df.column("low")?.f64()?;
     let close_col = df.column("close")?.f64()?;
     let volume_col = df.column("volume")?.f64()?;
-    let trade_count_col = df.column("trade_count")?.u64()?;
+    
+    // Handle trade_count - it might be f64 from Python, so we need to convert
+    let trade_count_col = df.column("trade_count")?;
+    let trade_count_values: Vec<Option<u64>> = if trade_count_col.dtype() == &DataType::Float64 {
+        // Convert f64 to u64
+        let f64_col = trade_count_col.f64()?;
+        (0..df.height())
+            .map(|i| f64_col.get(i).map(|v| v as u64))
+            .collect()
+    } else {
+        // Try to extract as u64 directly
+        let u64_col = trade_count_col.u64()?;
+        (0..df.height())
+            .map(|i| u64_col.get(i))
+            .collect()
+    };
+
     let vwap_col = df.column("vwap")?.f64()?;
 
     for i in 0..df.height() {
@@ -136,7 +157,7 @@ fn dataframe_to_bar_series(
             low: low_col.get(i).unwrap(),
             close: close_col.get(i).unwrap(),
             volume: volume_col.get(i).unwrap(),
-            trade_count: trade_count_col.get(i),
+            trade_count: trade_count_values[i],
             vwap: vwap_col.get(i),
         };
         series_map.entry(symbol).or_default().push(bar);
@@ -205,9 +226,9 @@ async fn test_compare_rust_and_python_providers() {
         "python_venv_path = \"{}\"",
         venv_path.to_str().unwrap().replace('\\', "\\\\") // Handle Windows paths
     );
-    write!(temp_config, "{}", config_content).expect("Failed to write to temp config file");
+    write!(temp_config, "{config_content}", ).expect("Failed to write to temp config file");
     let config_path = temp_config.path().to_str().unwrap();
-    
+
     let python_client = StockBarData::new(config_path)
         .await
         .expect("Failed to create legacy Python client");

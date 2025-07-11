@@ -28,10 +28,10 @@ fn main() {
     if !venv_path.exists() {
         println!("cargo:warning=Python virtual environment not found. Creating it with 'uv'...");
 
-        // Create the virtual environment using `uv venv`.
+        // Create the virtual environment using `uv init`.
         let venv_status = Command::new("uv")
-            .arg("venv")
-            .arg(&venv_path)
+            .arg("init")
+            .arg(python_project_path)
             .status()
             .expect("Failed to execute 'uv venv'.");
 

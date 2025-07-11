@@ -164,7 +164,7 @@ fn dataframe_to_bar_series(
 async fn test_compare_rust_and_python_providers() {
     // Load environment variables from .env file
     dotenvy::dotenv().ok();
-    
+
     // This test requires APCA_API_KEY_ID and APCA_API_SECRET_KEY to be set.
     if std::env::var("APCA_API_KEY_ID").is_err() || std::env::var("APCA_API_SECRET_KEY").is_err() {
         println!("Skipping test_compare_rust_and_python_providers: API keys not set.");
@@ -197,7 +197,17 @@ async fn test_compare_rust_and_python_providers() {
     rust_result.sort_by(|a, b| a.symbol.cmp(&b.symbol)); // Ensure consistent order
 
     // --- 3. Fetch with legacy Python-based StockBarData client ---
-    let config_path = "/home/hanbo/repo/stock_trading_bot/src/configs/data_ingestor.toml";
+    // --- 3. Fetch with legacy Python-based StockBarData client ---
+    // Create a temporary config file to avoid relying on a hardcoded path.
+    let mut temp_config = NamedTempFile::new().expect("Failed to create temp config file");
+    let venv_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../python/.venv");
+    let config_content = format!(
+        "python_venv_path = \"{}\"",
+        venv_path.to_str().unwrap().replace('\\', "\\\\") // Handle Windows paths
+    );
+    write!(temp_config, "{}", config_content).expect("Failed to write to temp config file");
+    let config_path = temp_config.path().to_str().unwrap();
+    
     let python_client = StockBarData::new(config_path)
         .await
         .expect("Failed to create legacy Python client");

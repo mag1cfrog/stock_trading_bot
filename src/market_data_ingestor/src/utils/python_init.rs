@@ -98,8 +98,8 @@ fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> 
             let msg = format!(
                 "APCA_API_KEY_ID not found in environment. \
                 Make sure to source your zsh config!\n\
-                Original error: {}",
-                e
+                Original error: {e}",
+                
             );
             PyErr::new::<PyValueError, _>(msg)
         })?;
@@ -108,8 +108,8 @@ fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> 
             let msg = format!(
                 "APCA_API_SECRET_KEY not found in environment. \
                 Did you reload your shell after adding to .zshenv?\n\
-                Original error: {}",
-                e
+                Original error: {e}",
+                
             );
             PyErr::new::<PyValueError, _>(msg)
         })?;
@@ -164,7 +164,7 @@ fn find_site_packages(lib_dir: &Path) -> Result<PathBuf, Box<dyn Error + Send + 
 pub fn verify_shell_environment() -> Result<(), Box<dyn Error + Send + Sync>> {
     println!("Current environment variables:");
     for (k, v) in std::env::vars() {
-        println!("- {}={}", k, v);
+        println!("- {k}={v}", );
     }
 
     let required_vars = ["APCA_API_KEY_ID", "APCA_API_SECRET_KEY"];
@@ -172,12 +172,11 @@ pub fn verify_shell_environment() -> Result<(), Box<dyn Error + Send + Sync>> {
     for var in required_vars {
         std::env::var(var).map_err(|_e| {
             format!(
-                "Missing {} in environment.\n\
+                "Missing {var} in environment.\n\
                 TROUBLESHOOTING:\n\
                 1. Ensure variables are exported in ~/.zshenv\n\
                 2. Run 'source ~/.zshenv'\n\
-                3. Verify with 'echo ${}'",
-                var, var
+                3. Verify with 'echo ${var}'",
             )
         })?;
     }

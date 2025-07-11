@@ -79,17 +79,26 @@ fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> 
     pyo3::prepare_freethreaded_python();
     Python::with_gil(|py| {
         let venv_path = Path::new(&config.python_venv_path);
+        
+        // Check for 'lib64' first, then fall back to 'lib'. This is more robust
+        // across different Linux distributions.
+        let lib64_dir = venv_path.join("lib64");
         let lib_dir = venv_path.join("lib");
 
-        // Set up virtual environment path first
-        let site_packages_path = find_site_packages(&lib_dir)?;
+        let site_packages_path = find_site_packages(&lib64_dir)
+            .or_else(|_| find_site_packages(&lib_dir))?;
 
         let sys = py.import("sys").expect("Cannot import sys module");
 
         let sys_path = sys.getattr("path").expect("Cannot get sys.path");
 
+        // Convert PathBuf to string before passing to Python
+        let site_packages_str = site_packages_path.to_str().ok_or_else(|| {
+            PyErr::new::<PyValueError, _>("Failed to convert site-packages path to string")
+        })?;
+
         sys_path
-            .call_method1("insert", (0, site_packages_path))
+            .call_method1("insert", (0, site_packages_str))
             .expect("Failed to insert site-packages path");
 
         // Get environment variables in Rust
@@ -121,23 +130,24 @@ fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> 
         environ.set_item("APCA_API_SECRET_KEY", secret_key)?;
         println!("env set to pyo3 instance.");
 
-        // Prevent deadlock by importing modules upfront
-        py.import("alpaca.data.timeframe").map_err(|e| {
-            error!("Failed to import alpaca.data.timeframe: {:?}", e);
-            e
-        })?;
-        py.import("alpaca.data.requests").map_err(|e| {
-            error!("Failed to import alpaca.data.requests: {:?}", e);
-            e
-        })?;
+        // Helper to create a detailed error message including the Python search path.
+        let import_error = |py: Python, module: &str, e: PyErr| -> PyErr {
+            let sys = py.import("sys").unwrap();
+            let path: Vec<String> = sys.getattr("path").unwrap().extract().unwrap();
+            let formatted_path = path.join("\n  - ");
+            let msg = format!(
+                "Failed to import Python module '{module}'.\n\nPython was searching in the following paths (sys.path):\n  - {formatted_path}\n\nOriginal error: {e}",
+            );
+            PyErr::new::<PyValueError, _>(msg)
+        };
 
-        // Optionally check pydantic_core if needed
-        // Update the pydantic_core import check
-        py.import("pydantic_core").map_err(|e| {
-            error!("Failed to import pydantic_core: {:?}", e);
-            error!("Python path: {:?}", sys_path.call_method0("__str__"));
-            e
-        })?;
+        // Prevent deadlock by importing modules upfront with enhanced error reporting.
+        py.import("alpaca.data.timeframe")
+            .map_err(|e| import_error(py, "alpaca.data.timeframe", e))?;
+        py.import("alpaca.data.requests")
+            .map_err(|e| import_error(py, "alpaca.data.requests", e))?;
+        py.import("pydantic_core")
+            .map_err(|e| import_error(py, "pydantic_core", e))?;
 
         Ok(())
     })

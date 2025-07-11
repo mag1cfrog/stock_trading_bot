@@ -7,7 +7,7 @@ use pyo3::types::{PyDict, PyList};
 
 use crate::models::stockbars::StockBarsParams;
 use crate::requests::historical::StockBarData;
-use crate::requests::historical::errors::MarketDataError;
+use crate::requests::historical::legacy_errors::MarketDataError;
 
 pub fn fetch_bars_batch_partial(
     _data: &StockBarData,
@@ -205,13 +205,13 @@ mod tests {
         let params_list = [
             StockBarsParams {
                 symbols: vec!["AAPL".into()],
-                timeframe: TimeFrame::new(1, TimeFrameUnit::Day).unwrap(),
+                timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
                 start: Utc.with_ymd_and_hms(2023, 1, 1, 9, 30, 0).unwrap(),
                 end: Utc.with_ymd_and_hms(2023, 1, 30, 16, 0, 0).unwrap(),
             },
             StockBarsParams {
                 symbols: vec!["MSFT".into()],
-                timeframe: TimeFrame::new(1, TimeFrameUnit::Day).unwrap(),
+                timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
                 start: Utc.with_ymd_and_hms(2023, 1, 1, 9, 30, 0).unwrap(),
                 end: Utc.with_ymd_and_hms(2023, 1, 30, 16, 0, 0).unwrap(),
             },

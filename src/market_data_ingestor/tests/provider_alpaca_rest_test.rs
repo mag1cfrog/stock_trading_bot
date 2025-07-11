@@ -162,6 +162,9 @@ fn dataframe_to_bar_series(
 #[serial]
 #[ignore]
 async fn test_compare_rust_and_python_providers() {
+    // Load environment variables from .env file
+    dotenvy::dotenv().ok();
+    
     // This test requires APCA_API_KEY_ID and APCA_API_SECRET_KEY to be set.
     if std::env::var("APCA_API_KEY_ID").is_err() || std::env::var("APCA_API_SECRET_KEY").is_err() {
         println!("Skipping test_compare_rust_and_python_providers: API keys not set.");

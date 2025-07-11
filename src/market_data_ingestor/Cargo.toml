@@ -33,6 +33,7 @@ toml = "0.8.20"
 uuid = { version = "1.14.0", features = ["v4"], optional = true }
 
 [dev-dependencies]
+dotenvy = "0.15.7"
 serial_test = "3.2.0"
 tempfile = "3.17.1"
 

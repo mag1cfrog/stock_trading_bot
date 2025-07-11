@@ -94,7 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     Err(e) => {
                         if let Some(symbol) = params_list[i].symbols.first() {
-                            eprintln!("ERROR: {} - {}", symbol, e);
+                            eprintln!("ERROR: {symbol} - {e}");
                         }
                         error_count += 1;
                     }
@@ -103,8 +103,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Print summary to stderr so it doesn't intefere with machine parisng of paths
             eprintln!(
-                "SUMMARY: {} succeeded, {} failed",
-                success_count, error_count
+                "SUMMARY: {success_count} succeeded, {error_count} failed"
             );
         }
     }

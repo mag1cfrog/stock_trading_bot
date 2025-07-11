@@ -7,7 +7,7 @@ use pyo3::types::PyDict;
 
 use crate::models::stockbars::StockBarsParams;
 use crate::requests::historical::StockBarData;
-use crate::requests::historical::errors::MarketDataError;
+use crate::requests::historical::legacy_errors::MarketDataError;
 
 pub fn fetch_historical_bars(
     _data: &StockBarData,
@@ -122,7 +122,7 @@ mod tests {
 
         let params = StockBarsParams {
             symbols: vec!["AAPL".into()],
-            timeframe: TimeFrame::new(1, TimeFrameUnit::Day).unwrap(),
+            timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
             start: Utc.with_ymd_and_hms(2025, 1, 1, 9, 30, 0).unwrap(),
             end: Utc.with_ymd_and_hms(2025, 1, 30, 16, 0, 0).unwrap(),
         };
@@ -130,6 +130,6 @@ mod tests {
         let df = market_data
             .fetch_historical_bars(params)
             .expect("Can't get dataframe from py to rs");
-        println!("Test dataframe output: {}", df);
+        println!("Test dataframe output: {df}");
     }
 }

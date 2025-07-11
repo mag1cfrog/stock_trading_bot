@@ -23,9 +23,9 @@ impl From<IOError> for IngestorError {
 impl fmt::Display for IngestorError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Market(err) => write!(f, "Market data error: {}", err),
-            Self::IO(err) => write!(f, "I/O error: {}", err),
-            Self::SystemError(msg) => write!(f, "System error: {}", msg),
+            Self::Market(err) => write!(f, "Market data error: {err}"),
+            Self::IO(err) => write!(f, "I/O error: {err}"),
+            Self::SystemError(msg) => write!(f, "System error: {msg}"),
         }
     }
 }

@@ -34,19 +34,19 @@ impl From<PolarsError> for MarketDataError {
 impl fmt::Display for MarketDataError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InvalidPath(path) => write!(f, "Invalid path: {}", path),
+            Self::InvalidPath(path) => write!(f, "Invalid path: {path}"),
             Self::MissingSitePackages(path) => {
-                write!(f, "Missing site-packages directory: {}", path)
+                write!(f, "Missing site-packages directory: {path}" )
             }
-            Self::MissingAlpacaPackage(path) => write!(f, "Missing Alpaca package: {}", path),
-            Self::NoPythonVersionFound(msg) => write!(f, "No Python version found: {}", msg),
+            Self::MissingAlpacaPackage(path) => write!(f, "Missing Alpaca package: {path}"),
+            Self::NoPythonVersionFound(msg) => write!(f, "No Python version found: {msg}"),
             Self::AlpacaAPIError { py_type, message } => {
-                write!(f, "Alpaca API error({}): {}", py_type, message)
+                write!(f, "Alpaca API error({py_type}): {message}")
             }
-            Self::PythonExecutionError(msg) => write!(f, "Python execution error: {}", msg),
-            Self::EnvError(msg) => write!(f, "Environment error: {}", msg),
-            Self::PyInterfaceError(msg) => write!(f, "Python interface error: {}", msg),
-            Self::DataFrameError(msg) => write!(f, "DataFrame processing error: {}", msg),
+            Self::PythonExecutionError(msg) => write!(f, "Python execution error: {msg}"),
+            Self::EnvError(msg) => write!(f, "Environment error: {msg}"),
+            Self::PyInterfaceError(msg) => write!(f, "Python interface error: {msg}"),
+            Self::DataFrameError(msg) => write!(f, "DataFrame processing error: {msg}"),
         }
     }
 }

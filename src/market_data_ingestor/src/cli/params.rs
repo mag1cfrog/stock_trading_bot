@@ -20,7 +20,7 @@ pub fn parse_timeframe(amount: u32, unit: &str) -> Result<TimeFrame, Box<dyn Err
         "mo" | "month" => TimeFrameUnit::Month,
         _ => {
             return Err(Box::new(TimeFrameError::InvalidInput {
-                message: format!("Invalid timeframe unit: {}", unit),
+                message: format!("Invalid timeframe unit: {unit}"),
             }));
         }
     };
@@ -43,7 +43,7 @@ pub fn parse_batch_params_from_stdin() -> Result<Vec<StockBarsParams>, Box<dyn E
 
     match json_value {
         Ok(value) => parse_batch_params_from_json_value(value),
-        Err(e) => Err(format!("Failed to parse stdin data: {}", e).into()),
+        Err(e) => Err(format!("Failed to parse stdin data: {e}").into()),
     }
 }
 

@@ -102,7 +102,7 @@ impl<'py> IntoPyObject<'py> for TimeFrame {
     }
 }
 
-#[cfg(all(test, feature = "alpaca-python-sdk"))]
+#[cfg(feature = "alpaca-python-sdk")]
 impl<'source> FromPyObject<'source> for TimeFrame {
     fn extract_bound(ob: &Bound<'source, PyAny>) -> pyo3::PyResult<Self> {
         let amount: u32 = ob.getattr("amount")?.extract()?;
@@ -152,7 +152,7 @@ mod test {
                 // Print Python version
                 let sys = py.import("sys").expect("Cannot import sys module");
                 let version = sys.getattr("version").expect("Cannot get Python version");
-                println!("Python version: {}", version);
+                println!("Python version: {version}");
 
                 // Print PYTHONPATH
                 let sys_path = sys.getattr("path").expect("Cannot get sys.path");
@@ -161,20 +161,20 @@ mod test {
                 // Try importing pydantic with more debug info
                 match py.import("pydantic") {
                     Ok(_) => println!("Successfully imported pydantic"),
-                    Err(e) => println!("Failed to import pydantic: {:?}", e),
+                    Err(e) => println!("Failed to import pydantic: {e}"),
                 }
 
                 // Try importing pydantic_core with more debug info
                 match py.import("pydantic_core") {
                     Ok(_) => println!("Successfully imported pydantic_core"),
-                    Err(e) => println!("Failed to import pydantic_core: {:?}", e),
+                    Err(e) => println!("Failed to import pydantic_core: {e}"),
                 }
 
                 let timeframe = TimeFrame::new(5, TimeFrameUnit::Minute);
                 let py_timeframe = timeframe
                     .into_pyobject(py)
                     .map_err(|e| {
-                        error!("Failed to import pydantic_core: {:?}", e);
+                        error!("Failed to import pydantic_core: {e}");
                         e
                     })
                     .unwrap();
@@ -244,7 +244,6 @@ mod test {
         #[test]
         fn test_valid_minute_timeframe() {
             let tf = TimeFrame::new(5, TimeFrameUnit::Minute);
-            let tf = tf;
             assert_eq!(tf.amount, 5);
             assert!(matches!(tf.unit, TimeFrameUnit::Minute));
         }
@@ -252,7 +251,6 @@ mod test {
         #[test]
         fn test_valid_hour_timeframe() {
             let tf = TimeFrame::new(6, TimeFrameUnit::Hour);
-            let tf = tf;
             assert_eq!(tf.amount, 6);
             assert!(matches!(tf.unit, TimeFrameUnit::Hour));
         }

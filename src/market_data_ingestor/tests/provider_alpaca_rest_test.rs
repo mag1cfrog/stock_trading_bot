@@ -1,5 +1,5 @@
 #![cfg(all(test, feature = "alpaca-python-sdk"))]
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use market_data_ingestor::{
     models::{
         asset::AssetClass,
@@ -130,7 +130,7 @@ fn dataframe_to_bar_series(
     for i in 0..df.height() {
         let symbol = symbol_col.get(i).unwrap().to_string();
         let bar = Bar {
-            timestamp: timestamp_col.get(i).unwrap().into(),
+            timestamp: DateTime::from_timestamp_nanos(timestamp_col.get(i).unwrap()),
             open: open_col.get(i).unwrap(),
             high: high_col.get(i).unwrap(),
             low: low_col.get(i).unwrap(),

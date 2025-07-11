@@ -38,7 +38,7 @@ impl AlpacaProvider {
             header::HeaderValue::from_str(api_key.expose_secret())?,
         );
         headers.insert(
-            "APCA_API_SECRET_KEY",
+            "APCA-API-SECRET-KEY",
             header::HeaderValue::from_str(secret_key.expose_secret())?,
         );
 

@@ -1,5 +1,14 @@
 # Changelog
 All notable changes to market_data_ingestor will be documented in this file.
+## [Latest]
+
+
+### Bug Fixes
+
+- Update pre-release-hook to post-release-hook in Cargo.toml ([c0fb896](https://github.com/mag1cfrog/stock_trading_bot/commit/c0fb89617bd87344daaf65253f7901620baddc15))
+
+- Correct post-release-hook to pre-release-hook in Cargo.toml ([2e31f26](https://github.com/mag1cfrog/stock_trading_bot/commit/2e31f2677b5153f576c82ea68ae90a9222695700))
+
 ## market_data_ingestor-v1.3.0
 
 

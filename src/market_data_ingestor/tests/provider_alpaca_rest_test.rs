@@ -11,10 +11,10 @@ use market_data_ingestor::{
     },
     providers::{
         alpaca_rest::{
-            params::{AlpacaBarsParams, Sort},
+            params::{AlpacaBarsParams, AlpacaSubscriptionPlan, Sort},
             provider::AlpacaProvider,
         },
-        DataProvider,
+        DataProvider, ProviderError,
     },
     requests::historical::StockBarData,
 };
@@ -252,4 +252,37 @@ async fn test_compare_rust_and_python_providers() {
         rust_result, python_result,
         "Data from Rust provider does not match data from Python provider"
     );
+}
+
+#[tokio::test]
+#[serial]
+#[ignore]
+async fn test_alpaca_provider_with_basic_plan_validation() {
+    if std::env::var("APCA_API_KEY_ID").is_err() || std::env::var("APCA_API_SECRET_KEY").is_err() {
+        println!("Skipping test: API keys not set.");
+        return;
+    }
+
+    let provider = AlpacaProvider::new().expect("Failed to create AlpacaProvider");
+    let now = Utc::now();
+
+    // This should fail for Basic plan due to 15-minute delay
+    let params = BarsRequestParams {
+        symbols: vec!["AAPL".to_string()],
+        timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
+        start: now - Duration::minutes(30),
+        end: now - Duration::minutes(5), // Too recent for Basic plan
+        asset_class: AssetClass::UsEquity,
+        provider_specific: ProviderParams::Alpaca(AlpacaBarsParams {
+            subscription_plan: AlpacaSubscriptionPlan::Basic,
+            ..Default::default()
+        }),
+    };
+
+    let result = provider.fetch_bars(params).await;
+    assert!(result.is_err());
+    
+    if let Err(ProviderError::Validation(msg)) = result {
+        assert!(msg.contains("15-minute delay"));
+    }
 }

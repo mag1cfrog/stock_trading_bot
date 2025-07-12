@@ -1,4 +1,3 @@
-#![cfg(feature = "alpaca-python-sdk")]
 use pyo3::{
     Bound, IntoPyObject, PyAny, PyErr,
     types::{PyAnyMethods, PyDict},
@@ -64,7 +63,7 @@ mod tests {
         Python::with_gil(|py| {
             let params = StockBarsParams {
                 symbols: vec!["AAPL".to_string(), "MSFT".to_string()],
-                timeframe: TimeFrame::new(5, TimeFrameUnit::Minute).unwrap(),
+                timeframe: TimeFrame::new(5, TimeFrameUnit::Minute),
                 start: Utc.with_ymd_and_hms(2023, 1, 1, 0, 0, 0).unwrap(),
                 end: Utc.with_ymd_and_hms(2023, 1, 2, 0, 0, 0).unwrap(),
             };
@@ -105,7 +104,7 @@ mod tests {
     fn test_stockbars_params_creation() {
         let params = StockBarsParams {
             symbols: vec!["AAPL".to_string()],
-            timeframe: TimeFrame::new(1, TimeFrameUnit::Minute).unwrap(),
+            timeframe: TimeFrame::new(1, TimeFrameUnit::Minute),
             start: Utc::now(),
             end: Utc::now(),
         };

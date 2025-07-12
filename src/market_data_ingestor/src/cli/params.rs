@@ -12,15 +12,19 @@ use crate::models::{
 use super::commands::BatchParamItem;
 
 pub fn parse_timeframe(amount: u32, unit: &str) -> Result<TimeFrame, Box<dyn Error>> {
-    let unit = match unit.trim().to_lowercase().as_str() {
-        "m" | "min" | "minute" => TimeFrame::new(amount, TimeFrameUnit::Minute),
-        "h" | "hr" | "hour" => TimeFrame::new(amount, TimeFrameUnit::Hour),
-        "d" | "day" => TimeFrame::new(amount, TimeFrameUnit::Day),
-        "w" | "wk" | "week" => TimeFrame::new(amount, TimeFrameUnit::Week),
-        "mo" | "month" => TimeFrame::new(amount, TimeFrameUnit::Month),
-        _ => return Box::new(TimeFrameError::InvalidInput { message: format!("Invalid timeframe unit: {}", unit)}),
+    let timeframe_unit = match unit.trim().to_lowercase().as_str() {
+        "m" | "min" | "minute" => TimeFrameUnit::Minute,
+        "h" | "hr" | "hour" => TimeFrameUnit::Hour,
+        "d" | "day" => TimeFrameUnit::Day,
+        "w" | "wk" | "week" => TimeFrameUnit::Week,
+        "mo" | "month" => TimeFrameUnit::Month,
+        _ => {
+            return Err(Box::new(TimeFrameError::InvalidInput {
+                message: format!("Invalid timeframe unit: {unit}"),
+            }));
+        }
     };
-    Ok(TimeFrame::new(amount, unit))
+    Ok(TimeFrame::new(amount, timeframe_unit))
 }
 
 #[cfg(feature = "alpaca-python-sdk")]
@@ -29,14 +33,17 @@ pub fn parse_batch_params_from_stdin() -> Result<Vec<StockBarsParams>, Box<dyn E
     io::stdin().read_to_end(&mut buffer)?;
 
     // Try to parse as binary format first(more efficient)
-    let json_value: Result<Value, _> = bincode::deserialize(&buffer).or_else(|_| {
-        // If binary foramt fails, try as JSON
-        serde_json::from_slice(&buffer)
-    });
+    let json_value: Result<Value, _> =
+        bincode::serde::decode_from_slice(&buffer, bincode::config::standard())
+            .map(|(val, _len)| val) // bincode 2 returns a (value, length) tuple
+            .or_else(|_| {
+                // If binary format fails, try as JSON
+                serde_json::from_slice(&buffer)
+            });
 
     match json_value {
         Ok(value) => parse_batch_params_from_json_value(value),
-        Err(e) => Err(format!("Failed to parse stdin data: {}", e).into()),
+        Err(e) => Err(format!("Failed to parse stdin data: {e}").into()),
     }
 }
 

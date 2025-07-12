@@ -1,4 +1,3 @@
-#![cfg(feature = "alpaca-python-sdk")]
 use std::ffi::CString;
 
 use polars::prelude::*;
@@ -7,7 +6,7 @@ use pyo3::types::{PyDict, PyList};
 
 use crate::models::stockbars::StockBarsParams;
 use crate::requests::historical::StockBarData;
-use crate::requests::historical::errors::MarketDataError;
+use crate::requests::historical::legacy_errors::MarketDataError;
 
 pub fn fetch_bars_batch_partial(
     _data: &StockBarData,
@@ -105,8 +104,7 @@ for request_params in request_params_list:
                     .get_item("results_list")
                     .map_err(|e| {
                         MarketDataError::PythonExecutionError(format!(
-                            "Could not find `results_list` in Python locals: {}",
-                            e
+                            "Could not find `results_list` in Python locals: {e}"
                         ))
                     })?
                     .ok_or_else(|| {
@@ -118,8 +116,7 @@ for request_params in request_params_list:
                 let py_results_list: &Bound<'_, PyList> =
                     py_results_list.downcast().map_err(|e| {
                         MarketDataError::PythonExecutionError(format!(
-                            "results_list is not a Python list: {}",
-                            e
+                            "results_list is not a Python list: {e}"
                         ))
                     })?;
 
@@ -130,7 +127,7 @@ for request_params in request_params_list:
                     // item should be a Python dict with either "ok" -> bytes or "err" -> string
                     // With proper dict downcasting:
                     let dict = item.downcast::<PyDict>().map_err(|e| {
-                        MarketDataError::PythonExecutionError(format!("Expected dict: {}", e))
+                        MarketDataError::PythonExecutionError(format!("Expected dict: {e}"))
                     })?;
 
                     let keys = dict.keys();
@@ -205,13 +202,13 @@ mod tests {
         let params_list = [
             StockBarsParams {
                 symbols: vec!["AAPL".into()],
-                timeframe: TimeFrame::new(1, TimeFrameUnit::Day).unwrap(),
+                timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
                 start: Utc.with_ymd_and_hms(2023, 1, 1, 9, 30, 0).unwrap(),
                 end: Utc.with_ymd_and_hms(2023, 1, 30, 16, 0, 0).unwrap(),
             },
             StockBarsParams {
                 symbols: vec!["MSFT".into()],
-                timeframe: TimeFrame::new(1, TimeFrameUnit::Day).unwrap(),
+                timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
                 start: Utc.with_ymd_and_hms(2023, 1, 1, 9, 30, 0).unwrap(),
                 end: Utc.with_ymd_and_hms(2023, 1, 30, 16, 0, 0).unwrap(),
             },
@@ -225,7 +222,7 @@ mod tests {
         for (i, result) in results.iter().enumerate() {
             match result {
                 Ok(df) => println!("Dataframe {} succeeded with shape: {:?}", i, df.shape()),
-                Err(e) => println!("Request {} failed with error: {}", i, e),
+                Err(e) => println!("Request {i} failed with error: {e}"),
             }
         }
 

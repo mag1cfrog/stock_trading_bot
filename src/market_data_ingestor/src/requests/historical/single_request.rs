@@ -1,4 +1,3 @@
-#![cfg(feature = "alpaca-python-sdk")]
 use std::ffi::CString;
 
 use polars::prelude::*;
@@ -7,7 +6,7 @@ use pyo3::types::PyDict;
 
 use crate::models::stockbars::StockBarsParams;
 use crate::requests::historical::StockBarData;
-use crate::requests::historical::errors::MarketDataError;
+use crate::requests::historical::legacy_errors::MarketDataError;
 
 pub fn fetch_historical_bars(
     _data: &StockBarData,
@@ -31,7 +30,6 @@ import polars as pl
 print("Alpaca version:", StockHistoricalDataClient.__module__)
 
 print("Python path:", sys.path)
-print("APCA_API_KEY_ID =", os.getenv('APCA_API_KEY_ID'))
 
 alpaca_key = os.getenv('APCA_API_KEY_ID')
 secret_key = os.getenv('APCA_API_SECRET_KEY')
@@ -40,6 +38,9 @@ client = StockHistoricalDataClient(api_key=alpaca_key, secret_key=secret_key)
 
 bars = client.get_stock_bars(request_params) # Use injected params
 df = bars.df
+
+# IMPORTANT: Reset index to make timestamp and symbol available as columns
+df = df.reset_index()
 
 # Convert to Polars DataFrame
 pl_df = pl.from_pandas(df)
@@ -122,7 +123,7 @@ mod tests {
 
         let params = StockBarsParams {
             symbols: vec!["AAPL".into()],
-            timeframe: TimeFrame::new(1, TimeFrameUnit::Day).unwrap(),
+            timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
             start: Utc.with_ymd_and_hms(2025, 1, 1, 9, 30, 0).unwrap(),
             end: Utc.with_ymd_and_hms(2025, 1, 30, 16, 0, 0).unwrap(),
         };
@@ -130,6 +131,6 @@ mod tests {
         let df = market_data
             .fetch_historical_bars(params)
             .expect("Can't get dataframe from py to rs");
-        println!("Test dataframe output: {}", df);
+        println!("Test dataframe output: {df}");
     }
 }

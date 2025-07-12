@@ -94,7 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     Err(e) => {
                         if let Some(symbol) = params_list[i].symbols.first() {
-                            eprintln!("ERROR: {} - {}", symbol, e);
+                            eprintln!("ERROR: {symbol} - {e}");
                         }
                         error_count += 1;
                     }
@@ -103,8 +103,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Print summary to stderr so it doesn't intefere with machine parisng of paths
             eprintln!(
-                "SUMMARY: {} succeeded, {} failed",
-                success_count, error_count
+                "SUMMARY: {success_count} succeeded, {error_count} failed"
             );
         }
     }
@@ -113,11 +112,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg(all(feature = "cli", not(feature = "alpaca-python-sdk")))]
 fn main() {
-    eprintln!("This command requires the 'alpaca-python-sdk' feature. Please recompile with '--features alpaca-python-sdk'.");
+    eprintln!(
+        "This command requires the 'alpaca-python-sdk' feature. Please recompile with '--features alpaca-python-sdk'."
+    );
     std::process::exit(1);
 }
 
 #[cfg(not(feature = "cli"))]
 fn main() {
-// ...existing code...
+    // ...existing code...
 }

@@ -32,12 +32,15 @@
 //!     }
 //! }
 //! ```
-//! 
+//!
+
+pub mod alpaca_rest;
 
 use async_trait::async_trait;
+use shared_utils::env::MissingEnvVarError;
 use thiserror::Error;
 
-use crate::{errors::Error, models::{bar_series::BarSeries, request_params::BarsRequestParams}};
+use crate::models::{bar_series::BarSeries, request_params::BarsRequestParams};
 
 /// Trait for fetching time-series bar data from a market data provider.
 ///
@@ -56,7 +59,23 @@ pub trait DataProvider {
     ///
     /// * `Ok(Vec<BarSeries>)` - A vector of bar series, one per symbol.
     /// * `Err(Error)` - If the request fails, returns a unified error type.
-    async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, Error>;
+    async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, ProviderError>;
+}
+
+/// Errors that can occur during the creation of a provider instance
+#[derive(Debug, Error)]
+pub enum ProviderInitError {
+    /// missed environment variable.
+    #[error(transparent)]
+    MissingEnvVar(#[from] MissingEnvVarError),
+
+    /// failed to init reqwest client
+    #[error(transparent)]
+    ClientBuild(#[from] reqwest::Error),
+
+    /// API key contains invalid characters.
+    #[error("Invalid API key format: {0}")]
+    InvalidApiKey(#[from] reqwest::header::InvalidHeaderValue),
 }
 
 /// Errors that can occur within a `DataProvider` implementation.
@@ -64,7 +83,7 @@ pub trait DataProvider {
 pub enum ProviderError {
     /// An error during an API request (e.g., network failure, timeout).
     #[error("API request failed: {0}")]
-    Request(#[from] reqwest::Error),
+    Reqwest(#[from] reqwest::Error),
 
     /// The provider's API returned a specific error message (e.g., invalid API key).
     #[error("API error: {0}")]
@@ -77,4 +96,8 @@ pub enum ProviderError {
     /// An internal error occurred while processing data within the provider.
     #[error("Internal provider error: {0}")]
     Internal(String),
+
+    /// An error during provider configuration or initialization.
+    #[error(transparent)]
+    Init(#[from] ProviderInitError),
 }

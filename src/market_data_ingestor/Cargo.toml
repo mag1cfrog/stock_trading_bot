@@ -7,30 +7,40 @@ edition = "2024"
 default = []
 cli = ["clap"]
 alpaca-python-sdk = [
-    "pyo3", "bincode", "serde_json", "tokio", "uuid", "polars",
+    "pyo3", "bincode", "uuid", "polars", "polars-io",
     "futures", "log"
-] 
+]
 
 [dependencies]
 async-trait = "0.1.88"
-bincode = {version = "2.0.1", optional = true}
-chrono = "0.4.39"
+bincode = { version = "2.0.1", features = ["serde"], optional = true }
+chrono = { version = "0.4.39", features = ["serde"] }
 clap = { version = "4.5.30", features = ["derive"], optional = true }
 futures = { version = "0.3.31", optional = true }
+governor = "0.10.0"
+indexmap = { version = "2.10.0", features = ["serde"] }
 log = { version = "0.4.26", optional = true }
+nonzero_ext = "0.3.0"
 polars = { version = "0.46.0", features = ["ipc", "polars-io"], optional = true }
+polars-io = { version = "0.46.0", optional = true }
 pyo3 = { version = "0.24.0", features = ["auto-initialize", "chrono"], optional = true }
-reqwest = "0.12.22"
+reqwest = { version = "0.12.22", features = ["json"] }
+secrecy = "0.10.3"
 serde = { version = "1.0.218", features = ["derive"] }
-serde_json = {version = "1.0.139", optional = true }
-thiserror = "2.0.11"
-tokio = { version = "1.43.0", features = ["full"], optional = true }
+serde_json = "1.0.139" 
+shared_utils = { path = "../shared_utils" }
+thiserror = { workspace = true }
+tokio = { version = "1.43.0", features = ["full"]}
 toml = "0.8.20"
 uuid = { version = "1.14.0", features = ["v4"], optional = true }
 
 [dev-dependencies]
+dotenvy = "0.15.7"
 serial_test = "3.2.0"
 tempfile = "3.17.1"
+
+[build-dependencies]
+pyo3-build-config = { version = "0.24.0", features = ["resolve-config"] }
 
 [package.metadata.release]
 pre-release-hook = ["git", "cliff", "-c", "market_data_ingestor/cliff.toml", "--include-path", "src/market_data_ingestor/**", "-p", "CHANGELOG.md", "--latest"]

@@ -20,17 +20,17 @@ use std::path::PathBuf;
 
 use polars::prelude::*;
 
-use crate::legacy_errors::IngestorError;
 #[cfg(feature = "alpaca-python-sdk")]
 use crate::io::dataframe::write_dataframe_to_temp;
 #[cfg(feature = "alpaca-python-sdk")]
 use crate::io::legacy_errors::IOError;
+use crate::legacy_errors::IngestorError;
 #[cfg(feature = "alpaca-python-sdk")]
 use crate::models::stockbars::StockBarsParams;
 #[cfg(feature = "alpaca-python-sdk")]
 use crate::utils::init_python;
 #[cfg(feature = "alpaca-python-sdk")]
-use crate::utils::python_init::{init_python_with_config, read_config, Config};
+use crate::utils::python_init::{Config, init_python_with_config, read_config};
 
 #[allow(unused)]
 pub struct StockBarData {
@@ -56,9 +56,10 @@ impl StockBarData {
     #[cfg(feature = "alpaca-python-sdk")]
     pub async fn with_config(config: Config) -> Result<Self, IngestorError> {
         // Initialize Python environment with the provided config
-        init_python_with_config(&config)
-            .map_err(|e| IngestorError::SystemError(format!("Python initialization error: {}", e)))?;
-        
+        init_python_with_config(&config).map_err(|e| {
+            IngestorError::SystemError(format!("Python initialization error: {e}"))
+        })?;
+
         Ok(Self { config })
     }
 

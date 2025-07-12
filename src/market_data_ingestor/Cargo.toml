@@ -1,6 +1,6 @@
 [package]
 name = "market_data_ingestor"
-version = "1.2.0"
+version = "1.3.4"
 edition = "2024"
 
 [features]
@@ -43,4 +43,4 @@ tempfile = "3.17.1"
 pyo3-build-config = { version = "0.24.0", features = ["resolve-config"] }
 
 [package.metadata.release]
-pre-release-hook = ["git", "cliff", "-c", "market_data_ingestor/cliff.toml", "--include-path", "src/market_data_ingestor/**", "-p", "CHANGELOG.md", "--latest"]
+

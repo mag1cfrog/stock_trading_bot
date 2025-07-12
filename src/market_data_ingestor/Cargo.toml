@@ -43,4 +43,4 @@ tempfile = "3.17.1"
 pyo3-build-config = { version = "0.24.0", features = ["resolve-config"] }
 
 [package.metadata.release]
-pre-release-hook = ["git", "cliff", "-c", "market_data_ingestor/cliff.toml", "--include-path", "src/market_data_ingestor/**", "-p", "CHANGELOG.md", "--latest"]
+post-release-hook = ["git", "cliff", "-c", "market_data_ingestor/cliff.toml", "--include-path", "src/market_data_ingestor/**", "-p", "CHANGELOG.md", "--latest"]

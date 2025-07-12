@@ -8,10 +8,10 @@ use secrecy::{ExposeSecret, SecretString};
 use shared_utils::env::get_env_var;
 
 use crate::{
-    models::{bar::Bar, bar_series::BarSeries, request_params::BarsRequestParams},
+    models::{bar::Bar, bar_series::BarSeries, request_params::{BarsRequestParams, ProviderParams}},
     providers::{
         alpaca_rest::{
-            params::{construct_params, validate_timeframe, AlpacaSubscriptionPlan},
+            params::{construct_params, validate_request, AlpacaSubscriptionPlan},
             response::{AlpacaBar, AlpacaResponse},
         }, DataProvider, ProviderError, ProviderInitError
     },
@@ -32,6 +32,19 @@ impl AlpacaProvider {
         Self::with_subscription_plan(AlpacaSubscriptionPlan::Basic)
     }
 
+    /// Creates a new Alpaca provider from request parameters.
+    ///
+    /// Extracts the subscription plan from the provider-specific parameters.
+    pub fn from_params(params: &BarsRequestParams) -> Result<Self, ProviderInitError> {
+        let plan = match &params.provider_specific {
+            ProviderParams::Alpaca(alpaca_params) => {
+                alpaca_params.subscription_plan.clone()
+            }
+            _ => AlpacaSubscriptionPlan::Basic,
+        };
+
+        Self::with_subscription_plan(plan)
+    }
 
     /// Creates a new Alpaca provider with specified subscription plan.
     pub fn with_subscription_plan(plan: AlpacaSubscriptionPlan) -> Result<Self, ProviderInitError> {
@@ -90,8 +103,8 @@ impl AlpacaProvider {
 #[async_trait]
 impl DataProvider for AlpacaProvider {
     async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, ProviderError> {
-        // Validate the timeframe before proceeding.
-        validate_timeframe(&params.timeframe)?;
+        // Validate the entire request (timeframe + date range + subscription plan)
+        validate_request(&params)?;
 
         let mut all_bars: IndexMap<String, Vec<AlpacaBar>> = IndexMap::new();
         let mut next_page_token: Option<String> = None;

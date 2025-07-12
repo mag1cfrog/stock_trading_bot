@@ -1,3 +1,4 @@
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -70,6 +71,9 @@ pub struct AlpacaBarsParams {
     pub limit: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sort: Option<Sort>,
+    /// Subscription plan for validation (defaults to Basic)
+    #[serde(default)]
+    pub subscription_plan: AlpacaSubscriptionPlan,
 }
 
 fn format_timeframe_str(tf: &TimeFrame) -> String {
@@ -156,6 +160,66 @@ pub fn construct_params(params: &BarsRequestParams) -> Vec<(String, String)> {
     }
 
     query_params
+}
+
+/// Validates the date range based on Alpaca's historical data limitations
+pub fn validate_date_range(start: DateTime<Utc>, end: DateTime<Utc>, plan: &AlpacaSubscriptionPlan) -> Result<(), ProviderError> {
+    let now = Utc::now();
+
+    // Both plans support data since 2016
+    let earliest_date = DateTime::parse_from_rfc3339("2016-01-01T00:00:00Z")
+        .unwrap()
+        .with_timezone(&Utc);
+
+    if start < earliest_date {
+        return Err(ProviderError::Validation(format!(
+            "Alpaca historical data is only available since 2016-01-01, but start date is {}",
+            start.format("%Y-%m-%d")
+        )));
+    }
+
+    // Basic plan has 15-minute delay limitation
+    match plan {
+        AlpacaSubscriptionPlan::Basic => {
+            let delay_threshold = now - Duration::minutes(15);
+            if end > delay_threshold {
+                return Err(ProviderError::Validation(format!(
+                    "Basic plan has a 15-minute delay. Latest available data is at {}. Requested end time: {}",
+                    delay_threshold.format("%Y-%m-%d %H:%M:%S UTC"),
+                    end.format("%Y-%m-%d %H:%M:%S UTC")
+                )));
+            }
+        }
+        AlpacaSubscriptionPlan::AlgoTrader => {
+            // No restriction for Algo Trader Plus
+        }
+    }
+
+    // Basic date range validation
+    if start >= end {
+        return Err(ProviderError::Validation(
+            "Start date must be before end date".to_string()
+        ));
+    }
+
+    Ok(())
+}
+
+/// Combined validation function that checks both timeframe and date range
+pub fn validate_request(params: &BarsRequestParams) -> Result<(), ProviderError> {
+    // Validate timeframe
+    validate_timeframe(&params.timeframe)?;
+    
+    // Extract subscription plan from provider-specific params
+    let plan = match &params.provider_specific {
+        ProviderParams::Alpaca(alpaca_params) => &alpaca_params.subscription_plan,
+        _ => &AlpacaSubscriptionPlan::Basic, // Default to Basic for safety
+    };
+    
+    // Validate date range
+    validate_date_range(params.start, params.end, plan)?;
+    
+    Ok(())
 }
 
 #[cfg(test)]

@@ -1,10 +1,10 @@
 {
     "rust-analyzer.cargo.features": [
-        "cli",
-        "alpaca-python-sdk"
+        // "cli",
+        // "alpaca-python-sdk"
     ],
     "rust-analyzer.server.extraEnv": {
         "PATH": "/usr/bin:/home/hanbo/.cargo/bin:/home/hanbo/.local/bin:${env:PATH}",
-        "PYO3_PYTHON": "/usr/bin/python3"
+        // "PYO3_PYTHON": "/usr/bin/python3"
     }
 }

@@ -62,6 +62,7 @@ pub trait DataProvider {
     async fn fetch_bars(&self, params: BarsRequestParams) -> Result<Vec<BarSeries>, ProviderError>;
 }
 
+/// Errors that can occur during the creation of a provider instance
 #[derive(Debug, Error)]
 pub enum ProviderInitError {
     /// missed environment variable.

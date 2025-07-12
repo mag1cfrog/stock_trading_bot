@@ -285,4 +285,73 @@ mod tests {
         assert_eq!(query_map.get("limit").unwrap(), "100");
         assert_eq!(query_map.get("sort").unwrap(), "desc");
     }
+    #[test]
+    fn test_validate_date_range_basic_plan() {
+        let now = Utc::now();
+        let plan = AlpacaSubscriptionPlan::Basic;
+        
+        // Valid date range (more than 15 minutes ago)
+        let start = now - Duration::hours(2);
+        let end = now - Duration::minutes(20);
+        assert!(validate_date_range(start, end, &plan).is_ok());
+        
+        // Invalid: too recent for Basic plan
+        let start = now - Duration::hours(1);
+        let end = now - Duration::minutes(5);
+        assert!(validate_date_range(start, end, &plan).is_err());
+        
+        // Invalid: before 2016
+        let start = DateTime::parse_from_rfc3339("2015-12-31T00:00:00Z").unwrap().with_timezone(&Utc);
+        let end = now - Duration::hours(1);
+        assert!(validate_date_range(start, end, &plan).is_err());
+    }
+
+    #[test]
+    fn test_validate_date_range_algo_trader() {
+        let now = Utc::now();
+        let plan = AlpacaSubscriptionPlan::AlgoTrader;
+        
+        // Valid: recent data (allowed for Algo Trader)
+        let start = now - Duration::minutes(30);
+        let end = now - Duration::minutes(1);
+        assert!(validate_date_range(start, end, &plan).is_ok());
+        
+        // Invalid: before 2016 (applies to all plans)
+        let start = DateTime::parse_from_rfc3339("2015-12-31T00:00:00Z").unwrap().with_timezone(&Utc);
+        let end = now - Duration::hours(1);
+        assert!(validate_date_range(start, end, &plan).is_err());
+    }
+
+    #[test]
+    fn test_validate_request_integration() {
+        let now = Utc::now();
+        
+        // Valid request for Basic plan
+        let params = BarsRequestParams {
+            symbols: vec!["AAPL".to_string()],
+            timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
+            start: now - Duration::days(30),
+            end: now - Duration::hours(1),
+            asset_class: AssetClass::UsEquity,
+            provider_specific: ProviderParams::Alpaca(AlpacaBarsParams {
+                subscription_plan: AlpacaSubscriptionPlan::Basic,
+                ..Default::default()
+            }),
+        };
+        assert!(validate_request(&params).is_ok());
+        
+        // Invalid request for Basic plan (too recent)
+        let params = BarsRequestParams {
+            symbols: vec!["AAPL".to_string()],
+            timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
+            start: now - Duration::minutes(30),
+            end: now - Duration::minutes(5),
+            asset_class: AssetClass::UsEquity,
+            provider_specific: ProviderParams::Alpaca(AlpacaBarsParams {
+                subscription_plan: AlpacaSubscriptionPlan::Basic,
+                ..Default::default()
+            }),
+        };
+        assert!(validate_request(&params).is_err());
+    }
 }

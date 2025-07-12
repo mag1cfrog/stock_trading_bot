@@ -1,4 +1,3 @@
-#![cfg(feature = "alpaca-python-sdk")]
 use std::ffi::CString;
 
 use polars::prelude::*;

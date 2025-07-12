@@ -6,10 +6,12 @@
 mod legacy_errors;
 pub use legacy_errors::MarketDataError;
 
+#[cfg(feature = "alpaca-python-sdk")]
 mod single_request;
 #[cfg(feature = "alpaca-python-sdk")]
 pub use single_request::fetch_historical_bars;
 
+#[cfg(feature = "alpaca-python-sdk")]
 mod batch_request;
 #[cfg(feature = "alpaca-python-sdk")]
 pub use batch_request::fetch_bars_batch_partial;

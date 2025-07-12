@@ -1,5 +1,37 @@
 # Changelog
 All notable changes to market_data_ingestor will be documented in this file.
+## market_data_ingestor-v1.2.0
+
+
+### Bug Fixes
+
+- Update pyo3 dependency to be optional and clean up feature definitions ([e631ac4](https://github.com/mag1cfrog/stock_trading_bot/commit/e631ac43254ba7ed2c07450d3d77680905470539))
+
+- Add conditional compilation for alpaca-python-sdk in module and initialization ([32d3bcf](https://github.com/mag1cfrog/stock_trading_bot/commit/32d3bcf672dd06823fcdcd45b3111a6822877934))
+
+- Add conditional compilation for alpaca-python-sdk in StockBarData methods ([c21b64b](https://github.com/mag1cfrog/stock_trading_bot/commit/c21b64b8f107b362e26a3ddad4bf21cf3ce97287))
+
+- Add conditional compilation for alpaca-python-sdk in batch and single request files ([0b7a512](https://github.com/mag1cfrog/stock_trading_bot/commit/0b7a512bba904e1014663f08a39058d11b77ce0d))
+
+- Ensure conditional compilation for PyErr in MarketDataError conversions ([b22745f](https://github.com/mag1cfrog/stock_trading_bot/commit/b22745f18b9efe8b255197d6e12b0fd8d3019e58))
+
+- Add conditional compilation for alpaca-python-sdk in TimeFrame implementations ([4c11d67](https://github.com/mag1cfrog/stock_trading_bot/commit/4c11d67892088529f69a5ea3af9f43330494e6a3))
+
+- Add conditional compilation for alpaca-python-sdk in StockBarsParams struct ([95855e0](https://github.com/mag1cfrog/stock_trading_bot/commit/95855e008b0d4a6babf22d165d2d9b94813561ca))
+
+- Update conditional compilation for CLI and alpaca-python-sdk in main function ([818a1a5](https://github.com/mag1cfrog/stock_trading_bot/commit/818a1a579bd556701f36bcd5f43c21ced614f9f5))
+
+- Ensure conditional compilation for alpaca-python-sdk in StockBarData and Config imports ([89ad9e9](https://github.com/mag1cfrog/stock_trading_bot/commit/89ad9e939b309ba0291e7d4fcedbe132103272cb))
+
+- Ensure conditional compilation for alpaca-python-sdk in single_request and batch_request modules ([cc7e227](https://github.com/mag1cfrog/stock_trading_bot/commit/cc7e22746ae8d422392eac26e618d95d0d4a00a6))
+
+- Update conditional compilation for alpaca-python-sdk in lib, stockbars, timeframe, and historical request modules ([a68b368](https://github.com/mag1cfrog/stock_trading_bot/commit/a68b3686a74c5485f133a4aea37b5b7a8faa6945))
+
+
+### Maintenance
+
+- Release ([c4892c6](https://github.com/mag1cfrog/stock_trading_bot/commit/c4892c66bcbef00c827ef542169813f156ea0c2f))
+
 ## market_data_ingestor-v1.1.1
 
 

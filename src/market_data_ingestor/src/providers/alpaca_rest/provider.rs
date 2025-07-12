@@ -1,4 +1,7 @@
+use std::{num::NonZeroU32, sync::Arc};
+
 use async_trait::async_trait;
+use governor::{ DefaultDirectRateLimiter, Quota, RateLimiter};
 use indexmap::IndexMap;
 use reqwest::{Client, header};
 use secrecy::{ExposeSecret, SecretString};
@@ -7,11 +10,10 @@ use shared_utils::env::get_env_var;
 use crate::{
     models::{bar::Bar, bar_series::BarSeries, request_params::BarsRequestParams},
     providers::{
-        DataProvider, ProviderError, ProviderInitError,
         alpaca_rest::{
-            params::{construct_params, validate_timeframe},
+            params::{construct_params, validate_timeframe, AlpacaSubscriptionPlan},
             response::{AlpacaBar, AlpacaResponse},
-        },
+        }, DataProvider, ProviderError, ProviderInitError
     },
 };
 
@@ -21,14 +23,18 @@ pub struct AlpacaProvider {
     client: Client,
     _api_key: SecretString,
     _secret_key: SecretString,
+    rate_limiter: Arc<DefaultDirectRateLimiter>
 }
 
 impl AlpacaProvider {
-    /// Creates a new Alpaca provider.
-    ///
-    /// Reads API keys from the `APCA_API_KEY_ID` and `APCA_API_SECRET_KEY`
-    /// environment variables.
+    /// Create a new Alpaca provider with Basic subscription plan
     pub fn new() -> Result<Self, ProviderInitError> {
+        Self::with_subscription_plan(AlpacaSubscriptionPlan::Basic)
+    }
+
+
+    /// Creates a new Alpaca provider with specified subscription plan.
+    pub fn with_subscription_plan(plan: AlpacaSubscriptionPlan) -> Result<Self, ProviderInitError> {
         let api_key = SecretString::new(get_env_var("APCA_API_KEY_ID")?.into());
         let secret_key = SecretString::new(get_env_var("APCA_API_SECRET_KEY")?.into());
 
@@ -44,11 +50,40 @@ impl AlpacaProvider {
 
         let client = Client::builder().default_headers(headers).build()?;
 
+        // Create rate limiter based on subscription plan
+        let requests_per_minute = plan.rate_limit_per_minute();
+        let quota = Quota::per_minute(NonZeroU32::new(requests_per_minute).expect("Expected non zero number for rpm"));
+        let rate_limiter= Arc::new(RateLimiter::direct(quota));
+
         Ok(Self {
             client,
             _api_key: api_key,
             _secret_key: secret_key,
+            rate_limiter
         })
+    }
+
+    async fn make_request(&self, query_params: &[(String, String)]) -> Result<AlpacaResponse, ProviderError> {
+        // Wait for rate limit permission
+        self.rate_limiter.until_ready().await;
+
+        // Make the actual request
+        let response = self
+                .client
+                .get(BASE_URL)
+                .query(&query_params)
+                .send()
+                .await?;
+
+            if !response.status().is_success() {
+                let error_msg = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Unknown API error".to_string());
+                return Err(ProviderError::Api(error_msg));
+            }
+        
+        Ok(response.json::<AlpacaResponse>().await?)
     }
 }
 
@@ -67,22 +102,7 @@ impl DataProvider for AlpacaProvider {
                 query_params.push(("page_token".to_string(), token.clone()));
             }
 
-            let response = self
-                .client
-                .get(BASE_URL)
-                .query(&query_params)
-                .send()
-                .await?;
-
-            if !response.status().is_success() {
-                let error_msg = response
-                    .text()
-                    .await
-                    .unwrap_or_else(|_| "Unknown API error".to_string());
-                return Err(ProviderError::Api(error_msg));
-            }
-
-            let alpaca_response = response.json::<AlpacaResponse>().await?;
+            let alpaca_response = self.make_request(&query_params).await?;
 
             // Merge the bars from the current page into our collection.
             for (symbol, bars) in alpaca_response.bars {

@@ -8,6 +8,25 @@ use crate::{
     providers::ProviderError,
 };
 
+/// Alpaca subscription plans with different rate limits
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum AlpacaSubscriptionPlan {
+    #[default]
+    Basic,          // 200 reqs/min
+    AlgoTrader,     // 10,000 reqs/min
+}
+
+impl AlpacaSubscriptionPlan {
+    /// Returns the rate limit in requests per minute for this subscription plan
+    pub fn rate_limit_per_minute(&self) -> u32 {
+        match self {
+            AlpacaSubscriptionPlan::Basic => 200,
+            AlpacaSubscriptionPlan::AlgoTrader => 10_000,
+        }
+    }
+}
+
 /// Specifies the corporate action adjustment for stock data.
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]

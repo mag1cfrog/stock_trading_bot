@@ -6,7 +6,7 @@ echo "🚀 Starting minor release for market_data_ingestor..."
 cargo release minor --no-verify --execute --no-publish
 
 echo "📝 Generating changelog..."
-git cliff -c cliff.toml -p CHANGELOG.md
+git cliff -c cliff.toml --latest -p CHANGELOG.md
 
 echo "📦 Committing changelog..."
 git add CHANGELOG.md

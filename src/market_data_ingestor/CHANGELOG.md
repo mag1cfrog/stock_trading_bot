@@ -1,5 +1,17 @@
 # Changelog
 All notable changes to market_data_ingestor will be documented in this file.
+## market_data_ingestor-v1.3.4
+
+
+### Bug Fixes
+
+- Update changelog generation command to include latest changes ([b6cdfdf](https://github.com/mag1cfrog/stock_trading_bot/commit/b6cdfdfbc9d860cfa3c4fa21d9f2dfe4524f9ef8))
+
+
+### Maintenance
+
+- Release ([f40c9f8](https://github.com/mag1cfrog/stock_trading_bot/commit/f40c9f8a8920a5100bc897a47befc43049c4fd6b))
+
 ## [Latest]
 
 

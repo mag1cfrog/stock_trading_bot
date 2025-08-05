@@ -1,5 +1,5 @@
 [package]
-name = "plan_executor"
+name = "asset_refresh_planner"
 version = "0.1.0"
 edition = "2024"
 

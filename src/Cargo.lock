@@ -586,6 +586,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "asset_manifest"
+version = "0.1.0"
+
+[[package]]
 name = "asset_refresh_planner"
 version = "0.1.0"
 
@@ -2793,10 +2797,6 @@ checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
 dependencies = [
  "autocfg",
 ]
-
-[[package]]
-name = "metadata_catalog"
-version = "0.1.0"
 
 [[package]]
 name = "mime"

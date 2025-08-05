@@ -586,6 +586,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "asset_spec"
+version = "0.1.0"
+
+[[package]]
 name = "async-compression"
 version = "0.4.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2787,6 +2791,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "metadata_catalog"
+version = "0.1.0"
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3179,6 +3187,10 @@ name = "pkg-config"
 version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
+
+[[package]]
+name = "plan_executor"
+version = "0.1.0"
 
 [[package]]
 name = "planus"

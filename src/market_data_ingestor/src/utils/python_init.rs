@@ -78,14 +78,14 @@ fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> 
     pyo3::prepare_freethreaded_python();
     Python::with_gil(|py| {
         let venv_path = Path::new(&config.python_venv_path);
-        
+
         // Check for 'lib64' first, then fall back to 'lib'. This is more robust
         // across different Linux distributions.
         let lib64_dir = venv_path.join("lib64");
         let lib_dir = venv_path.join("lib");
 
-        let site_packages_path = find_site_packages(&lib64_dir)
-            .or_else(|_| find_site_packages(&lib_dir))?;
+        let site_packages_path =
+            find_site_packages(&lib64_dir).or_else(|_| find_site_packages(&lib_dir))?;
 
         let sys = py.import("sys").expect("Cannot import sys module");
 
@@ -107,7 +107,6 @@ fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> 
                 "APCA_API_KEY_ID not found in environment. \
                 Make sure to source your zsh config!\n\
                 Original error: {e}",
-                
             );
             PyErr::new::<PyValueError, _>(msg)
         })?;
@@ -117,7 +116,6 @@ fn try_init_python(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> 
                 "APCA_API_SECRET_KEY not found in environment. \
                 Did you reload your shell after adding to .zshenv?\n\
                 Original error: {e}",
-                
             );
             PyErr::new::<PyValueError, _>(msg)
         })?;
@@ -173,7 +171,7 @@ fn find_site_packages(lib_dir: &Path) -> Result<PathBuf, Box<dyn Error + Send + 
 pub fn verify_shell_environment() -> Result<(), Box<dyn Error + Send + Sync>> {
     println!("Current environment variables:");
     for (k, v) in std::env::vars() {
-        println!("- {k}={v}", );
+        println!("- {k}={v}",);
     }
 
     let required_vars = ["APCA_API_KEY_ID", "APCA_API_SECRET_KEY"];

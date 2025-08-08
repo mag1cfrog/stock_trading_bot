@@ -1,6 +1,6 @@
 use std::collections::HashSet;
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
 use deltalake::arrow::{
@@ -10,7 +10,7 @@ use deltalake::arrow::{
 };
 use deltalake::datafusion::prelude::SessionContext;
 use deltalake::kernel::{DataType, PrimitiveType, StructField};
-use deltalake::{open_table, DeltaOps};
+use deltalake::{DeltaOps, open_table};
 use rand::Rng;
 use tokio::time::sleep;
 
@@ -74,13 +74,15 @@ fn generate_batch_for_writer(writer_id: i32) -> RecordBatch {
 }
 
 async fn writer_task(table_uri: String, writer_id: i32) {
-
     let mut attempts = 0;
     loop {
         let batch = generate_batch_for_writer(writer_id);
-        let ops = DeltaOps::try_from_uri(&table_uri).await.expect("Failed to create ops");
+        let ops = DeltaOps::try_from_uri(&table_uri)
+            .await
+            .expect("Failed to create ops");
 
-        match ops.write(vec![batch])
+        match ops
+            .write(vec![batch])
             .with_save_mode(deltalake::protocol::SaveMode::Append)
             .await
         {
@@ -89,7 +91,10 @@ async fn writer_task(table_uri: String, writer_id: i32) {
                 return;
             }
             Err(e) => {
-                eprintln!("Writer {} attempted {} failed: {:?}", writer_id, attempts, e);
+                eprintln!(
+                    "Writer {} attempted {} failed: {:?}",
+                    writer_id, attempts, e
+                );
                 attempts += 1;
                 if attempts >= 10 {
                     panic!("Writer {} failed after 10 attempts", writer_id);
@@ -97,8 +102,6 @@ async fn writer_task(table_uri: String, writer_id: i32) {
                 sleep(Duration::from_millis(100 * attempts)).await
             }
         }
-        
-            
     }
 }
 
@@ -107,20 +110,25 @@ async fn snapshot_reader_task(table_uri: String, read_counter: Arc<AtomicU32>) -
     // Open the table via DeltaTable
     let table = open_table(table_uri).await.unwrap();
     let ctx = SessionContext::new();
-    ctx.register_table("snapshot_table", Arc::new(table)).unwrap();
+    ctx.register_table("snapshot_table", Arc::new(table))
+        .unwrap();
 
     // Add random dely to increase concurrent variabiltiy
     let jitter = rand::rng().random_range(50..500);
     sleep(Duration::from_millis(jitter)).await;
 
-    match ctx.sql("SELECT DISTINCT writer_id FROM snapshot_table").await {
+    match ctx
+        .sql("SELECT DISTINCT writer_id FROM snapshot_table")
+        .await
+    {
         Ok(df) => {
             let results = df.collect().await.unwrap();
             read_counter.fetch_add(1, Ordering::Relaxed);
 
             let mut ids = HashSet::new();
             for batch in results {
-                let writer_id_array = batch.column(0)
+                let writer_id_array = batch
+                    .column(0)
                     .as_any()
                     .downcast_ref::<Int32Array>()
                     .unwrap();
@@ -136,7 +144,6 @@ async fn snapshot_reader_task(table_uri: String, read_counter: Arc<AtomicU32>) -
             HashSet::new()
         }
     }
-
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -155,7 +162,6 @@ async fn test_delta_concurrent_operations() {
         .await
         .unwrap();
 
-
     let read_counter = Arc::new(AtomicU32::new(0));
 
     // Spawn readers
@@ -163,13 +169,11 @@ async fn test_delta_concurrent_operations() {
     for _ in 0..20 {
         let uri = table_uri.clone();
         let counter = read_counter.clone();
-        read_handles.push(
-            tokio::spawn(async move {
-                snapshot_reader_task(uri, counter).await
-            })
-        );
+        read_handles.push(tokio::spawn(async move {
+            snapshot_reader_task(uri, counter).await
+        }));
     }
-    
+
     // Spawn writer tasks
     let mut writer_handles = vec![];
     for writer_id in 0..10 {
@@ -195,9 +199,11 @@ async fn test_delta_concurrent_operations() {
     // Verify final state
     let ctx = SessionContext::new();
     let final_table = open_table(&table_uri).await.unwrap();
-    ctx.register_table("final_table", Arc::new(final_table)).unwrap();
+    ctx.register_table("final_table", Arc::new(final_table))
+        .unwrap();
 
-    let final_df = ctx.sql("SELECT DISTINCT writer_id FROM final_table")
+    let final_df = ctx
+        .sql("SELECT DISTINCT writer_id FROM final_table")
         .await
         .unwrap()
         .collect()
@@ -206,7 +212,8 @@ async fn test_delta_concurrent_operations() {
 
     let mut final_ids = HashSet::new();
     for batch in final_df {
-        let writer_id_array = batch.column(0)
+        let writer_id_array = batch
+            .column(0)
             .as_any()
             .downcast_ref::<Int32Array>()
             .unwrap();
@@ -222,6 +229,8 @@ async fn test_delta_concurrent_operations() {
     }
 
     assert_eq!(final_ids.len(), 10);
-    println!("Completed {} reads during writes", read_counter.load(Ordering::Relaxed));
-
+    println!(
+        "Completed {} reads during writes",
+        read_counter.load(Ordering::Relaxed)
+    );
 }

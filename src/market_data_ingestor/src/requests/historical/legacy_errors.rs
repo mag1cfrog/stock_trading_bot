@@ -36,7 +36,7 @@ impl fmt::Display for MarketDataError {
         match self {
             Self::InvalidPath(path) => write!(f, "Invalid path: {path}"),
             Self::MissingSitePackages(path) => {
-                write!(f, "Missing site-packages directory: {path}" )
+                write!(f, "Missing site-packages directory: {path}")
             }
             Self::MissingAlpacaPackage(path) => write!(f, "Missing Alpaca package: {path}"),
             Self::NoPythonVersionFound(msg) => write!(f, "No Python version found: {msg}"),

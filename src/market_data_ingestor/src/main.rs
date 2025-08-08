@@ -102,9 +102,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             // Print summary to stderr so it doesn't intefere with machine parisng of paths
-            eprintln!(
-                "SUMMARY: {success_count} succeeded, {error_count} failed"
-            );
+            eprintln!("SUMMARY: {success_count} succeeded, {error_count} failed");
         }
     }
     Ok(())

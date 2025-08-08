@@ -10,19 +10,19 @@ use market_data_ingestor::{
         timeframe::{TimeFrame, TimeFrameUnit},
     },
     providers::{
+        DataProvider, ProviderError,
         alpaca_rest::{
             params::{AlpacaBarsParams, AlpacaSubscriptionPlan, Sort},
             provider::AlpacaProvider,
         },
-        DataProvider, ProviderError,
     },
     requests::historical::StockBarData,
 };
 use polars::prelude::*;
 use serial_test::serial;
 use std::io::Write;
-use tempfile::NamedTempFile;
 use std::{collections::HashMap, path::Path};
+use tempfile::NamedTempFile;
 
 #[tokio::test]
 #[serial]
@@ -51,15 +51,25 @@ async fn test_alpaca_provider_fetch_bars() {
 
     let result = provider.fetch_bars(params).await;
 
-    assert!(result.is_ok(), "fetch_bars returned an error: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "fetch_bars returned an error: {:?}",
+        result.err()
+    );
 
     let bar_series_vec = result.unwrap();
     assert_eq!(bar_series_vec.len(), 1, "Expected 1 BarSeries for AAPL");
 
     let aapl_series = &bar_series_vec[0];
     assert_eq!(aapl_series.symbol, "AAPL");
-    assert!(!aapl_series.bars.is_empty(), "Expected to fetch at least one bar for AAPL");
-    assert!(aapl_series.bars.len() <= 5, "Expected at most 5 bars due to limit");
+    assert!(
+        !aapl_series.bars.is_empty(),
+        "Expected to fetch at least one bar for AAPL"
+    );
+    assert!(
+        aapl_series.bars.len() <= 5,
+        "Expected at most 5 bars due to limit"
+    );
 
     // Check that bars are sorted descending
     if aapl_series.bars.len() > 1 {
@@ -94,13 +104,20 @@ async fn test_alpaca_provider_pagination() {
 
     let result = provider.fetch_bars(params).await;
 
-    assert!(result.is_ok(), "fetch_bars returned an error: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "fetch_bars returned an error: {:?}",
+        result.err()
+    );
 
     let bar_series_vec = result.unwrap();
     assert_eq!(bar_series_vec.len(), 1, "Expected 1 BarSeries for SPY");
 
     let spy_series = &bar_series_vec[0];
-    assert!(!spy_series.bars.is_empty(), "Expected to fetch bars for SPY");
+    assert!(
+        !spy_series.bars.is_empty(),
+        "Expected to fetch bars for SPY"
+    );
 
     // The key assertion: if we got more bars than the page limit, pagination must have worked.
     assert!(
@@ -118,7 +135,7 @@ fn dataframe_to_bar_series(
 ) -> Result<Vec<BarSeries>, Box<dyn std::error::Error>> {
     println!("DataFrame columns: {:?}", df.get_column_names());
     println!("DataFrame shape: {:?}", df.shape());
-    
+
     let mut series_map: HashMap<String, Vec<Bar>> = HashMap::new();
 
     // After reset_index(), we should have both timestamp and symbol as columns
@@ -129,7 +146,7 @@ fn dataframe_to_bar_series(
     let low_col = df.column("low")?.f64()?;
     let close_col = df.column("close")?.f64()?;
     let volume_col = df.column("volume")?.f64()?;
-    
+
     // Handle trade_count - it might be f64 from Python, so we need to convert
     let trade_count_col = df.column("trade_count")?;
     let trade_count_values: Vec<Option<u64>> = if trade_count_col.dtype() == &DataType::Float64 {
@@ -141,9 +158,7 @@ fn dataframe_to_bar_series(
     } else {
         // Try to extract as u64 directly
         let u64_col = trade_count_col.u64()?;
-        (0..df.height())
-            .map(|i| u64_col.get(i))
-            .collect()
+        (0..df.height()).map(|i| u64_col.get(i)).collect()
     };
 
     let vwap_col = df.column("vwap")?.f64()?;
@@ -227,7 +242,7 @@ async fn test_compare_rust_and_python_providers() {
         "python_venv_path = \"{}\"",
         venv_path.to_str().unwrap().replace('\\', "\\\\") // Handle Windows paths
     );
-    write!(temp_config, "{config_content}", ).expect("Failed to write to temp config file");
+    write!(temp_config, "{config_content}",).expect("Failed to write to temp config file");
     let config_path = temp_config.path().to_str().unwrap();
 
     let python_client = StockBarData::new(config_path)
@@ -281,7 +296,7 @@ async fn test_alpaca_provider_with_basic_plan_validation() {
 
     let result = provider.fetch_bars(params).await;
     assert!(result.is_err());
-    
+
     if let Err(ProviderError::Validation(msg)) = result {
         assert!(msg.contains("15-minute delay"));
     }

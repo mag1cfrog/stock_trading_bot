@@ -52,7 +52,9 @@ fn main() {
         if !pip_status.success() {
             panic!("'uv pip install' failed. Could not install Python dependencies.");
         }
-        println!("cargo:warning=Python virtual environment created and dependencies installed successfully.");
+        println!(
+            "cargo:warning=Python virtual environment created and dependencies installed successfully."
+        );
     }
 
     // --- 3. Configure PyO3 to use the virtual environment's Python interpreter ---
@@ -67,7 +69,7 @@ fn main() {
             env::set_var("PYO3_PYTHON", python_executable.to_str().unwrap());
         }
     } else {
-        panic!("Could not find Python executable in virtual environment at: {python_executable:?}", );
+        panic!("Could not find Python executable in virtual environment at: {python_executable:?}",);
     }
 
     // --- 4. Let pyo3-build-config handle the rest ---

@@ -154,13 +154,14 @@ fn find_site_packages(lib_dir: &Path) -> Result<PathBuf, Box<dyn Error + Send + 
     for entry in fs::read_dir(lib_dir)? {
         let entry = entry?;
         let path = entry.path();
-        if path.is_dir() {
-            if let Some(folder_name) = path.file_name().and_then(|n| n.to_str()) {
-                if folder_name.starts_with("python") {
-                    let candidate = path.join("site-packages");
-                    if candidate.exists() {
-                        return Ok(candidate);
-                    }
+        if path.is_dir()
+            && let Some(folder_name) = path.file_name().and_then(|n| n.to_str())
+            && folder_name.starts_with("python")
+        {
+            {
+                let candidate = path.join("site-packages");
+                if candidate.exists() {
+                    return Ok(candidate);
                 }
             }
         }

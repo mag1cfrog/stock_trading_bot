@@ -11,15 +11,24 @@ fn main() {
     }
 
     // Allow CI / users to force skip (set in workflow: MARKET_DATA_INGESTOR_SKIP_PYTHON_SETUP=1)
-    if std::env::var("MARKET_DATA_INGESTOR_SKIP_PYTHON_SETUP").is_ok() || std::env::var("CI").is_ok() {
-        println!("cargo:warning=Skipping Python setup (MARKET_DATA_INGESTOR_SKIP_PYTHON_SETUP or CI set).");
+    if std::env::var("MARKET_DATA_INGESTOR_SKIP_PYTHON_SETUP").is_ok()
+        || std::env::var("CI").is_ok()
+    {
+        println!(
+            "cargo:warning=Skipping Python setup (MARKET_DATA_INGESTOR_SKIP_PYTHON_SETUP or CI set)."
+        );
         return;
     }
 
     // 1. Try to find 'uv'; if absent, warn and skip instead of panic.
-    let uv_ok = Command::new("uv").arg("--version").output().is_ok_and(|o| o.status.success());
+    let uv_ok = Command::new("uv")
+        .arg("--version")
+        .output()
+        .is_ok_and(|o| o.status.success());
     if !uv_ok {
-        println!("cargo:warning='uv' not found; skipping virtualenv creation (set it up manually if needed).");
+        println!(
+            "cargo:warning='uv' not found; skipping virtualenv creation (set it up manually if needed)."
+        );
         return;
     }
 

@@ -137,7 +137,7 @@ mod tests {
                 assert_eq!(source, "file");
                 assert_eq!(input, Some("batch_params.json".to_string()));
                 assert_eq!(max_retries, 5);
-                assert_eq!(base_delay_ms, 1000); // Default value
+                assert_eq!(base_delay_ms, 300); // Default value
             }
             _ => panic!("Expected Batch command"),
         }

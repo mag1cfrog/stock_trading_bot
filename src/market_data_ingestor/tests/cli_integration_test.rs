@@ -47,13 +47,12 @@ fn test_single_fetch_cli() -> Result<(), Box<dyn std::error::Error>> {
     assert!(output.status.success(), "Binary did not exit successfully");
 
     let stdout = str::from_utf8(&output.stdout)?;
-    println!("App output: {stdout}", );
+    println!("App output: {stdout}",);
 
     // Check that output contains a feather file name.
     assert!(
         stdout.contains(".feather"),
         "Expected a feather file name in output, got: {stdout}",
-        
     );
 
     // Verify exactly one feather file is returned
@@ -61,7 +60,6 @@ fn test_single_fetch_cli() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(
         feather_count, 1,
         "Expected 1 feather file, found {feather_count}",
-        
     );
 
     Ok(())
@@ -93,7 +91,7 @@ fn test_batch_fetch_cli_with_file_input() -> Result<(), Box<dyn std::error::Erro
         }
     ]"#;
 
-    write!(temp_file, "{json_content}", )?;
+    write!(temp_file, "{json_content}",)?;
     let file_path = temp_file.path().to_str().unwrap();
 
     // Run CLI with file input
@@ -118,13 +116,12 @@ fn test_batch_fetch_cli_with_file_input() -> Result<(), Box<dyn std::error::Erro
     assert!(output.status.success(), "Binary did not exit successfully");
 
     let stdout = str::from_utf8(&output.stdout)?;
-    println!("App output: {stdout}", );
+    println!("App output: {stdout}",);
 
     // Check that output contains feather file names
     assert!(
         stdout.contains(".feather"),
         "Expected feather file names in output, got: {stdout}",
-        
     );
 
     // Check summary in stderr
@@ -132,7 +129,6 @@ fn test_batch_fetch_cli_with_file_input() -> Result<(), Box<dyn std::error::Erro
     assert!(
         stderr.contains("SUMMARY:"),
         "Expected summary in stderr, got: {stderr}",
-        
     );
 
     // Verify we got exactly two feather files
@@ -140,7 +136,6 @@ fn test_batch_fetch_cli_with_file_input() -> Result<(), Box<dyn std::error::Erro
     assert_eq!(
         feather_count, 2,
         "Expected 2 feather files, found {feather_count}",
-        
     );
 
     Ok(())
@@ -172,19 +167,17 @@ fn test_batch_fetch_cli_with_json_input() -> Result<(), Box<dyn std::error::Erro
     assert!(output.status.success(), "Binary did not exit successfully");
 
     let stdout = str::from_utf8(&output.stdout)?;
-    println!("App output: {stdout}", );
+    println!("App output: {stdout}",);
 
     assert!(
         stdout.contains(".feather"),
         "Expected a feather file name in output, got: {stdout}",
-        
     );
 
     let stderr = str::from_utf8(&output.stderr)?;
     assert!(
         stderr.contains("SUMMARY:"),
         "Expected summary in stderr, got: {stderr}",
-        
     );
 
     // Verify we got exactly two feather files
@@ -192,7 +185,6 @@ fn test_batch_fetch_cli_with_json_input() -> Result<(), Box<dyn std::error::Erro
     assert_eq!(
         feather_count, 2,
         "Expected 2 feather files, found {feather_count}",
-        
     );
 
     Ok(())
@@ -234,19 +226,17 @@ fn test_batch_fetch_cli_with_stdin_input() -> Result<(), Box<dyn std::error::Err
     assert!(output.status.success(), "Binary did not exit successfully");
 
     let stdout = str::from_utf8(&output.stdout)?;
-    println!("App output: {stdout}", );
+    println!("App output: {stdout}",);
 
     assert!(
         stdout.contains(".feather"),
         "Expected a feather file name in output, got: {stdout}",
-        
     );
 
     let stderr = str::from_utf8(&output.stderr)?;
     assert!(
         stderr.contains("SUMMARY:"),
         "Expected summary in stderr, got: {stderr}",
-        
     );
 
     // Verify we got exactly two feather files
@@ -254,7 +244,6 @@ fn test_batch_fetch_cli_with_stdin_input() -> Result<(), Box<dyn std::error::Err
     assert_eq!(
         feather_count, 2,
         "Expected 2 feather files, found {feather_count}",
-        
     );
 
     Ok(())
@@ -287,7 +276,6 @@ fn test_batch_fetch_cli_with_invalid_source() -> Result<(), Box<dyn std::error::
     assert!(
         stderr.contains("Invalid source"),
         "Expected 'Invalid source' error message, got: {stderr}",
-        
     );
 
     Ok(())
@@ -321,7 +309,6 @@ fn test_batch_fetch_cli_missing_required_input() -> Result<(), Box<dyn std::erro
     assert!(
         stderr.contains("File path required for source=file"),
         "Expected 'File path required' error message, got: {stderr}",
-        
     );
 
     Ok(())

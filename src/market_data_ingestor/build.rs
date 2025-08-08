@@ -3,21 +3,33 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
-    // --- 1. Verify that 'uv' is installed ---
-    // We check by trying to get its version. If this fails, we panic with a helpful message.
-    if !Command::new("uv")
+    // Fast exit if feature not enabled (Cargo exposes features as CARGO_FEATURE_* env vars)
+    let python_feature_enabled = std::env::var("CARGO_FEATURE_ALPACA_PYTHON_SDK").is_ok();
+    if !python_feature_enabled {
+        println!("cargo:warning=alpaca-python-sdk feature not enabled; skipping Python setup.");
+        return;
+    }
+
+    // Allow CI / users to force skip (set in workflow: MARKET_DATA_INGESTOR_SKIP_PYTHON_SETUP=1)
+    if std::env::var("MARKET_DATA_INGESTOR_SKIP_PYTHON_SETUP").is_ok()
+        || std::env::var("CI").is_ok()
+    {
+        println!(
+            "cargo:warning=Skipping Python setup (MARKET_DATA_INGESTOR_SKIP_PYTHON_SETUP or CI set)."
+        );
+        return;
+    }
+
+    // 1. Try to find 'uv'; if absent, warn and skip instead of panic.
+    let uv_ok = Command::new("uv")
         .arg("--version")
         .output()
-        .is_ok_and(|o| o.status.success())
-    {
-        panic!(
-            "The 'uv' command was not found in your PATH. \n\
-            Please install it by running the following command (for Linux/macOS):\n\
-            \n\
-            curl -LsSf https://astral.sh/uv/install.sh | sh\n\
-            \n\
-            Then, ensure it's available in your PATH."
+        .is_ok_and(|o| o.status.success());
+    if !uv_ok {
+        println!(
+            "cargo:warning='uv' not found; skipping virtualenv creation (set it up manually if needed)."
         );
+        return;
     }
 
     // --- 2. Set up the Python virtual environment if it doesn't exist ---
@@ -52,7 +64,9 @@ fn main() {
         if !pip_status.success() {
             panic!("'uv pip install' failed. Could not install Python dependencies.");
         }
-        println!("cargo:warning=Python virtual environment created and dependencies installed successfully.");
+        println!(
+            "cargo:warning=Python virtual environment created and dependencies installed successfully."
+        );
     }
 
     // --- 3. Configure PyO3 to use the virtual environment's Python interpreter ---
@@ -67,7 +81,7 @@ fn main() {
             env::set_var("PYO3_PYTHON", python_executable.to_str().unwrap());
         }
     } else {
-        panic!("Could not find Python executable in virtual environment at: {python_executable:?}", );
+        panic!("Could not find Python executable in virtual environment at: {python_executable:?}",);
     }
 
     // --- 4. Let pyo3-build-config handle the rest ---

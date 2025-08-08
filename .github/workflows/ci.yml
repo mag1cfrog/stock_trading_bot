@@ -1,18 +1,22 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+  workflow_dispatch: {}   # manual run
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   rust:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      MARKET_DATA_INGESTOR_SKIP_PYTHON_SETUP: "1"
     defaults:
       run:
         working-directory: src

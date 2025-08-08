@@ -56,9 +56,8 @@ impl StockBarData {
     #[cfg(feature = "alpaca-python-sdk")]
     pub async fn with_config(config: Config) -> Result<Self, IngestorError> {
         // Initialize Python environment with the provided config
-        init_python_with_config(&config).map_err(|e| {
-            IngestorError::SystemError(format!("Python initialization error: {e}"))
-        })?;
+        init_python_with_config(&config)
+            .map_err(|e| IngestorError::SystemError(format!("Python initialization error: {e}")))?;
 
         Ok(Self { config })
     }

@@ -34,7 +34,6 @@ impl TimeFrame {
     pub fn new(amount: u32, unit: TimeFrameUnit) -> Self {
         Self { amount, unit }
     }
-
 }
 
 #[cfg(feature = "alpaca-python-sdk")]
@@ -205,5 +204,4 @@ mod test {
             });
         }
     }
-
 }

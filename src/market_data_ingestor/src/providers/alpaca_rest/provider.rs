@@ -1,19 +1,24 @@
 use std::{num::NonZeroU32, sync::Arc};
 
 use async_trait::async_trait;
-use governor::{ DefaultDirectRateLimiter, Quota, RateLimiter};
+use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
 use indexmap::IndexMap;
 use reqwest::{Client, header};
 use secrecy::{ExposeSecret, SecretString};
 use shared_utils::env::get_env_var;
 
 use crate::{
-    models::{bar::Bar, bar_series::BarSeries, request_params::{BarsRequestParams, ProviderParams}},
+    models::{
+        bar::Bar,
+        bar_series::BarSeries,
+        request_params::{BarsRequestParams, ProviderParams},
+    },
     providers::{
+        DataProvider, ProviderError, ProviderInitError,
         alpaca_rest::{
-            params::{construct_params, validate_request, AlpacaSubscriptionPlan},
+            params::{AlpacaSubscriptionPlan, construct_params, validate_request},
             response::{AlpacaBar, AlpacaResponse},
-        }, DataProvider, ProviderError, ProviderInitError
+        },
     },
 };
 
@@ -23,7 +28,7 @@ pub struct AlpacaProvider {
     client: Client,
     _api_key: SecretString,
     _secret_key: SecretString,
-    rate_limiter: Arc<DefaultDirectRateLimiter>
+    rate_limiter: Arc<DefaultDirectRateLimiter>,
 }
 
 impl AlpacaProvider {
@@ -37,9 +42,7 @@ impl AlpacaProvider {
     /// Extracts the subscription plan from the provider-specific parameters.
     pub fn from_params(params: &BarsRequestParams) -> Result<Self, ProviderInitError> {
         let plan = match &params.provider_specific {
-            ProviderParams::Alpaca(alpaca_params) => {
-                alpaca_params.subscription_plan.clone()
-            }
+            ProviderParams::Alpaca(alpaca_params) => alpaca_params.subscription_plan.clone(),
             _ => AlpacaSubscriptionPlan::Basic,
         };
 
@@ -65,37 +68,42 @@ impl AlpacaProvider {
 
         // Create rate limiter based on subscription plan
         let requests_per_minute = plan.rate_limit_per_minute();
-        let quota = Quota::per_minute(NonZeroU32::new(requests_per_minute).expect("Expected non zero number for rpm"));
-        let rate_limiter= Arc::new(RateLimiter::direct(quota));
+        let quota = Quota::per_minute(
+            NonZeroU32::new(requests_per_minute).expect("Expected non zero number for rpm"),
+        );
+        let rate_limiter = Arc::new(RateLimiter::direct(quota));
 
         Ok(Self {
             client,
             _api_key: api_key,
             _secret_key: secret_key,
-            rate_limiter
+            rate_limiter,
         })
     }
 
-    async fn make_request(&self, query_params: &[(String, String)]) -> Result<AlpacaResponse, ProviderError> {
+    async fn make_request(
+        &self,
+        query_params: &[(String, String)],
+    ) -> Result<AlpacaResponse, ProviderError> {
         // Wait for rate limit permission
         self.rate_limiter.until_ready().await;
 
         // Make the actual request
         let response = self
-                .client
-                .get(BASE_URL)
-                .query(&query_params)
-                .send()
-                .await?;
+            .client
+            .get(BASE_URL)
+            .query(&query_params)
+            .send()
+            .await?;
 
-            if !response.status().is_success() {
-                let error_msg = response
-                    .text()
-                    .await
-                    .unwrap_or_else(|_| "Unknown API error".to_string());
-                return Err(ProviderError::Api(error_msg));
-            }
-        
+        if !response.status().is_success() {
+            let error_msg = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown API error".to_string());
+            return Err(ProviderError::Api(error_msg));
+        }
+
         Ok(response.json::<AlpacaResponse>().await?)
     }
 }

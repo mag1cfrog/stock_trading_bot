@@ -14,8 +14,8 @@ use crate::{
 #[serde(rename_all = "snake_case")]
 pub enum AlpacaSubscriptionPlan {
     #[default]
-    Basic,          // 200 reqs/min
-    AlgoTrader,     // 10,000 reqs/min
+    Basic, // 200 reqs/min
+    AlgoTrader, // 10,000 reqs/min
 }
 
 impl AlpacaSubscriptionPlan {
@@ -163,7 +163,11 @@ pub fn construct_params(params: &BarsRequestParams) -> Vec<(String, String)> {
 }
 
 /// Validates the date range based on Alpaca's historical data limitations
-pub fn validate_date_range(start: DateTime<Utc>, end: DateTime<Utc>, plan: &AlpacaSubscriptionPlan) -> Result<(), ProviderError> {
+pub fn validate_date_range(
+    start: DateTime<Utc>,
+    end: DateTime<Utc>,
+    plan: &AlpacaSubscriptionPlan,
+) -> Result<(), ProviderError> {
     let now = Utc::now();
 
     // Both plans support data since 2016
@@ -198,7 +202,7 @@ pub fn validate_date_range(start: DateTime<Utc>, end: DateTime<Utc>, plan: &Alpa
     // Basic date range validation
     if start >= end {
         return Err(ProviderError::Validation(
-            "Start date must be before end date".to_string()
+            "Start date must be before end date".to_string(),
         ));
     }
 
@@ -209,16 +213,16 @@ pub fn validate_date_range(start: DateTime<Utc>, end: DateTime<Utc>, plan: &Alpa
 pub fn validate_request(params: &BarsRequestParams) -> Result<(), ProviderError> {
     // Validate timeframe
     validate_timeframe(&params.timeframe)?;
-    
+
     // Extract subscription plan from provider-specific params
     let plan = match &params.provider_specific {
         ProviderParams::Alpaca(alpaca_params) => &alpaca_params.subscription_plan,
         _ => &AlpacaSubscriptionPlan::Basic, // Default to Basic for safety
     };
-    
+
     // Validate date range
     validate_date_range(params.start, params.end, plan)?;
-    
+
     Ok(())
 }
 
@@ -289,19 +293,21 @@ mod tests {
     fn test_validate_date_range_basic_plan() {
         let now = Utc::now();
         let plan = AlpacaSubscriptionPlan::Basic;
-        
+
         // Valid date range (more than 15 minutes ago)
         let start = now - Duration::hours(2);
         let end = now - Duration::minutes(20);
         assert!(validate_date_range(start, end, &plan).is_ok());
-        
+
         // Invalid: too recent for Basic plan
         let start = now - Duration::hours(1);
         let end = now - Duration::minutes(5);
         assert!(validate_date_range(start, end, &plan).is_err());
-        
+
         // Invalid: before 2016
-        let start = DateTime::parse_from_rfc3339("2015-12-31T00:00:00Z").unwrap().with_timezone(&Utc);
+        let start = DateTime::parse_from_rfc3339("2015-12-31T00:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
         let end = now - Duration::hours(1);
         assert!(validate_date_range(start, end, &plan).is_err());
     }
@@ -310,14 +316,16 @@ mod tests {
     fn test_validate_date_range_algo_trader() {
         let now = Utc::now();
         let plan = AlpacaSubscriptionPlan::AlgoTrader;
-        
+
         // Valid: recent data (allowed for Algo Trader)
         let start = now - Duration::minutes(30);
         let end = now - Duration::minutes(1);
         assert!(validate_date_range(start, end, &plan).is_ok());
-        
+
         // Invalid: before 2016 (applies to all plans)
-        let start = DateTime::parse_from_rfc3339("2015-12-31T00:00:00Z").unwrap().with_timezone(&Utc);
+        let start = DateTime::parse_from_rfc3339("2015-12-31T00:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
         let end = now - Duration::hours(1);
         assert!(validate_date_range(start, end, &plan).is_err());
     }
@@ -325,7 +333,7 @@ mod tests {
     #[test]
     fn test_validate_request_integration() {
         let now = Utc::now();
-        
+
         // Valid request for Basic plan
         let params = BarsRequestParams {
             symbols: vec!["AAPL".to_string()],
@@ -339,7 +347,7 @@ mod tests {
             }),
         };
         assert!(validate_request(&params).is_ok());
-        
+
         // Invalid request for Basic plan (too recent)
         let params = BarsRequestParams {
             symbols: vec!["AAPL".to_string()],

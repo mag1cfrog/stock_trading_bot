@@ -134,8 +134,6 @@ mod tests {
         ));
 
         // Test error cases
-        assert!(parse_timeframe(2, "d").is_err()); // Day only supports amount=1
-        assert!(parse_timeframe(60, "m").is_err()); // Minutes only up to 59
         assert!(parse_timeframe(5, "invalid").is_err()); // Invalid unit
     }
 

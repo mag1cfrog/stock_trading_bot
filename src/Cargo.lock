@@ -586,15 +586,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "asset_manifest"
-version = "0.1.0"
-
-[[package]]
-name = "asset_refresh_planner"
-version = "0.1.0"
-
-[[package]]
-name = "asset_spec"
+name = "asset_sync"
 version = "0.1.0"
 
 [[package]]

@@ -1,5 +1,5 @@
 [package]
-name = "asset_manifest"
+name = "asset_sync"
 version = "0.1.0"
 edition = "2024"
 

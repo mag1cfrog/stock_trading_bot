@@ -3,6 +3,8 @@ name: CI
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'src/**'
   workflow_dispatch: {}   # manual run
 
 concurrency:

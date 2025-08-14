@@ -252,7 +252,7 @@ mod tests {
             let t = r#"
 symbol = "AAPL"
 provider = "alpaca"
-asset_class = "UsEquity"
+asset_class = "us_equity"
 
 [timeframe]
 amount = 1

@@ -18,22 +18,22 @@ A modular, Rust-native system for fetching market data and keeping datasets fres
 ```mermaid
 flowchart LR
   subgraph User
-    CFG[AssetSpec (what to keep fresh)]
+    CFG["AssetSpec (what to keep fresh)"]
   end
 
   subgraph asset_sync
-    SPEC[spec module]
-    MANI[manifest (SQLite)]
-    PLAN[planner]
-    RUNR[runtime/worker]
+    SPEC["spec module"]
+    MANI["manifest (SQLite)"]
+    PLAN["planner"]
+    RUNR["runtime/worker"]
   end
 
   subgraph market_data_ingestor
-    PROV[DataProvider trait<br/>Alpaca REST impl]
+    PROV["DataProvider trait<br/>Alpaca REST impl"]
   end
 
   subgraph storage_service
-    SINK[Parquet sink / FS or S3]
+    SINK["Parquet sink / FS or S3"]
   end
 
   CFG --> SPEC --> PLAN --> RUNR

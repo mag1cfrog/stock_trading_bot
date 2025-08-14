@@ -47,6 +47,8 @@ jobs:
           workspaces: |
             src -> target
       
+      - run: rustc -Vv && cargo -V && cargo clippy -V
+      
       - name: fmt
         run: cargo fmt --all -- --check
 

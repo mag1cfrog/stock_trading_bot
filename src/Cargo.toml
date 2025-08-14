@@ -13,3 +13,5 @@ opt-level = 3
 [workspace.dependencies]
 thiserror = "2.0.12"
 market_data_ingestor = { path = "market_data_ingestor" }
+chrono = { version = "0.4.39", features = ["serde"] }
+serde = { version = "1.0.218", features = ["derive"] }

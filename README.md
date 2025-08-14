@@ -1,40 +1,111 @@
 # Stock Trading Bot
 
 [![Rust](https://img.shields.io/badge/Developed%20in-Rust-orange?logo=rust)](https://www.rust-lang.org)
-[![Project Status: Active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-This repository contains a high-performance, Rust-native stock trading bot designed for algorithmic trading. The system is architected for reliability, speed, and modularity, leveraging modern data engineering tools.
+A modular, Rust-native system for fetching market data and keeping datasets fresh for research and trading.
 
-**Evolution Notice**: This project has evolved from Python/Go prototypes into a fully Rust-native system to leverage its safety, performance, and concurrency features. For more details, see our [Architecture Evolution Blog Post](docs/blog/2025-01-rust-architecture-pivot.md).
+**Status:** Active personal project. The system is migrating to a cleaner, crate-per-concern workspace.
 
-## Core Components
+## Workspace at a glance
 
-### 1. Market Data Ingestor
-The `market_data_ingestor` is a key component responsible for fetching financial market data from various sources.
+- `market_data_ingestor/` — provider-agnostic fetcher returning canonical `BarSeries` (currently: Alpaca REST).
+- `asset_sync/` — keeps data fresh: declarative specs, a manifest (SQLite), a planner, and a lightweight runtime.
+- `storage_service/` — I/O layer (e.g., Parquet to local/S3).
+- `shared_utils/` — shared types and helpers.
 
-**Key Features**:
-- **High-Performance**: Built with asynchronous Rust (`tokio`) for efficient, non-blocking I/O.
-- **Extensible Provider API**: Easily add new data sources. Currently supports Alpaca.
-- **Data Serialization**: Uses `serde` for robust JSON parsing and `polars` for efficient in-memory data representation.
-- **Flexible Output**: Can be used as a standalone CLI tool or as a Python-callable module via `PyO3`.
-- **Rate Limiting**: Integrated request throttling to respect provider API limits.
+### Architecture
 
-### 2. Storage Service
-The storage layer is built on **Delta Lake**, providing ACID transactions, time travel, and scalable metadata for large-scale financial datasets. This ensures data integrity and reproducibility for backtesting and live trading.
+```mermaid
+flowchart LR
+  subgraph User
+    CFG[AssetSpec (what to keep fresh)]
+  end
 
-### 3. Trading Logic
-The core trading strategies and backtesting engine are implemented in Rust, ensuring memory safety and computational efficiency.
+  subgraph asset_sync
+    SPEC[spec module]
+    MANI[manifest (SQLite)]
+    PLAN[planner]
+    RUNR[runtime/worker]
+  end
 
-## Why Rust?
-- **Performance**: Achieves C-level speed without sacrificing safety.
-- **Fearless Concurrency**: Safely parallelize backtesting and data processing.
-- **Type Safety**: Catches data-related errors at compile time, crucial for financial applications.
-- **Modern Ecosystem**: Access to cutting-edge crates like `tokio`, `polars`, and `delta-rs`.
-- **WASM Future**: Potential to build interactive web-based dashboards with WebAssembly.
+  subgraph market_data_ingestor
+    PROV[DataProvider trait<br/>Alpaca REST impl]
+  end
 
-## Development Progress
-- **Q1 2025**: Migrated core trading engine and data ingestion services to Rust.
-- **2024**: Developed initial prototypes in Python and Go. Legacy code is available in the `archive/` directory.
+  subgraph storage_service
+    SINK[Parquet sink / FS or S3]
+  end
 
-## Getting Started
-*Instructions on how to build and run the project will be added here soon.*
+  CFG --> SPEC --> PLAN --> RUNR
+  MANI <--> PLAN
+  RUNR --> PROV --> SINK
+  RUNR --> MANI
+```
+
+## Why this design
+
+- Separation of concerns: fetching vs. planning vs. storage.
+- Declarative freshness: define *what you want*; the system plans backfill + ongoing refresh.
+- Rust first: async I/O, strong typing, predictable performance.
+
+## Getting started
+
+### Prereqs
+- Rust (stable toolchain).
+- If using Alpaca, set env vars:
+```bash
+export ALPACA_API_KEY=...
+export ALPACA_SECRET_KEY=...
+```
+
+### Build & test
+```bash
+# workspace lives under src/
+cd src
+cargo build --workspace
+cargo test  --workspace
+```
+
+### Quick example: fetch daily bars
+```rust
+use market_data_ingestor::{
+    providers::{alpaca_rest::provider::AlpacaProvider, DataProvider},
+    models::{
+        request_params::{BarsRequestParams, ProviderParams},
+        timeframe::{TimeFrame, TimeFrameUnit},
+        asset::AssetClass,
+    },
+};
+use chrono::{Utc, Duration};
+
+# #[tokio::main]
+# async fn main() -> Result<(), Box<dyn std::error::Error>> {
+let provider = AlpacaProvider::new()?;
+let params = BarsRequestParams{
+  symbols: vec!["AAPL".into()],
+  timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
+  start: Utc::now() - Duration::days(10),
+  end: Utc::now(),
+  asset_class: AssetClass::UsEquity,
+  provider_specific: ProviderParams::default(),
+};
+let series = provider.fetch_bars(params).await?;
+println!("Fetched {} series", series.len());
+# Ok(()) }
+```
+
+## Development
+
+- CI runs `fmt`, `clippy -D warnings`, and `cargo nextest` on PRs.
+- Branch protection requires passing checks before merge.
+
+## Roadmap (short)
+
+- Asset specs: TOML loader + validation.
+- Manifest: SQLite schema + sync CLI.
+- Planner/runtime: gap detection + scheduled refresh.
+- Next provider: add a second vendor to validate abstraction.
+
+## Notes
+
+- Project previously experimented with heavier table formats; focus now is fast ingestion, simple manifesting, and low-latency reads tailored to personal trading research.

@@ -30,3 +30,20 @@ pub enum Range {
         end: DateTime<Utc>,
     }
 }
+
+impl Range {
+    /// Returns the inclusive start timestamp (UTC) of the range, regardless of whether it is open or closed.
+    pub fn start(&self) -> DateTime<Utc> {
+        match *self {
+            Range::Open { start } | Range::Closed { start, .. } => start,
+        }
+    }
+
+    /// Returns the inclusive end timestamp (UTC) if the range is closed; None if the range is open.
+    pub fn end(&self) -> Option<DateTime<Utc>> {
+        match *self {
+            Range::Open { .. } => None,
+            Range::Closed { end, .. } => Some(end),
+        }
+    }
+}

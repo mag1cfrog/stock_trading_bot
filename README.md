@@ -71,7 +71,7 @@ cargo test  --workspace
 ### Quick example: fetch daily bars
 ```rust
 use market_data_ingestor::{
-    providers::{alpaca_rest::provider::AlpacaProvider, DataProvider},
+    providers::alpaca_rest::provider::AlpacaProvider,
     models::{
         request_params::BarsRequestParams,
         timeframe::{TimeFrame, TimeFrameUnit},
@@ -86,7 +86,7 @@ use chrono::{Utc, Duration};
     let provider = AlpacaProvider::new()?;
 
     let params = BarsRequestParams {
-        
+
         symbols: vec!["AAPL".into()],
 
         timeframe: TimeFrame::new(1, TimeFrameUnit::Day),

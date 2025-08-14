@@ -1,9 +1,11 @@
 //! Declarative specification of *what data to keep fresh*.
 //!
 use chrono::{DateTime, Utc};
-use market_data_ingestor::models::{asset::AssetClass, timeframe::{TimeFrame, TimeFrameUnit}};
+use market_data_ingestor::models::{
+    asset::AssetClass,
+    timeframe::{TimeFrame, TimeFrameUnit},
+};
 use serde::{Deserialize, Serialize};
-
 
 /// Which upstream to use (serde snake_case).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -29,7 +31,7 @@ pub enum Range {
         start: DateTime<Utc>,
         /// Inclusive end timestamp (UTC).
         end: DateTime<Utc>,
-    }
+    },
 }
 
 impl Range {
@@ -66,7 +68,6 @@ pub struct AssetSpec {
 
     /// Time range to backfill (closed) or keep fresh (open).
     pub range: Range,
-
 }
 
 impl Default for AssetSpec {
@@ -132,16 +133,20 @@ pub mod load {
 
 #[cfg(test)]
 mod tests {
+    use super::load::{SpecError, from_file, validate};
     use super::*;
-    use super::load::{from_file, validate, SpecError};
     use chrono::{TimeZone, Utc};
-    use toml::Value;
     use std::{fs, path::PathBuf};
+    use toml::Value;
 
     fn tmp_file(name: &str) -> PathBuf {
         let mut p = std::env::temp_dir();
         // Keep filename deterministic for debugging; include pid to reduce collision risk.
-        p.push(format!("asset_spec_test_{}_{}.toml", name, std::process::id()));
+        p.push(format!(
+            "asset_spec_test_{}_{}.toml",
+            name,
+            std::process::id()
+        ));
         p
     }
 
@@ -249,7 +254,7 @@ mod tests {
 
     #[test]
     fn test_from_file_invalid_closed_range() {
-            let t = r#"
+        let t = r#"
 symbol = "AAPL"
 provider = "alpaca"
 asset_class = "us_equity"
@@ -262,13 +267,13 @@ unit   = "Minute"
 start = "2024-01-01T00:00:00Z"
 end   = "2024-01-01T00:00:00Z"
 "#;
-    let path = tmp_file("bad_range_literal");
-    std::fs::write(&path, t).unwrap();
+        let path = tmp_file("bad_range_literal");
+        std::fs::write(&path, t).unwrap();
 
-    let err = from_file(&path).unwrap_err();
-    assert!(matches!(err, SpecError::BadRange));
+        let err = from_file(&path).unwrap_err();
+        assert!(matches!(err, SpecError::BadRange));
 
-    let _ = std::fs::remove_file(path);
+        let _ = std::fs::remove_file(path);
     }
 
     #[test]
@@ -278,12 +283,18 @@ end   = "2024-01-01T00:00:00Z"
             ..AssetSpec::default()
         };
         let toml_str = toml::to_string(&spec).unwrap();
-        
+
         let v: Value = toml::from_str(&toml_str).unwrap();
         assert_eq!(v.get("provider").and_then(Value::as_str), Some("alpaca"));
 
         // Externally tagged enum: range table containing an 'open' table.
-        let range_tbl = v.get("range").and_then(Value::as_table).expect("range table");
-        assert!(range_tbl.contains_key("open"), "expected 'open' variant key in range");
+        let range_tbl = v
+            .get("range")
+            .and_then(Value::as_table)
+            .expect("range table");
+        assert!(
+            range_tbl.contains_key("open"),
+            "expected 'open' variant key in range"
+        );
     }
 }

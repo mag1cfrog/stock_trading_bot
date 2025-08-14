@@ -1,5 +1,48 @@
 # Changelog
 All notable changes to market_data_ingestor will be documented in this file.
+## market_data_ingestor-v1.3.5
+
+
+### Bug Fixes
+
+- Improve error handling for 'uv' command in Python setup ([a9a3df1](https://github.com/mag1cfrog/stock_trading_bot/commit/a9a3df18470fbedd9bd8699145e7f8eb6a5a5258))
+
+- Improve formatting and clarity of warning messages in build script ([a9bb085](https://github.com/mag1cfrog/stock_trading_bot/commit/a9bb085a512782263ffd0f074171128c9232672a))
+
+- Simplify directory check in find_site_packages function ([b73a0cc](https://github.com/mag1cfrog/stock_trading_bot/commit/b73a0ccf231f7b068b33b7634a9bb1d2a8f37843))
+
+- Correct default value for base_delay_ms in batch command tests ([16b3b05](https://github.com/mag1cfrog/stock_trading_bot/commit/16b3b05a8f69b93111fc8ec1b3905c9ed69a3c9b))
+
+- Remove invalid error case tests for timeframe parsing ([99a2b59](https://github.com/mag1cfrog/stock_trading_bot/commit/99a2b5984eb1dd20dbd38b0e2839ac93ce5532b3))
+
+
+### Documentation
+
+- Update changelog for patch release ([2416ec7](https://github.com/mag1cfrog/stock_trading_bot/commit/2416ec7e7d97dc0f07608251ad3f3fda659262c8))
+
+- Add README for release scripts with usage instructions and troubleshooting ([f0b1270](https://github.com/mag1cfrog/stock_trading_bot/commit/f0b1270860fb7278a73b8ea9e73d3de09e7c9bff))
+
+- Add comprehensive README for market data ingestor with usage, configuration, and architecture details ([c382b0e](https://github.com/mag1cfrog/stock_trading_bot/commit/c382b0eac516baa7454bd91efa1787f63633d75e))
+
+
+### Features
+
+- Update dependencies for asset_sync and market_data_ingestor, add Range enum for time range specification ([1ac3e1e](https://github.com/mag1cfrog/stock_trading_bot/commit/1ac3e1e0ea958ead68bc20bc24903af345e06b71))
+
+- Add serde rename_all attribute to AssetClass enum for consistent serialization ([2ba2063](https://github.com/mag1cfrog/stock_trading_bot/commit/2ba2063f3bfe469251415127cc8d373e8ef56985))
+
+
+### Maintenance
+
+- Comment out unused Rust analyzer features and environment variable ([c45450e](https://github.com/mag1cfrog/stock_trading_bot/commit/c45450ea312054b87f78bad86616ceb4bcc3561a))
+
+- Release ([aa68fda](https://github.com/mag1cfrog/stock_trading_bot/commit/aa68fda9a2884465f17b2f9c13f650497c3a6ced))
+
+
+### Style
+
+- Format code for consistency and readability across multiple files ([13cbc62](https://github.com/mag1cfrog/stock_trading_bot/commit/13cbc626cdca0cd4331a47bd30143f898136c5d7))
+
 ## market_data_ingestor-v1.3.4
 
 

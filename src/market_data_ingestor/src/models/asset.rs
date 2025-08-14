@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 /// This enum is used in [`BarsRequestParams`](crate::models::request_params::BarsRequestParams)
 /// to specify the type of asset being queried (e.g., stocks, futures, etc.).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum AssetClass {
     /// U.S. equities (stocks traded on U.S. exchanges).
     UsEquity,

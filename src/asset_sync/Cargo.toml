@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 chrono = { workspace = true }
+market_data_ingestor = { workspace = true }
 serde = { workspace = true }

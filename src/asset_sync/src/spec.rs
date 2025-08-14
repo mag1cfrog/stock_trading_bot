@@ -120,12 +120,170 @@ pub mod load {
         if spec.symbol.trim().is_empty() {
             return Err(SpecError::EmptySymbol);
         }
-        
+
         if let Range::Closed { start, end } = spec.range {
             if start >= end {
                 return Err(SpecError::BadRange);
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::load::{from_file, validate, SpecError};
+    use chrono::{TimeZone, Utc};
+    use toml::Value;
+    use std::{fs, path::PathBuf};
+
+    fn tmp_file(name: &str) -> PathBuf {
+        let mut p = std::env::temp_dir();
+        // Keep filename deterministic for debugging; include pid to reduce collision risk.
+        p.push(format!("asset_spec_test_{}_{}.toml", name, std::process::id()));
+        p
+    }
+
+    #[test]
+    fn test_range_start_end_open() {
+        let ts = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
+        let r = Range::Open { start: ts };
+        assert_eq!(r.start(), ts);
+        assert_eq!(r.end(), None);
+    }
+
+    #[test]
+    fn test_range_start_end_closed() {
+        let start = Utc.with_ymd_and_hms(2024, 1, 1, 9, 30, 0).unwrap();
+        let end = Utc.with_ymd_and_hms(2024, 1, 10, 16, 0, 0).unwrap();
+        let r = Range::Closed { start, end };
+        assert_eq!(r.start(), start);
+        assert_eq!(r.end(), Some(end));
+    }
+
+    #[test]
+    fn test_asset_spec_default() {
+        let d = AssetSpec::default();
+        assert!(d.symbol.is_empty());
+        assert!(matches!(d.provider, ProviderId::Alpaca));
+        assert!(matches!(d.asset_class, AssetClass::UsEquity));
+        assert!(matches!(d.timeframe.amount, 1));
+        assert!(matches!(d.range, Range::Open { .. }));
+    }
+
+    #[test]
+    fn test_validate_ok_closed_range() {
+        let spec = AssetSpec {
+            symbol: "AAPL".into(),
+            provider: ProviderId::Alpaca,
+            asset_class: AssetClass::UsEquity,
+            timeframe: TimeFrame::new(5, TimeFrameUnit::Minute),
+            range: Range::Closed {
+                start: Utc.with_ymd_and_hms(2024, 2, 1, 0, 0, 0).unwrap(),
+                end: Utc.with_ymd_and_hms(2024, 2, 2, 0, 0, 0).unwrap(),
+            },
+        };
+        assert!(validate(&spec).is_ok());
+    }
+
+    #[test]
+    fn test_validate_error_empty_symbol() {
+        let spec = AssetSpec {
+            symbol: "   ".into(),
+            ..AssetSpec::default()
+        };
+        let err = validate(&spec).unwrap_err();
+        assert!(matches!(err, SpecError::EmptySymbol));
+    }
+
+    #[test]
+    fn test_validate_error_bad_range() {
+        let t = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
+        let spec = AssetSpec {
+            symbol: "MSFT".into(),
+            range: Range::Closed { start: t, end: t }, // equal -> bad
+            ..AssetSpec::default()
+        };
+        let err = validate(&spec).unwrap_err();
+        assert!(matches!(err, SpecError::BadRange));
+    }
+
+    #[test]
+    fn test_from_file_success_round_trip() {
+        let spec = AssetSpec {
+            symbol: "GOOGL".into(),
+            provider: ProviderId::Alpaca,
+            asset_class: AssetClass::UsEquity,
+            timeframe: TimeFrame::new(15, TimeFrameUnit::Minute),
+            range: Range::Open {
+                start: Utc.with_ymd_and_hms(2023, 12, 31, 0, 0, 0).unwrap(),
+            },
+        };
+        let toml_str = toml::to_string(&spec).expect("serialize");
+        let path = tmp_file("ok");
+        fs::write(&path, toml_str).unwrap();
+
+        let loaded = from_file(&path).expect("from_file");
+        assert_eq!(loaded, spec);
+
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn test_from_file_invalid_symbol() {
+        // Start from a valid spec TOML then blank out symbol.
+        let spec = AssetSpec {
+            symbol: "AAPL".into(),
+            ..AssetSpec::default()
+        };
+        let mut toml_str = toml::to_string(&spec).unwrap();
+        toml_str = toml_str.replace("symbol = \"AAPL\"", "symbol = \"\"");
+
+        let path = tmp_file("bad_symbol");
+        fs::write(&path, toml_str).unwrap();
+        let err = from_file(&path).unwrap_err();
+        assert!(matches!(err, SpecError::EmptySymbol));
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn test_from_file_invalid_closed_range() {
+            let t = r#"
+symbol = "AAPL"
+provider = "alpaca"
+asset_class = "UsEquity"
+
+[timeframe]
+amount = 1
+unit   = "Minute"
+
+[range.closed]
+start = "2024-01-01T00:00:00Z"
+end   = "2024-01-01T00:00:00Z"
+"#;
+    let path = tmp_file("bad_range_literal");
+    std::fs::write(&path, t).unwrap();
+
+    let err = from_file(&path).unwrap_err();
+    assert!(matches!(err, SpecError::BadRange));
+
+    let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn test_serialization_snake_case_fields() {
+        let spec = AssetSpec {
+            symbol: "AAPL".into(),
+            ..AssetSpec::default()
+        };
+        let toml_str = toml::to_string(&spec).unwrap();
+        
+        let v: Value = toml::from_str(&toml_str).unwrap();
+        assert_eq!(v.get("provider").and_then(Value::as_str), Some("alpaca"));
+
+        // Externally tagged enum: range table containing an 'open' table.
+        let range_tbl = v.get("range").and_then(Value::as_table).expect("range table");
+        assert!(range_tbl.contains_key("open"), "expected 'open' variant key in range");
     }
 }

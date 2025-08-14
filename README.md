@@ -1,6 +1,8 @@
 # Stock Trading Bot
 
 [![Rust](https://img.shields.io/badge/Developed%20in-Rust-orange?logo=rust)](https://www.rust-lang.org)
+![License](https://img.shields.io/badge/license-MIT-informational)
+[![CI](https://github.com/mag1cfrog/stock_trading_bot/actions/workflows/ci.yml/badge.svg?branch=main&event=pull_request)](https://github.com/mag1cfrog/stock_trading_bot/actions/workflows/ci.yml)
 
 A modular, Rust-native system for fetching market data and keeping datasets fresh for research and trading.
 

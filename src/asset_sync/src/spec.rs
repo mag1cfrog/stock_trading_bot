@@ -83,3 +83,49 @@ impl Default for AssetSpec {
         }
     }
 }
+
+/// Loader + validation helpers.
+pub mod load {
+    use super::*;
+    use std::{fs, path::Path};
+    use thiserror::Error;
+
+    #[derive(Debug, Error)]
+    /// Errors that can occur while loading or validating an AssetSpec.
+    pub enum SpecError {
+        /// Underlying filesystem I/O error when reading a spec file.
+        #[error("I/O: {0}")]
+        Io(#[from] std::io::Error),
+        /// Error while parsing TOML into an AssetSpec.
+        #[error("TOML parse: {0}")]
+        Toml(#[from] toml::de::Error),
+        /// Range validation failed: start must be strictly before end.
+        #[error("invalid range: start must be < end")]
+        BadRange,
+        /// Validation failed: symbol was empty or whitespace.
+        #[error("symbol must be non-empty")]
+        EmptySymbol,
+    }
+
+    /// Parse a single spec file (.toml).
+    pub fn from_file(path: &Path) -> Result<AssetSpec, SpecError> {
+        let s = fs::read_to_string(path)?;
+        let spec: AssetSpec = toml::from_str(&s)?;
+        validate(&spec)?;
+        Ok(spec)
+    }
+
+    /// Validate the provided AssetSpec (non-empty symbol; for closed ranges, start < end).
+    pub fn validate(spec: &AssetSpec) -> Result<(), SpecError> {
+        if spec.symbol.trim().is_empty() {
+            return Err(SpecError::EmptySymbol);
+        }
+        
+        if let Range::Closed { start, end } = spec.range {
+            if start >= end {
+                return Err(SpecError::BadRange);
+            }
+        }
+        Ok(())
+    }
+}

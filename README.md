@@ -73,7 +73,7 @@ cargo test  --workspace
 use market_data_ingestor::{
     providers::{alpaca_rest::provider::AlpacaProvider, DataProvider},
     models::{
-        request_params::{BarsRequestParams, ProviderParams},
+        request_params::BarsRequestParams,
         timeframe::{TimeFrame, TimeFrameUnit},
         asset::AssetClass,
     },
@@ -82,18 +82,27 @@ use chrono::{Utc, Duration};
 
 # #[tokio::main]
 # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-let provider = AlpacaProvider::new()?;
-let params = BarsRequestParams{
-  symbols: vec!["AAPL".into()],
-  timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
-  start: Utc::now() - Duration::days(10),
-  end: Utc::now(),
-  asset_class: AssetClass::UsEquity,
-  provider_specific: ProviderParams::default(),
-};
-let series = provider.fetch_bars(params).await?;
-println!("Fetched {} series", series.len());
-# Ok(()) }
+
+    let provider = AlpacaProvider::new()?;
+
+    let params = BarsRequestParams {
+        
+        symbols: vec!["AAPL".into()],
+
+        timeframe: TimeFrame::new(1, TimeFrameUnit::Day),
+
+        start: Utc::now() - Duration::days(10),
+
+        end: Utc::now(),
+
+        asset_class: AssetClass::UsEquity
+    };
+
+    let series = provider.fetch_bars(params).await?;
+
+    println!("Fetched {} series", series.len());
+    # Ok(()) 
+}
 ```
 
 ## Development

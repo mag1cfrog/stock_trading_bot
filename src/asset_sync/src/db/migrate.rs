@@ -46,3 +46,20 @@ pub fn run_all(database_url: &str) -> anyhow::Result<()> {
         anyhow::bail!("Unsupported DATABASE_URL: {database_url}");
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn migrations_apply_on_temp_file() {
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        let path = temp.path().to_string_lossy().to_string();
+
+        crate::db::migrate::run_sqlite(&path).expect("migration run");
+
+        let mut conn = SqliteConnection::establish(&path).unwrap();
+
+        conn.batch_execute("INSERT INTO engine_kv (k,v) VALUES ('hello', 'world')").unwrap();
+    }
+}

@@ -4,8 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.99"
 chrono = { workspace = true }
+diesel = { version = "2.2.12", features = ["sqlite", "postgres", "chrono"] }
+diesel-async = { version = "0.6.1", features = ["postgres", "sqlite", "deadpool", "tokio"] }
+diesel_migrations = "2.2.0"
 market_data_ingestor = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 toml = "0.9.5"
+
+[dev-dependencies]
+tempfile = "3.21.0"

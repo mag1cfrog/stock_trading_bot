@@ -2,5 +2,6 @@
 
 #![deny(missing_docs)]
 
+pub mod db;
 pub mod providers;
 pub mod spec;

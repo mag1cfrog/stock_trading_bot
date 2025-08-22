@@ -1,0 +1,4 @@
+CREATE TABLE engine_kv (
+  k TEXT PRIMARY KEY,
+  v TEXT NOT NULL
+);

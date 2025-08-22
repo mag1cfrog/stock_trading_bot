@@ -1,16 +1,16 @@
-//! set up migrations 
+//! set up migrations
 
 use anyhow::anyhow;
-use diesel::{connection::SimpleConnection, Connection, PgConnection, SqliteConnection};
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use diesel::{Connection, PgConnection, SqliteConnection, connection::SimpleConnection};
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 
 /// Embedded Diesel migrations bundled with this crate.
-/// 
+///
 /// These are applied by `run_sqlite` to bring the database schema up to date.
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 /// Runs pending Diesel migrations on a SQLite database at the given URL.
-/// 
+///
 /// This sets the SQLite journal mode to WAL and applies all embedded migrations, returning an error on failure.
 pub fn run_sqlite(url: &str) -> anyhow::Result<()> {
     let mut conn = SqliteConnection::establish(url)?;
@@ -22,14 +22,14 @@ pub fn run_sqlite(url: &str) -> anyhow::Result<()> {
 }
 
 /// Runs pending Diesel migrations on a PostgreSQL database at the given URL.
-/// 
+///
 /// This connects to the database and applies all embedded migrations, returning an error on failure.
 pub fn run_postgres(url: &str) -> anyhow::Result<()> {
     let mut conn = PgConnection::establish(url)?;
 
     conn.run_pending_migrations(MIGRATIONS)
         .map_err(|e| anyhow!(e))?;
-    
+
     Ok(())
 }
 
@@ -60,6 +60,7 @@ mod test {
 
         let mut conn = SqliteConnection::establish(&path).unwrap();
 
-        conn.batch_execute("INSERT INTO engine_kv (k,v) VALUES ('hello', 'world')").unwrap();
+        conn.batch_execute("INSERT INTO engine_kv (k,v) VALUES ('hello', 'world')")
+            .unwrap();
     }
 }

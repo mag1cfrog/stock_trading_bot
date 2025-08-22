@@ -32,3 +32,17 @@ pub fn run_postgres(url: &str) -> anyhow::Result<()> {
     
     Ok(())
 }
+
+/// Runs pending migrations for the given database URL by delegating to the appropriate backend.
+///
+/// Accepts URLs that start with "postgres://" or "postgresql://" for PostgreSQL and "sqlite:" for SQLite,
+/// returning an error if the URL scheme is not recognized.
+pub fn run_all(database_url: &str) -> anyhow::Result<()> {
+    if database_url.starts_with("postgres://") || database_url.starts_with("postgresql://") {
+        run_postgres(database_url)
+    } else if database_url.starts_with("sqlite:") {
+        run_sqlite(database_url)
+    } else {
+        anyhow::bail!("Unsupported DATABASE_URL: {database_url}");
+    }
+}

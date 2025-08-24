@@ -19,7 +19,7 @@ struct ForeignKeys {
 }
 #[derive(QueryableByName)]
 struct BusyTimeout {
-    #[diesel(sql_type = Integer)]
+    #[diesel(sql_type = Integer, column_name = "timeout")]
     busy_timeout: i32,
 }
 

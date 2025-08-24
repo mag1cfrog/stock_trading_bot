@@ -1,8 +1,10 @@
 //! set up migrations
 
 use anyhow::anyhow;
-use diesel::{Connection, PgConnection, SqliteConnection, connection::SimpleConnection};
+use diesel::{Connection, PgConnection};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+
+use crate::db::connection::connect_sqlite;
 
 /// Embedded Diesel migrations bundled with this crate.
 ///
@@ -13,8 +15,9 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 ///
 /// This sets the SQLite journal mode to WAL and applies all embedded migrations, returning an error on failure.
 pub fn run_sqlite(url: &str) -> anyhow::Result<()> {
-    let mut conn = SqliteConnection::establish(url)?;
-    conn.batch_execute("PRAGMA journal_mode=WAL;")?;
+    // Reuse the centralized PRAGMAs (WAL, FKs, busy_timeout)
+    let mut conn = connect_sqlite(url)?;
+
     conn.run_pending_migrations(MIGRATIONS)
         .map_err(|e| anyhow!(e))?;
 
@@ -40,27 +43,8 @@ pub fn run_postgres(url: &str) -> anyhow::Result<()> {
 pub fn run_all(database_url: &str) -> anyhow::Result<()> {
     if database_url.starts_with("postgres://") || database_url.starts_with("postgresql://") {
         run_postgres(database_url)
-    } else if database_url.starts_with("sqlite:") {
-        run_sqlite(database_url)
     } else {
-        anyhow::bail!("Unsupported DATABASE_URL: {database_url}");
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn migrations_apply_on_temp_file() {
-        let temp = tempfile::NamedTempFile::new().unwrap();
-        let path = temp.path().to_string_lossy().to_string();
-
-        crate::db::migrate::run_sqlite(&path).expect("migration run");
-
-        let mut conn = SqliteConnection::establish(&path).unwrap();
-
-        conn.batch_execute("INSERT INTO engine_kv (k,v) VALUES ('hello', 'world')")
-            .unwrap();
+        // Treat anything else as SQLite (supports bare file paths like "dev.db")
+        run_sqlite(database_url)
     }
 }

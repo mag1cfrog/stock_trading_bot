@@ -3,6 +3,8 @@
 
 [print_schema]
 file = "src/schema.rs"
+with_docs = true
+filter = { only_tables = ["asset_manifest", "asset_coverage_bitmap", "asset_gaps"] }
 custom_type_derives = ["diesel::query_builder::QueryId", "Clone"]
 
 [migrations_directory]

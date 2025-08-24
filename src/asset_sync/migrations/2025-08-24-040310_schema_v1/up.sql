@@ -10,18 +10,20 @@ CREATE TABLE asset_manifest (
     desired_end TEXT,                  -- NULL=open-ended keep-fresh
     watermark TEXT,                  -- RFC3339 UTC contiguous progress
     last_error TEXT,
-    created_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-    updated_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     CHECK (timeframe_unit IN ('Minute', 'Day')),
     UNIQUE (symbol, provider, asset_class, timeframe_amount, timeframe_unit)
 );
 
--- keep updated_at fresh on any update
+-- trigger: set updated_at precisely on every update
+DROP TRIGGER IF EXISTS trg_asset_manifest_updated;
 CREATE TRIGGER trg_asset_manifest_updated
 AFTER UPDATE ON asset_manifest
 FOR EACH ROW
 BEGIN
-UPDATE asset_manifest SET updated_at = CURRENT_TIMESTAMP
+UPDATE asset_manifest
+SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 WHERE id = old.id;
 END;
 

@@ -72,4 +72,67 @@ fn migrations_apply_and_pragmas_are_set() {
             .unwrap();
 
     assert_ne!(before.t, after.t, "updated_at should change on UPDATE");
+
+    // Attempt to insert a coverage row referencing a non-existent manifest
+    let orphan = diesel::sql_query(
+        "INSERT INTO asset_coverage_bitmap (manifest_id, bitmap) VALUES (999999, x'00');",
+    )
+    .execute(&mut conn);
+    assert!(orphan.is_err(), "FK should reject orphan coverage row");
+
+    // Insert a manifest
+    diesel::sql_query(
+        "
+  INSERT INTO asset_manifest (
+    symbol, provider, asset_class, timeframe_amount, timeframe_unit,
+    desired_start, desired_end, watermark, last_error
+  ) VALUES (
+    'CASCADE','alpaca','us_equity',1,'Minute','2010-01-01T00:00:00Z',NULL,NULL,NULL
+  );
+",
+    )
+    .execute(&mut conn)
+    .unwrap();
+
+    // Fetch its id (SQLite: simplest is select by unique identity)
+    #[derive(diesel::QueryableByName)]
+    struct IdRow {
+        #[diesel(sql_type = diesel::sql_types::Integer)]
+        id: i32,
+    }
+    let mid: IdRow = diesel::sql_query(
+        "
+  SELECT id FROM asset_manifest WHERE symbol='CASCADE' LIMIT 1;
+",
+    )
+    .get_result(&mut conn)
+    .unwrap();
+
+    // Insert a gap tied to this manifest
+    diesel::sql_query(format!(
+        "INSERT INTO asset_gaps (manifest_id, start_ts, end_ts, state)
+   VALUES ({}, '2010-01-01T00:00:00Z', '2010-01-02T00:00:00Z', 'queued');",
+        mid.id
+    ))
+    .execute(&mut conn)
+    .unwrap();
+
+    // Delete the manifest; dependent gaps should be removed if ON DELETE CASCADE
+    diesel::sql_query(format!("DELETE FROM asset_manifest WHERE id={};", mid.id))
+        .execute(&mut conn)
+        .unwrap();
+
+    // Count remaining gaps for that manifest_id
+    #[derive(diesel::QueryableByName)]
+    struct Cnt {
+        #[diesel(sql_type = diesel::sql_types::Integer)]
+        c: i32,
+    }
+    let cnt: Cnt = diesel::sql_query(format!(
+        "SELECT COUNT(*) AS c FROM asset_gaps WHERE manifest_id={};",
+        mid.id
+    ))
+    .get_result(&mut conn)
+    .unwrap();
+    assert_eq!(cnt.c, 0, "gaps should be removed by ON DELETE CASCADE");
 }

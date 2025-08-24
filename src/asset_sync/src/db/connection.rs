@@ -11,8 +11,7 @@
 //! let _conn = connect_sqlite(path.to_str().unwrap()).expect("open sqlite");
 //! ```
 
-use diesel::{sql_query, Connection, RunQueryDsl, SqliteConnection};
-
+use diesel::{Connection, RunQueryDsl, SqliteConnection, sql_query};
 
 /// Open a SQLite connection and apply conneciton-wide PRAGMAs.
 pub fn connect_sqlite(database_url: &str) -> anyhow::Result<SqliteConnection> {
@@ -28,9 +27,9 @@ pub fn connect_sqlite(database_url: &str) -> anyhow::Result<SqliteConnection> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use diesel::sql_types::{Integer, Text};
     use diesel::QueryableByName;
     use diesel::connection::SimpleConnection;
+    use diesel::sql_types::{Integer, Text};
     use tempfile::NamedTempFile;
 
     #[derive(QueryableByName, Debug)]

@@ -1,22 +1,31 @@
 #![allow(dead_code)]
 
 use asset_sync::db::{connection, migrate}; // ensure these are `pub` in your crate
+use diesel::QueryableByName;
 use diesel::prelude::*;
 use diesel::sql_types::{Integer, Text};
-use diesel::QueryableByName;
-use tempfile::TempDir;
 use std::path::PathBuf;
+use tempfile::TempDir;
 
 #[derive(QueryableByName)]
-struct JournalMode { #[diesel(sql_type = Text)] journal_mode: String }
+struct JournalMode {
+    #[diesel(sql_type = Text)]
+    journal_mode: String,
+}
 #[derive(QueryableByName)]
-struct ForeignKeys { #[diesel(sql_type = Integer)] foreign_keys: i32 }
+struct ForeignKeys {
+    #[diesel(sql_type = Integer)]
+    foreign_keys: i32,
+}
 #[derive(QueryableByName)]
-struct BusyTimeout { #[diesel(sql_type = Integer)] busy_timeout: i32 }
+struct BusyTimeout {
+    #[diesel(sql_type = Integer)]
+    busy_timeout: i32,
+}
 
 pub struct TestDb {
-    _dir: TempDir,     // keep alive for the life of the test
-    pub path: String,  // <tmpdir>/test.db
+    _dir: TempDir,    // keep alive for the life of the test
+    pub path: String, // <tmpdir>/test.db
 }
 
 pub fn setup_db() -> (TestDb, SqliteConnection) {

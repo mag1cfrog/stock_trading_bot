@@ -5,8 +5,6 @@ use diesel::QueryableByName;
 use diesel::prelude::*;
 use diesel::sql_query;
 use diesel::sql_types::{Integer, Text};
-use std::thread::sleep;
-use std::time::Duration;
 
 #[derive(QueryableByName)]
 struct TblCnt {
@@ -57,9 +55,6 @@ fn migrations_apply_and_pragmas_are_set() {
         sql_query("SELECT updated_at AS t FROM asset_manifest WHERE symbol='AAPL' LIMIT 1;")
             .get_result(&mut conn)
             .unwrap();
-
-    // Sleep to avoid same-second equality
-    sleep(Duration::from_millis(1100));
 
     // Touch the row
     sql_query("UPDATE asset_manifest SET last_error='test' WHERE symbol='AAPL';")

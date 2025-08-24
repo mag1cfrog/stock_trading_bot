@@ -162,6 +162,9 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(asset_coverage_bitmap -> asset_manifest (manifest_id));
+diesel::joinable!(asset_gaps -> asset_manifest (manifest_id));
+
 diesel::allow_tables_to_appear_in_same_query!(
     asset_coverage_bitmap,
     asset_gaps,

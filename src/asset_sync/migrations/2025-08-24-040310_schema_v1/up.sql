@@ -31,6 +31,9 @@ CREATE TABLE asset_coverage_bitmap (
     manifest_id INTEGER NOT NULL,
     bitmap BLOB NOT NULL,          -- roaring serialized bytes
     version INTEGER NOT NULL DEFAULT 0, -- optimistic concurrency
+    -- FK: if a manifest goes away, clean up the blob
+    FOREIGN KEY (manifest_id) REFERENCES asset_manifest (id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (manifest_id)
 );
 
@@ -44,6 +47,9 @@ CREATE TABLE asset_gaps (
     lease_owner TEXT,
     lease_expires_at TEXT,
     CHECK (state IN ('queued', 'leased', 'done', 'failed')),
+    -- FK: gaps are tied to a manifest (choose policy below)
+    FOREIGN KEY (manifest_id) REFERENCES asset_manifest (id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (manifest_id, start_ts, end_ts)
 );
 

@@ -16,7 +16,7 @@ use crate::schema::*;
 ///
 /// Used for SELECT/UPDATE operations (Queryable, Identifiable, AsChangeset, Selectable).
 #[derive(Debug, Clone, Queryable, Identifiable, AsChangeset, Selectable)]
-#[diesel(table_name = asset_manifest)]
+#[diesel(table_name = asset_manifest, check_for_backend(diesel::sqlite::Sqlite))]
 pub struct AssetManifest {
     /// Database primary key (SQLite INTEGER PRIMARY KEY rowid). Populated by the DB.
     pub id: i32,
@@ -68,7 +68,7 @@ pub struct NewAssetManifest<'a> {
 ///
 /// Unique per manifest; cleaned up via FK `ON DELETE CASCADE`.
 #[derive(Debug, Clone, Queryable, Identifiable, Associations, AsChangeset, Selectable)]
-#[diesel(table_name = asset_coverage_bitmap)]
+#[diesel(table_name = asset_coverage_bitmap, check_for_backend(diesel::sqlite::Sqlite))]
 #[diesel(belongs_to(AssetManifest, foreign_key = manifest_id))]
 pub struct CoverageBlob {
     /// Database primary key.
@@ -95,7 +95,7 @@ pub struct NewCoverageBlob<'a> {
 ///
 /// Constrained `state` values: "queued" | "leased" | "done" | "failed".
 #[derive(Debug, Clone, Queryable, Identifiable, Associations, AsChangeset, Selectable)]
-#[diesel(table_name = asset_gaps)]
+#[diesel(table_name = asset_gaps, check_for_backend(diesel::sqlite::Sqlite))]
 #[diesel(belongs_to(AssetManifest, foreign_key = manifest_id))]
 pub struct AssetGap {
     /// Database primary key.

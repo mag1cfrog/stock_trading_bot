@@ -14,8 +14,7 @@ use chrono_tz::Tz;
 /// Example:
 /// - "2024-03-10T09:30:00-05:00" -> "2024-03-10T14:30:00Z"
 pub fn parse_ts_to_utc(s: &str) -> anyhow::Result<DateTime<Utc>> {
-    let dt = DateTime::parse_from_rfc3339(s)
-        .with_context(|| format!("bad rfc3339: {s}"))?;
+    let dt = DateTime::parse_from_rfc3339(s).with_context(|| format!("bad rfc3339: {s}"))?;
     Ok(dt.with_timezone(&Utc))
 }
 
@@ -24,8 +23,11 @@ pub fn parse_ts_to_utc(s: &str) -> anyhow::Result<DateTime<Utc>> {
 /// Errors for nonexistent wall times during spring-forward and for ambiguous wall times
 /// during fall-back. This lets callers decide policy for these edge cases.
 pub fn from_local_naive(naive: NaiveDateTime, tz_name: &str) -> anyhow::Result<DateTime<Utc>> {
-    let tz: Tz = tz_name.parse().with_context(|| format!("bad tz: {tz_name}"))?;
-    let local = tz.from_local_datetime(&naive)
+    let tz: Tz = tz_name
+        .parse()
+        .with_context(|| format!("bad tz: {tz_name}"))?;
+    let local = tz
+        .from_local_datetime(&naive)
         .single()
         .ok_or_else(|| anyhow::anyhow!("ambiguous or nonexistent local time"))?;
     Ok(local.with_timezone(&Utc))
@@ -34,7 +36,7 @@ pub fn from_local_naive(naive: NaiveDateTime, tz_name: &str) -> anyhow::Result<D
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{TimeZone, NaiveDate};
+    use chrono::{NaiveDate, TimeZone};
 
     #[test]
     fn parse_rfc3339_offset_to_utc() {

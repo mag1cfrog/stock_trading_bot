@@ -9,8 +9,8 @@
 //! See migrations for constraints and triggers (e.g., `updated_at` trigger on
 //! `asset_manifest` and `ON DELETE CASCADE` FKs).
 
-use diesel::prelude::*;
 use crate::schema::*;
+use diesel::prelude::*;
 
 /// A row in [`crate::schema::asset_manifest`]: one tracked symbol/timeframe on a provider.
 ///

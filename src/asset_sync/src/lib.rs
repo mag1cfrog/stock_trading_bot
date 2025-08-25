@@ -5,5 +5,6 @@
 pub mod db;
 pub mod models;
 pub mod providers;
+pub mod roaring_bytes;
 pub mod schema;
 pub mod spec;

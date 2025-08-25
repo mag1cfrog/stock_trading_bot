@@ -10,3 +10,4 @@ pub mod roaring_bytes;
 /// @generated automatically by Diesel CLI.
 pub mod schema;
 pub mod spec;
+pub mod tz;

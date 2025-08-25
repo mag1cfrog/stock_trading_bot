@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.99"
 chrono = { workspace = true }
+chrono-tz = { workspace = true }
 diesel = { version = "2.2.12", features = ["sqlite", "postgres", "chrono"] }
 diesel-async = { version = "0.6.1", features = ["postgres", "sqlite", "deadpool", "tokio"] }
 diesel_migrations = "2.2.0"

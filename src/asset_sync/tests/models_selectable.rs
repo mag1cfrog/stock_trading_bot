@@ -24,7 +24,10 @@ fn selectable_smoke_query_compiles_and_runs() {
         desired_start: "2010-01-01T00:00:00Z",
         desired_end: None,
     };
-    diesel::insert_into(am::asset_manifest).values(&row).execute(&mut conn).unwrap();
+    diesel::insert_into(am::asset_manifest)
+        .values(&row)
+        .execute(&mut conn)
+        .unwrap();
 
     // the important part: .select(AssetManifest::as_select())
     let list = am::asset_manifest

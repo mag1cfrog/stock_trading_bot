@@ -1,4 +1,4 @@
-//! @generated automatically by Diesel CLI.
+// @generated automatically by Diesel CLI.
 
 diesel::table! {
     /// Representation of the `asset_coverage_bitmap` table.
@@ -165,4 +165,8 @@ diesel::table! {
 diesel::joinable!(asset_coverage_bitmap -> asset_manifest (manifest_id));
 diesel::joinable!(asset_gaps -> asset_manifest (manifest_id));
 
-diesel::allow_tables_to_appear_in_same_query!(asset_coverage_bitmap, asset_gaps, asset_manifest,);
+diesel::allow_tables_to_appear_in_same_query!(
+    asset_coverage_bitmap,
+    asset_gaps,
+    asset_manifest,
+);

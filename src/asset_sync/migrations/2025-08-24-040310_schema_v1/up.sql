@@ -12,7 +12,16 @@ CREATE TABLE asset_manifest (
     last_error TEXT,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-    CHECK (timeframe_unit IN ('Minute', 'Day')),
+    CHECK (
+        (timeframe_unit = 'Minute' AND timeframe_amount BETWEEN 1 AND 59)
+        OR (timeframe_unit = 'Hour' AND timeframe_amount BETWEEN 1 AND 23)
+        OR (timeframe_unit = 'Day' AND timeframe_amount = 1)
+        OR (timeframe_unit = 'Week' AND timeframe_amount = 1)
+        OR (
+            timeframe_unit = 'Month'
+            AND timeframe_amount IN (1, 2, 3, 4, 6, 12)
+        )
+    ),
     UNIQUE (symbol, provider, asset_class, timeframe_amount, timeframe_unit)
 );
 

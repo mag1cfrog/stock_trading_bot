@@ -19,7 +19,7 @@ pub fn read_config(config_path: &str) -> Result<Config, Box<dyn Error + Send + S
     let config_content = match fs::read_to_string(config_path) {
         Ok(content) => content,
         Err(e) => {
-            error!("Failed to read config file: {:?}", e);
+            error!("Failed to read config file: {e:?}");
             return Err(e.into());
         }
     };
@@ -27,7 +27,7 @@ pub fn read_config(config_path: &str) -> Result<Config, Box<dyn Error + Send + S
     let config: Config = match toml::from_str(&config_content) {
         Ok(cfg) => cfg,
         Err(e) => {
-            error!("Failed to parse config file: {:?}", e);
+            error!("Failed to parse config file: {e:?}");
             return Err(e.into());
         }
     };
@@ -44,7 +44,7 @@ pub fn init_python(config_path: &str) -> Result<(), Box<dyn Error + Send + Sync>
     let result = INIT.get_or_init(|| {
         let result = try_init_python(&config);
         if let Err(e) = &result {
-            error!("Failed to initialize Python: {:?}", e);
+            error!("Failed to initialize Python: {e:?}");
         }
         result
     });
@@ -61,7 +61,7 @@ pub fn init_python_with_config(config: &Config) -> Result<(), Box<dyn Error + Se
     let result = INIT.get_or_init(|| {
         let result = try_init_python(config);
         if let Err(e) = &result {
-            error!("Failed to initialize Python: {:?}", e);
+            error!("Failed to initialize Python: {e:?}");
         }
         result
     });

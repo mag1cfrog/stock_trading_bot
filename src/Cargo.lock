@@ -141,6 +141,7 @@ dependencies = [
  "diesel-async",
  "diesel_migrations",
  "market_data_ingestor",
+ "roaring",
  "serde",
  "tempfile",
  "thiserror",
@@ -2731,6 +2732,16 @@ dependencies = [
  "libc",
  "untrusted",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "roaring"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f08d6a905edb32d74a5d5737a0c9d7e950c312f3c46cb0ca0a2ca09ea11878a0"
+dependencies = [
+ "bytemuck",
+ "byteorder",
 ]
 
 [[package]]

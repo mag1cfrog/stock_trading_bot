@@ -3,5 +3,7 @@
 #![deny(missing_docs)]
 
 pub mod db;
+pub mod models;
 pub mod providers;
+pub mod schema;
 pub mod spec;

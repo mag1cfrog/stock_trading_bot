@@ -1,6 +1,6 @@
 -- 1) identity + desired coverage + progress (one row per stream)
 CREATE TABLE asset_manifest (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY NOT NULL,
     symbol TEXT NOT NULL,
     provider TEXT NOT NULL,
     asset_class TEXT NOT NULL,         -- e.g. "us_equity","futures"
@@ -38,7 +38,7 @@ END;
 
 -- 2) roaring bitmap per manifest = “what we have” (with OCC)
 CREATE TABLE asset_coverage_bitmap (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY NOT NULL,
     manifest_id INTEGER NOT NULL,
     bitmap BLOB NOT NULL,          -- roaring serialized bytes
     version INTEGER NOT NULL DEFAULT 0, -- optimistic concurrency
@@ -50,7 +50,7 @@ CREATE TABLE asset_coverage_bitmap (
 
 -- 3) durable backlog of requested backfills (operational work items)
 CREATE TABLE asset_gaps (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY NOT NULL,
     manifest_id INTEGER NOT NULL,
     start_ts TEXT NOT NULL,        -- RFC3339 UTC inclusive
     end_ts TEXT NOT NULL,        -- RFC3339 UTC inclusive

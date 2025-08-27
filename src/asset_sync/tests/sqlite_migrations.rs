@@ -42,7 +42,7 @@ fn migrations_apply_and_pragmas_are_set() {
     sql_query(
         "
         INSERT INTO asset_manifest (
-            symbol, provider, asset_class, timeframe_amount, timeframe_unit,
+            symbol, provider_code, asset_class_code, timeframe_amount, timeframe_unit,
             desired_start, desired_end, watermark, last_error
         ) VALUES (
             'AAPL','alpaca','us_equity',1,'Minute',
@@ -81,7 +81,7 @@ fn migrations_apply_and_pragmas_are_set() {
     diesel::sql_query(
         "
   INSERT INTO asset_manifest (
-    symbol, provider, asset_class, timeframe_amount, timeframe_unit,
+    symbol, provider_code, asset_class_code, timeframe_amount, timeframe_unit,
     desired_start, desired_end, watermark, last_error
   ) VALUES (
     'CASCADE','alpaca','us_equity',1,'Minute','2010-01-01T00:00:00Z',NULL,NULL,NULL

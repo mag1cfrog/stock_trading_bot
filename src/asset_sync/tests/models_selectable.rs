@@ -22,8 +22,8 @@ fn selectable_smoke_query_compiles_and_runs() {
     // insert one row (use your helper if you have one)
     let row = NewAssetManifest {
         symbol: "AAPL",
-        provider: "alpaca",
-        asset_class: "us_equity",
+        provider_code: "alpaca",
+        asset_class_code: "us_equity",
         timeframe_amount: 1,
         timeframe_unit: "Minute",
         desired_start: "2010-01-01T00:00:00Z",

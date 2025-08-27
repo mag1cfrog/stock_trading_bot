@@ -1,11 +1,12 @@
 -- Lookup tables
 CREATE TABLE provider (
-    code TEXT PRIMARY KEY,       -- normalized lowercase key, e.g. 'alpaca'
+    -- normalized lowercase key, e.g. 'alpaca'
+    code TEXT PRIMARY KEY NOT NULL,
     name TEXT NOT NULL
 );
 
 CREATE TABLE asset_class (
-    code TEXT PRIMARY KEY        -- e.g. 'us_equity','futures'
+    code TEXT PRIMARY KEY NOT NULL        -- e.g. 'us_equity','futures'
 );
 
 CREATE TABLE provider_asset_class (
@@ -23,7 +24,7 @@ CREATE TABLE provider_symbol_map (
     asset_class_code TEXT NOT NULL,
     canonical_symbol TEXT NOT NULL,   -- our 'AAPL','ES', etc.
     remote_symbol TEXT NOT NULL,   -- provider-specific, e.g. 'AAPL','ESZ5'
-    UNIQUE (provider_code, asset_class_code, canonical_symbol),
+    PRIMARY KEY (provider_code, asset_class_code, canonical_symbol),
     UNIQUE (provider_code, asset_class_code, remote_symbol),
     FOREIGN KEY (provider_code, asset_class_code)
     REFERENCES provider_asset_class (provider_code, asset_class_code)

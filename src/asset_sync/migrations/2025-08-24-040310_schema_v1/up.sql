@@ -1,3 +1,35 @@
+-- Lookup tables
+CREATE TABLE provider (
+    code TEXT PRIMARY KEY,       -- normalized lowercase key, e.g. 'alpaca'
+    name TEXT NOT NULL
+);
+
+CREATE TABLE asset_class (
+    code TEXT PRIMARY KEY        -- e.g. 'us_equity','futures'
+);
+
+CREATE TABLE provider_asset_class (
+    provider_code TEXT NOT NULL,
+    asset_class_code TEXT NOT NULL,
+    PRIMARY KEY (provider_code, asset_class_code),
+    FOREIGN KEY (provider_code) REFERENCES provider (code)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (asset_class_code) REFERENCES asset_class (code)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE provider_symbol_map (
+    provider_code TEXT NOT NULL,
+    asset_class_code TEXT NOT NULL,
+    canonical_symbol TEXT NOT NULL,   -- our 'AAPL','ES', etc.
+    remote_symbol TEXT NOT NULL,   -- provider-specific, e.g. 'AAPL','ESZ5'
+    UNIQUE (provider_code, asset_class_code, canonical_symbol),
+    UNIQUE (provider_code, asset_class_code, remote_symbol),
+    FOREIGN KEY (provider_code, asset_class_code)
+    REFERENCES provider_asset_class (provider_code, asset_class_code)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
 -- 1) identity + desired coverage + progress (one row per stream)
 CREATE TABLE asset_manifest (
     id INTEGER PRIMARY KEY NOT NULL,
@@ -22,7 +54,10 @@ CREATE TABLE asset_manifest (
             AND timeframe_amount IN (1, 2, 3, 4, 6, 12)
         )
     ),
-    UNIQUE (symbol, provider, asset_class, timeframe_amount, timeframe_unit)
+    UNIQUE (symbol, provider, asset_class, timeframe_amount, timeframe_unit),
+    FOREIGN KEY (provider, asset_class)
+    REFERENCES provider_asset_class (provider_code, asset_class_code)
+    ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- trigger: set updated_at precisely on every update

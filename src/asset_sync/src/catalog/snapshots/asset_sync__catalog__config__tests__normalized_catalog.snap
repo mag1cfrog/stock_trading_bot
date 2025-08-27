@@ -1,0 +1,26 @@
+---
+source: asset_sync/src/catalog/config.rs
+expression: "&cat"
+---
+{
+  "providers": {
+    "alpaca": {
+      "name": "Alpaca",
+      "asset_classes": [
+        "us_equity",
+        "futures"
+      ],
+      "markets": null,
+      "timeframes": null,
+      "supports_extended": null,
+      "supports_backfill": null,
+      "symbol_map": [
+        {
+          "asset_class": "us_equity",
+          "canonical": "AAPL",
+          "remote": "AAPL"
+        }
+      ]
+    }
+  }
+}

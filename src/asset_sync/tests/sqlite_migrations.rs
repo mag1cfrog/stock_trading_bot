@@ -1,5 +1,5 @@
 mod common;
-use common::{assert_sqlite_pragmas, setup_db};
+use common::{assert_sqlite_pragmas, seed_min_catalog, setup_db};
 
 use diesel::QueryableByName;
 use diesel::prelude::*;
@@ -20,6 +20,8 @@ struct TimeStr {
 #[test]
 fn migrations_apply_and_pragmas_are_set() {
     let (_db, mut conn) = setup_db();
+
+    seed_min_catalog(&mut conn).expect("seed catalog");
 
     // PRAGMAs (WAL is a persistent property of the .db file; FKs/timeout are per-connection)
     assert_sqlite_pragmas(&mut conn);

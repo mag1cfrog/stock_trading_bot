@@ -7,6 +7,8 @@ use diesel::sql_types::{Integer, Text};
 use std::path::PathBuf;
 use tempfile::TempDir;
 
+use asset_sync::schema::{asset_class, provider, provider_asset_class};
+
 #[derive(QueryableByName)]
 struct JournalMode {
     #[diesel(sql_type = Text)]
@@ -53,4 +55,35 @@ pub fn assert_sqlite_pragmas(conn: &mut SqliteConnection) {
 
     let bt: BusyTimeout = sql_query("PRAGMA busy_timeout;").get_result(conn).unwrap();
     assert_eq!(bt.busy_timeout, 5000);
+}
+
+pub fn seed_min_catalog(conn: &mut SqliteConnection) -> diesel::QueryResult<()> {
+    // provider: 'alpaca'
+    diesel::insert_into(provider::table)
+        .values((provider::code.eq("alpaca"), provider::name.eq("Alpaca")))
+        .on_conflict(provider::code)
+        .do_nothing()
+        .execute(conn)?;
+
+    // asset_class: 'us_equity'
+    diesel::insert_into(asset_class::table)
+        .values(asset_class::code.eq("us_equity"))
+        .on_conflict(asset_class::code)
+        .do_nothing()
+        .execute(conn)?;
+
+    // link pair: ('alpaca','us_equity')
+    diesel::insert_into(provider_asset_class::table)
+        .values((
+            provider_asset_class::provider_code.eq("alpaca"),
+            provider_asset_class::asset_class_code.eq("us_equity"),
+        ))
+        .on_conflict((
+            provider_asset_class::provider_code,
+            provider_asset_class::asset_class_code,
+        ))
+        .do_nothing()
+        .execute(conn)?;
+
+    Ok(())
 }

@@ -5,3 +5,4 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 6402dbb91a469f9ddda3a3449efffd3dd9d7f98ab0b66110c039394bcaa7b613 # shrinks to names = ["µ"]
+cc 1e42d64a5229f4464c0e6fc712188462cfd1889b4f3ab2533b5af2c83fbbd0ae # shrinks to names = ["🄰"]

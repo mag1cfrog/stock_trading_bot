@@ -115,23 +115,39 @@ pub enum UnknownSymbolAssetClassPolicy {
     Error,
 }
 
+/// Normalize an identifier to a strict ASCII "slug":
+/// - trim
+/// - lowercase (ASCII only)
+/// - allowed chars: [a-z0-9_]
+/// - length 1..=32
+pub fn normalize_code_ascii_slug(raw: &str) -> anyhow::Result<String> {
+    let s = raw.trim();
+    if s.is_empty() {
+        bail!("code cannot be empty");
+    }
+    if s.len() > 32 {
+        bail!("code length must be 1..=32");
+    }
+    let mut out = String::with_capacity(s.len());
+    for ch in s.chars() {
+        if ch.is_ascii_alphanumeric() || ch == '_' {
+            out.push(ch.to_ascii_lowercase());
+        } else {
+            bail!("code contains invalid non-ASCII or punctuation: {:?}", ch);
+        }
+    }
+    Ok(out)
+}
+
 /// Normalize a catalog in-place with an explicit policy for unknown symbol asset classes.
 ///
 /// What normalization does:
-/// - Lowercase + trim provider keys; reject duplicates after normalization
-/// - Deduplicate and lowercase `asset_classes`, preserving the first occurrence order
-/// - For `symbol_map`:
-///   - Trim all fields; lowercase `asset_class`
-///   - Enforce the asset_class is declared in the provider (`Drop` vs `Error`)
-///   - Deduplicate by `(asset_class, canonical)` preserving the first occurrence
-///
-/// Returns:
-/// - A [`NormalizationReport`] detailing the changes made
-///
-/// Errors:
-/// - Empty or duplicate provider codes after normalization
-/// - Empty asset class names or empty symbol fields after trimming
-/// - Unknown symbol_map.asset_class when policy is [`UnknownSymbolAssetClassPolicy::Error`]
+/// - Provider keys -> ASCII slug (lowercase, [a-z0-9_], len 1..=32); rejects collisions
+/// - asset_classes -> ASCII slug; dedupe preserving first
+/// - symbol_map:
+///   - trim strings; lowercase/slug-check asset_class
+///   - enforce asset_class is declared (Drop vs Error)
+///   - dedupe by (asset_class, canonical) preserving first
 pub fn normalize_catalog_with_policy(
     cat: &mut Catalog,
     policy: UnknownSymbolAssetClassPolicy,
@@ -143,10 +159,9 @@ pub fn normalize_catalog_with_policy(
     let old = std::mem::take(&mut cat.providers);
 
     for (raw_code, mut cfg) in old {
-        let code = raw_code.trim().to_lowercase();
-        if code.is_empty() {
-            bail!("provider code cannot be empty after trimming");
-        }
+        let code = normalize_code_ascii_slug(&raw_code)
+            .with_context(|| format!("invalid provider code {raw_code:?}"))?;
+
         if code != raw_code {
             report.providers_renamed += 1;
         }
@@ -159,11 +174,10 @@ pub fn normalize_catalog_with_policy(
         let mut seen_ac = HashSet::new();
         let mut norm_classes = Vec::with_capacity(before_len);
 
-        for mut ac in mem::take(&mut cfg.asset_classes) {
-            ac = ac.trim().to_lowercase();
-            if ac.is_empty() {
-                bail!("asset class cannot be empty after trimming");
-            }
+        for ac_raw in mem::take(&mut cfg.asset_classes) {
+            let ac = normalize_code_ascii_slug(&ac_raw)
+                .with_context(|| format!("invalid asset class {ac_raw:?} for provider {code}"))?;
+
             if seen_ac.insert(ac.clone()) {
                 norm_classes.push(ac);
             }
@@ -181,10 +195,15 @@ pub fn normalize_catalog_with_policy(
             let mut seen_pair = HashSet::new();
 
             for mut sm in list {
-                sm.asset_class = sm.asset_class.trim().to_lowercase();
-                if sm.asset_class.is_empty() {
-                    bail!("symbol_map.asset_class cannot be empty after trimming");
-                }
+                // asset_class: slug
+                sm.asset_class = normalize_code_ascii_slug(&sm.asset_class).with_context(|| {
+                    format!(
+                        "invalid symbol_map.asset_class {:?} for provider {}",
+                        sm.asset_class, code
+                    )
+                })?;
+
+                // canonical/remote: trim only (tickers can be non-ASCII or contain punctuation)
                 sm.canonical = sm.canonical.trim().to_string();
                 if sm.canonical.is_empty() {
                     bail!("symbol_map.canonical cannot be empty after trimming");
@@ -367,12 +386,15 @@ mod tests {
 
     proptest! {
         #[test]
-        fn providers_lowercased_and_unique(
-            // up to 5 random provider names with mixed case + whitespace
+        fn providers_ascii_slug_or_error(
+            // up to 5 random provider names with mixed content
             names in proptest::collection::vec(".{1,8}", 1..5),
         ) {
+            use indexmap::IndexMap;
+
             let mut cat = Catalog { providers: IndexMap::new() };
             for (i, n) in names.iter().enumerate() {
+                // inject some noise (whitespace, case) to exercise normalization
                 let key = if i % 2 == 0 { n.to_uppercase() } else { format!("  {n} ") };
                 cat.providers.insert(key, ProviderCfg {
                     name: "X".into(),
@@ -383,12 +405,19 @@ mod tests {
             }
 
             let res = normalize_catalog(&mut cat);
-            if res.is_ok() {
-                // 1) all keys lowercase
-                assert!(cat.providers.keys().all(|k| k.chars().all(|c| !c.is_uppercase())));
-                // 2) no duplicates (IndexMap guarantees unique keys)
-            } else {
-                // a normalization collision is allowed; property still holds for success cases
+            match res {
+                Ok(_) => {
+                    // Provider keys must be 1..=32 chars of [a-z0-9_]
+                    assert!(cat.providers.keys().all(|k|
+                        !k.is_empty() &&
+                        k.len() <= 32 &&
+                        k.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+                    ));
+                }
+                Err(_e) => {
+                    // An error is acceptable for “names” containing disallowed characters;
+                    // the normalization contract permits rejecting bad provider codes.
+                }
             }
         }
     }

@@ -18,7 +18,7 @@ chrono = { workspace = true }
 clap = { version = "4.5.30", features = ["derive"], optional = true }
 futures = { version = "0.3.31", optional = true }
 governor = "0.10.0"
-indexmap = { version = "2.10.0", features = ["serde"] }
+indexmap = { workspace = true }
 log = { version = "0.4.26", optional = true }
 nonzero_ext = "0.3.0"
 polars = { version = "0.46.0", features = ["ipc", "polars-io"], optional = true }

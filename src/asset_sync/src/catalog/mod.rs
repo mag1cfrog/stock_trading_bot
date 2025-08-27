@@ -5,3 +5,4 @@
 //! mappings. See [`crate::catalog::config`] for the TOML model and helpers.
 
 pub mod config;
+pub mod repo;

@@ -9,6 +9,7 @@
 //! See migrations for constraints and triggers (e.g., `updated_at` trigger on
 //! `asset_manifest` and `ON DELETE CASCADE` FKs).
 
+pub mod catalog;
 use crate::schema::*;
 use diesel::prelude::*;
 

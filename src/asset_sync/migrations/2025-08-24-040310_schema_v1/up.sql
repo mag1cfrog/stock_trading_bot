@@ -35,8 +35,8 @@ CREATE TABLE provider_symbol_map (
 CREATE TABLE asset_manifest (
     id INTEGER PRIMARY KEY NOT NULL,
     symbol TEXT NOT NULL,
-    provider TEXT NOT NULL,
-    asset_class TEXT NOT NULL,         -- e.g. "us_equity","futures"
+    provider_code TEXT NOT NULL,
+    asset_class_code TEXT NOT NULL,         -- e.g. "us_equity","futures"
     timeframe_amount INTEGER NOT NULL,
     timeframe_unit TEXT NOT NULL,         -- e.g. "Minute","Day"
     desired_start TEXT NOT NULL,         -- RFC3339 UTC
@@ -55,8 +55,14 @@ CREATE TABLE asset_manifest (
             AND timeframe_amount IN (1, 2, 3, 4, 6, 12)
         )
     ),
-    UNIQUE (symbol, provider, asset_class, timeframe_amount, timeframe_unit),
-    FOREIGN KEY (provider, asset_class)
+    UNIQUE (
+        symbol,
+        provider_code,
+        asset_class_code,
+        timeframe_amount,
+        timeframe_unit
+    ),
+    FOREIGN KEY (provider_code, asset_class_code)
     REFERENCES provider_asset_class (provider_code, asset_class_code)
     ON DELETE RESTRICT ON UPDATE CASCADE
 );

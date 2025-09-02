@@ -67,7 +67,6 @@ pub fn snapshot() -> Arc<AllowedSet> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use diesel::prelude::*;
     use tempfile::NamedTempFile;
 
     use crate::db::{connection::connect_sqlite, migrate};

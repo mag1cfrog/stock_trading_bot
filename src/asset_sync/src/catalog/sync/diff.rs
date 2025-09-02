@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt,
+};
 
 use crate::catalog::sync::{read::Current, want::Wanted};
 
@@ -16,6 +19,106 @@ pub struct CatalogDiff {
     pub classes_delete: BTreeSet<String>,
     pub pairs_delete: BTreeSet<(String, String)>,
     pub symbols_delete: BTreeSet<(String, String, String, String)>,
+}
+
+impl fmt::Display for CatalogDiff {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // helper: section header with underline
+        let mut wrote_any = false;
+        let mut section = |title: &str,
+                           body: &mut dyn FnMut(&mut fmt::Formatter<'_>) -> fmt::Result|
+         -> fmt::Result {
+            if wrote_any {
+                writeln!(f)?;
+            }
+            writeln!(f, "{title}")?;
+            for _ in 0..title.len() {
+                write!(f, "-")?;
+            }
+            writeln!(f)?;
+            body(f)?;
+            wrote_any = true;
+            Ok(())
+        };
+
+        // UPSERTS
+        if !self.providers_upsert.is_empty() {
+            section("Providers (UPSERT)", &mut |f| {
+                for (code, name) in &self.providers_upsert {
+                    writeln!(f, "+ {code}  \"{name}\"")?;
+                }
+                Ok(())
+            })?;
+        }
+        if !self.classes_upsert.is_empty() {
+            section("Asset Classes (UPSERT)", &mut |f| {
+                for code in &self.classes_upsert {
+                    writeln!(f, "+ {code}")?;
+                }
+                Ok(())
+            })?;
+        }
+        if !self.pairs_upsert.is_empty() {
+            section("Provider × Class (UPSERT)", &mut |f| {
+                for (prov, class) in &self.pairs_upsert {
+                    writeln!(f, "+ {prov} × {class}")?;
+                }
+                Ok(())
+            })?;
+        }
+        if !self.symbols_upsert.is_empty() {
+            section("Symbol Map (UPSERT)", &mut |f| {
+                for (prov, class, canon, remote) in &self.symbols_upsert {
+                    if canon == remote {
+                        writeln!(f, "+ {prov}/{class}  {canon}")?;
+                    } else {
+                        writeln!(f, "+ {prov}/{class}  {canon} → {remote}")?;
+                    }
+                }
+                Ok(())
+            })?;
+        }
+
+        // DELETES
+        if !self.providers_delete.is_empty() {
+            section("Providers (DELETE)", &mut |f| {
+                for code in &self.providers_delete {
+                    writeln!(f, "- {code}")?;
+                }
+                Ok(())
+            })?;
+        }
+        if !self.classes_delete.is_empty() {
+            section("Asset Classes (DELETE)", &mut |f| {
+                for code in &self.classes_delete {
+                    writeln!(f, "- {code}")?;
+                }
+                Ok(())
+            })?;
+        }
+        if !self.pairs_delete.is_empty() {
+            section("Provider × Class (DELETE)", &mut |f| {
+                for (prov, class) in &self.pairs_delete {
+                    writeln!(f, "- {prov} × {class}")?;
+                }
+                Ok(())
+            })?;
+        }
+        if !self.symbols_delete.is_empty() {
+            section("Symbol Map (DELETE)", &mut |f| {
+                for (prov, class, canon, remote) in &self.symbols_delete {
+                    writeln!(f, "- {prov}/{class}  {canon} ({remote})")?;
+                }
+                Ok(())
+            })?;
+        }
+
+        if !wrote_any {
+            write!(f, "No changes")
+        } else {
+            Ok(())
+        }
+    }
 }
 
 pub fn make_diff(w: &Wanted, c: &Current, prune: bool) -> CatalogDiff {

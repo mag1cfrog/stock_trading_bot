@@ -35,7 +35,7 @@ use toml::from_str;
 /// Top-level catalog mapping provider codes to their configuration.
 ///
 /// Keys are normalized to lowercase during normalization (e.g., "AlPaCa" -> "alpaca").
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Catalog {
     /// Map of provider code -> configuration.

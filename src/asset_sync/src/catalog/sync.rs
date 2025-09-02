@@ -106,12 +106,11 @@ pub fn sync_catalog(
                 use asset_class::dsl as ac;
                 let existing: Vec<String> = ac::asset_class.select(ac::code).load(conn)?;
                 for code in existing {
-                    if !want_classes.contains(&code) {
-                        if !opt.dry_run {
+                    if !want_classes.contains(&code)
+                        && !opt.dry_run {
                             diesel::delete(ac::asset_class.filter(ac::code.eq(&code)))
                                 .execute(conn)?;
                         }
-                    }
                 }
             }
             // Pairs
@@ -121,14 +120,13 @@ pub fn sync_catalog(
                     .select((pac::provider_code, pac::asset_class_code))
                     .load(conn)?;
                 for (p, a) in existing {
-                    if !want_pairs.contains(&(p.clone(), a.clone())) {
-                        if !opt.dry_run {
+                    if !want_pairs.contains(&(p.clone(), a.clone()))
+                        && !opt.dry_run {
                             diesel::delete(pac::provider_asset_class.filter(
                                 pac::provider_code.eq(&p).and(pac::asset_class_code.eq(&a)),
                             ))
                             .execute(conn)?;
                         }
-                    }
                 }
             }
             // Symbol map (prune any not present)
@@ -143,8 +141,8 @@ pub fn sync_catalog(
                     ))
                     .load(conn)?;
                 for row in existing {
-                    if !want_symbols.contains(&row) {
-                        if !opt.dry_run {
+                    if !want_symbols.contains(&row)
+                        && !opt.dry_run {
                             diesel::delete(
                                 psm::provider_symbol_map.filter(
                                     psm::provider_code
@@ -156,7 +154,6 @@ pub fn sync_catalog(
                             )
                             .execute(conn)?;
                         }
-                    }
                 }
             }
         }

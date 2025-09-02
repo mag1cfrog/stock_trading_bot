@@ -20,6 +20,7 @@
 //! referential integrity with `PRAGMA foreign_key_check` in tests.
 
 mod diff;
+mod read;
 
 use std::collections::{BTreeMap, BTreeSet};
 

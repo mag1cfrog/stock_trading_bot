@@ -59,9 +59,9 @@ impl fmt::Display for CatalogDiff {
             })?;
         }
         if !self.pairs_upsert.is_empty() {
-            section("Provider × Class (UPSERT)", &mut |f| {
+            section("Provider - Class (UPSERT)", &mut |f| {
                 for (prov, class) in &self.pairs_upsert {
-                    writeln!(f, "+ {prov} × {class}")?;
+                    writeln!(f, "+ {prov} - {class}")?;
                 }
                 Ok(())
             })?;
@@ -97,9 +97,9 @@ impl fmt::Display for CatalogDiff {
             })?;
         }
         if !self.pairs_delete.is_empty() {
-            section("Provider × Class (DELETE)", &mut |f| {
+            section("Provider - Class (DELETE)", &mut |f| {
                 for (prov, class) in &self.pairs_delete {
-                    writeln!(f, "- {prov} × {class}")?;
+                    writeln!(f, "- {prov} - {class}")?;
                 }
                 Ok(())
             })?;
@@ -155,4 +155,119 @@ pub fn make_diff(w: &Wanted, c: &Current, prune: bool) -> CatalogDiff {
     }
 
     d
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::{BTreeMap, BTreeSet};
+
+    fn wanted_min() -> Wanted {
+        let providers = BTreeMap::from([("alpaca".to_string(), "Alpaca".to_string())]);
+        let classes = BTreeSet::from(["us_equity".to_string()]);
+        let pairs = BTreeSet::from([("alpaca".to_string(), "us_equity".to_string())]);
+        let symbols = BTreeSet::from([(
+            "alpaca".to_string(),
+            "us_equity".to_string(),
+            "AAPL".to_string(),
+            "AAPL".to_string(), // same -> prints without arrow
+        )]);
+
+        Wanted {
+            providers,
+            classes,
+            pairs,
+            symbols,
+        }
+    }
+
+    fn current_empty() -> Current {
+        Current {
+            providers: BTreeMap::new(),
+            classes: BTreeSet::new(),
+            pairs: BTreeSet::new(),
+            symbols: BTreeSet::new(),
+        }
+    }
+
+    #[test]
+    fn display_no_changes() {
+        // make_diff with both sides empty -> "No changes"
+        let w = Wanted::default();
+        let c = Current {
+            providers: BTreeMap::new(),
+            classes: BTreeSet::new(),
+            pairs: BTreeSet::new(),
+            symbols: BTreeSet::new(),
+        };
+        let d = make_diff(&w, &c, false);
+        assert_eq!(d.to_string(), "No changes");
+    }
+
+    #[test]
+    fn display_upserts_expected() {
+        // Upserts only; prune=false so no DELETE sections.
+        let w = wanted_min();
+        let c = current_empty();
+        let d = make_diff(&w, &c, false);
+        let got = d.to_string();
+
+        // Expected layout (headers underlined to the exact length).
+        let expected = "\
+Providers (UPSERT)
+------------------
++ alpaca  \"Alpaca\"
+
+Asset Classes (UPSERT)
+----------------------
++ us_equity
+
+Provider - Class (UPSERT)
+-------------------------
++ alpaca - us_equity
+
+Symbol Map (UPSERT)
+-------------------
++ alpaca/us_equity  AAPL
+";
+        assert_eq!(got, expected, "pretty diff did not match");
+    }
+
+    // Run this manually to preview how diffs print in your console:
+    // cargo test -p asset_sync -- catalog::sync::diff::tests::print_example -- --nocapture --ignored
+    #[test]
+    #[ignore]
+    fn print_example() {
+        let w = wanted_min();
+
+        // Current has one extra provider/class/symbol so we exercise DELETEs with prune=true.
+        let c = Current {
+            providers: BTreeMap::from([
+                ("alpaca".to_string(), "Alpaca".to_string()),
+                ("intrinio".to_string(), "Intrinio".to_string()),
+            ]),
+            classes: BTreeSet::from(["us_equity".to_string(), "futures".to_string()]),
+            pairs: BTreeSet::from([
+                ("alpaca".to_string(), "us_equity".to_string()),
+                ("intrinio".to_string(), "futures".to_string()),
+            ]),
+            symbols: BTreeSet::from([
+                (
+                    "alpaca".to_string(),
+                    "us_equity".to_string(),
+                    "AAPL".to_string(),
+                    "AAPL".to_string(),
+                ),
+                (
+                    "intrinio".to_string(),
+                    "futures".to_string(),
+                    "ES".to_string(),
+                    "ESZ5".to_string(),
+                ),
+            ]),
+        };
+
+        let d = make_diff(&w, &c, true);
+        println!("{d}");
+    }
 }

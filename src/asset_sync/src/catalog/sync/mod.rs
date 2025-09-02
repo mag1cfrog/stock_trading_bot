@@ -66,5 +66,7 @@ pub fn sync_catalog(
     // one-shot transactional apply, BEGIN IMMEDIATE
     conn.immediate_transaction::<_, anyhow::Error, _>(|tx| apply_diff(tx, &diff))?;
 
+    // Refresh the in-memory allow-list snapshot now that the DB is consistent
+    crate::catalog::cache::refresh_allowed(conn)?;
     Ok(diff)
 }

@@ -8,7 +8,7 @@
 //! ## Transactions & consistency
 //! Everything runs inside a single **`BEGIN IMMEDIATE`** transaction via
 //! `SqliteConnection::immediate_transaction`. This reduces `SQLITE_BUSY` surprises and
-//! ensures we either apply the whole diff or none of it. :contentReference[oaicite:0]{index=0}
+//! ensures we either apply the whole diff or none of it.
 //!
 //! ## Dry-run
 //! When `SyncOptions::dry_run` is `true`, we return a structured `CatalogDiff` and do
@@ -17,7 +17,7 @@
 //! ## Delete order (prune)
 //! When pruning, we delete in dependency order: `provider_symbol_map` → `provider_asset_class`
 //! → (`provider`, `asset_class`). This respects FKs with `ON DELETE RESTRICT`. We verify
-//! referential integrity with `PRAGMA foreign_key_check` in tests. :contentReference[oaicite:1]{index=1}
+//! referential integrity with `PRAGMA foreign_key_check` in tests.
 
 use std::collections::{BTreeMap, BTreeSet};
 

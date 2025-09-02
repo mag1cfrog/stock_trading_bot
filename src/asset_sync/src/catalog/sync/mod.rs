@@ -19,6 +19,7 @@
 //! → (`provider`, `asset_class`). This respects FKs with `ON DELETE RESTRICT`. We verify
 //! referential integrity with `PRAGMA foreign_key_check` in tests.
 
+mod apply;
 mod diff;
 mod read;
 mod want;

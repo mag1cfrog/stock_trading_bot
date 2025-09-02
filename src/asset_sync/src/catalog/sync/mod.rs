@@ -59,6 +59,7 @@ pub fn sync_catalog(
     let diff = make_diff(&want, &cur, opt.prune);
 
     if opt.dry_run {
+        println!("{diff}");
         return Ok(diff);
     }
 

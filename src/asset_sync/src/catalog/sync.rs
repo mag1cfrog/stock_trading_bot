@@ -1,4 +1,23 @@
-//! syncing module
+//! Catalog synchronization (providers, asset classes, allowed pairs, symbol map).
+//!
+//! ## What this does
+//! - Parses a `Catalog` (TOML) and **normalizes** it (lowercase codes, trim, dedupe).
+//! - Computes a **diff** between TOML (desired) and the DB (current).
+//! - Applies the diff with UPSERTs (idempotent) and optional **prune** deletes.
+//!
+//! ## Transactions & consistency
+//! Everything runs inside a single **`BEGIN IMMEDIATE`** transaction via
+//! `SqliteConnection::immediate_transaction`. This reduces `SQLITE_BUSY` surprises and
+//! ensures we either apply the whole diff or none of it. :contentReference[oaicite:0]{index=0}
+//!
+//! ## Dry-run
+//! When `SyncOptions::dry_run` is `true`, we return a structured `CatalogDiff` and do
+//! **not** write anything. Callers can pretty-print the diff or log it.
+//!
+//! ## Delete order (prune)
+//! When pruning, we delete in dependency order: `provider_symbol_map` → `provider_asset_class`
+//! → (`provider`, `asset_class`). This respects FKs with `ON DELETE RESTRICT`. We verify
+//! referential integrity with `PRAGMA foreign_key_check` in tests. :contentReference[oaicite:1]{index=1}
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -106,11 +125,9 @@ pub fn sync_catalog(
                 use asset_class::dsl as ac;
                 let existing: Vec<String> = ac::asset_class.select(ac::code).load(conn)?;
                 for code in existing {
-                    if !want_classes.contains(&code)
-                        && !opt.dry_run {
-                            diesel::delete(ac::asset_class.filter(ac::code.eq(&code)))
-                                .execute(conn)?;
-                        }
+                    if !want_classes.contains(&code) && !opt.dry_run {
+                        diesel::delete(ac::asset_class.filter(ac::code.eq(&code))).execute(conn)?;
+                    }
                 }
             }
             // Pairs
@@ -120,13 +137,14 @@ pub fn sync_catalog(
                     .select((pac::provider_code, pac::asset_class_code))
                     .load(conn)?;
                 for (p, a) in existing {
-                    if !want_pairs.contains(&(p.clone(), a.clone()))
-                        && !opt.dry_run {
-                            diesel::delete(pac::provider_asset_class.filter(
+                    if !want_pairs.contains(&(p.clone(), a.clone())) && !opt.dry_run {
+                        diesel::delete(
+                            pac::provider_asset_class.filter(
                                 pac::provider_code.eq(&p).and(pac::asset_class_code.eq(&a)),
-                            ))
-                            .execute(conn)?;
-                        }
+                            ),
+                        )
+                        .execute(conn)?;
+                    }
                 }
             }
             // Symbol map (prune any not present)
@@ -141,19 +159,18 @@ pub fn sync_catalog(
                     ))
                     .load(conn)?;
                 for row in existing {
-                    if !want_symbols.contains(&row)
-                        && !opt.dry_run {
-                            diesel::delete(
-                                psm::provider_symbol_map.filter(
-                                    psm::provider_code
-                                        .eq(&row.0)
-                                        .and(psm::asset_class_code.eq(&row.1))
-                                        .and(psm::canonical_symbol.eq(&row.2))
-                                        .and(psm::remote_symbol.eq(&row.3)),
-                                ),
-                            )
-                            .execute(conn)?;
-                        }
+                    if !want_symbols.contains(&row) && !opt.dry_run {
+                        diesel::delete(
+                            psm::provider_symbol_map.filter(
+                                psm::provider_code
+                                    .eq(&row.0)
+                                    .and(psm::asset_class_code.eq(&row.1))
+                                    .and(psm::canonical_symbol.eq(&row.2))
+                                    .and(psm::remote_symbol.eq(&row.3)),
+                            ),
+                        )
+                        .execute(conn)?;
+                    }
                 }
             }
         }

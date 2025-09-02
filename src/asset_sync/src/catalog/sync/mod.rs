@@ -21,6 +21,7 @@
 
 mod diff;
 mod read;
+mod want;
 
 use std::collections::{BTreeMap, BTreeSet};
 

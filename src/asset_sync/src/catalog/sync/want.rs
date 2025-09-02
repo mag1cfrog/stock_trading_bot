@@ -1,6 +1,7 @@
 use crate::catalog::config::Catalog;
 use std::collections::{BTreeMap, BTreeSet};
 
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Wanted {
     pub providers: BTreeMap<String, String>,
     pub classes: BTreeSet<String>,

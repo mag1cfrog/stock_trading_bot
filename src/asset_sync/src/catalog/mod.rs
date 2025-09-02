@@ -4,6 +4,7 @@
 //! catalog, which describes providers, supported asset classes, and symbol
 //! mappings. See [`crate::catalog::config`] for the TOML model and helpers.
 
+mod cache;
 pub mod config;
 pub mod repo;
 pub mod sync;

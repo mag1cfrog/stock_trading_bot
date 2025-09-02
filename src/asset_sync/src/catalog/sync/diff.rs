@@ -19,13 +19,13 @@ pub struct CatalogDiff {
 }
 
 pub fn make_diff(w: &Wanted, c: &Current, prune: bool) -> CatalogDiff {
-    let mut d = CatalogDiff::default();
-
-    // upserts
-    d.providers_upsert = w.providers.clone();
-    d.classes_upsert = w.classes.clone();
-    d.pairs_upsert = w.pairs.clone();
-    d.symbols_upsert = w.symbols.clone();
+    let mut d = CatalogDiff {
+        providers_upsert: w.providers.clone(),
+        classes_upsert: w.classes.clone(),
+        pairs_upsert: w.pairs.clone(),
+        symbols_upsert: w.symbols.clone(),
+        ..Default::default()
+    };
 
     // prunes (only when requested)
     if prune {

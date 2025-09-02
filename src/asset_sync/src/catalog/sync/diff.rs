@@ -21,6 +21,20 @@ pub struct CatalogDiff {
     pub symbols_delete: BTreeSet<(String, String, String, String)>,
 }
 
+impl CatalogDiff {
+    /// True if there is nothing to upsert or delete.
+    pub fn is_noop(&self) -> bool {
+        self.providers_upsert.is_empty()
+            && self.classes_upsert.is_empty()
+            && self.pairs_upsert.is_empty()
+            && self.symbols_upsert.is_empty()
+            && self.providers_delete.is_empty()
+            && self.classes_delete.is_empty()
+            && self.pairs_delete.is_empty()
+            && self.symbols_delete.is_empty()
+    }
+}
+
 impl fmt::Display for CatalogDiff {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // helper: section header with underline

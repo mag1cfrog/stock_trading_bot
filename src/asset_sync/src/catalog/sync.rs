@@ -2,11 +2,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use diesel::{
-    Connection, ExpressionMethods, SqliteConnection,
-    query_dsl::methods::{FilterDsl, SelectDsl},
-};
-use diesel_async::RunQueryDsl;
+use diesel::SqliteConnection;
+use diesel::prelude::*;
 
 use crate::catalog::{
     config::{Catalog, normalize_catalog},
@@ -14,17 +11,26 @@ use crate::catalog::{
 };
 use crate::schema::{asset_class, provider, provider_asset_class, provider_symbol_map};
 
+/// Options for catalog synchronization.
 pub struct SyncOptions {
+    /// If true, compute the diff only and print/log what would change.
     pub dry_run: bool,
+    /// If true, delete rows from the DB that are not present in the TOML.
     pub prune: bool,
 }
 
+/// Sync the provider/asset-class catalog (and symbol map) into SQLite.
+///
+/// - Reads a TOML [`Catalog`], normalizes it, and UPSERTs providers, classes,
+///   provider↔class pairs, and symbol mappings.
+/// - When `opt.prune` is true, removes rows not present in the TOML.
+/// - Runs in a single immediate transaction to reduce SQLITE_BUSY surprises.
 pub fn sync_catalog(
     conn: &mut SqliteConnection,
     mut cat: Catalog,
     opt: SyncOptions,
 ) -> anyhow::Result<()> {
-    normalize_catalog(&mut cat);
+    let _ = normalize_catalog(&mut cat);
 
     // Build desired sets from TOML
     let mut want_providers = BTreeMap::<String, String>::new();
@@ -53,7 +59,7 @@ pub fn sync_catalog(
     }
 
     // Read current DB state (for diff & prune)
-    conn.transaction::<_, anyhow::Error, _>(|_| {
+    conn.immediate_transaction::<_, anyhow::Error, _>(|conn| {
         // UPSERT providers/classes
         for (p, name_) in &want_providers {
             if !opt.dry_run {
@@ -156,6 +162,6 @@ pub fn sync_catalog(
         }
 
         Ok(())
-    });
+    })?;
     Ok(())
 }

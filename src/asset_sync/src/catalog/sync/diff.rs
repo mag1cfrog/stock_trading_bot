@@ -127,7 +127,7 @@ impl fmt::Display for CatalogDiff {
             })?;
         }
 
-        if !wrote_any {
+        if self.is_noop() {
             write!(f, "No changes")
         } else {
             Ok(())
@@ -136,13 +136,58 @@ impl fmt::Display for CatalogDiff {
 }
 
 pub fn make_diff(w: &Wanted, c: &Current, prune: bool) -> CatalogDiff {
-    let mut d = CatalogDiff {
-        providers_upsert: w.providers.clone(),
-        classes_upsert: w.classes.clone(),
-        pairs_upsert: w.pairs.clone(),
-        symbols_upsert: w.symbols.clone(),
-        ..Default::default()
-    };
+    let mut d = CatalogDiff::default();
+
+    // --- UPSERTS ---
+    // Providers: new or name changed
+    for (code, want_name) in &w.providers {
+        match c.providers.get(code) {
+            None => {
+                d.providers_upsert.insert(code.clone(), want_name.clone());
+            }
+            Some(cur_name) if cur_name != want_name => {
+                d.providers_upsert.insert(code.clone(), want_name.clone());
+            }
+            _ => {}
+        }
+    }
+
+    // Classes: set differences
+    for cls in &w.classes {
+        if !c.classes.contains(cls) {
+            d.classes_upsert.insert(cls.clone());
+        }
+    }
+
+    // Pairs: set differences
+    for pair in &w.pairs {
+        if !c.pairs.contains(pair) {
+            d.pairs_upsert.insert(pair.clone());
+        }
+    }
+
+    // Symbols: compare by (provider, asset_class, canonical) and upsert when remote differs or missing
+    use std::collections::BTreeMap;
+    let cur_by_key: BTreeMap<(String, String, String), String> = c
+        .symbols
+        .iter()
+        .map(|(p, a, canon, remote)| ((p.clone(), a.clone(), canon.clone()), remote.clone()))
+        .collect();
+
+    for (p, a, canon, remote) in &w.symbols {
+        let key = (p.clone(), a.clone(), canon.clone());
+        match cur_by_key.get(&key) {
+            None => {
+                d.symbols_upsert
+                    .insert((p.clone(), a.clone(), canon.clone(), remote.clone()));
+            }
+            Some(cur_remote) if cur_remote != remote => {
+                d.symbols_upsert
+                    .insert((p.clone(), a.clone(), canon.clone(), remote.clone()));
+            }
+            _ => {}
+        }
+    }
 
     // prunes (only when requested)
     if prune {
@@ -223,7 +268,27 @@ mod tests {
         // Upserts only; prune=false so no DELETE sections.
         let w = wanted_min();
         let c = current_empty();
+        assert_eq!(w.providers.len(), 1);
+        assert_eq!(w.classes.len(), 1);
+        assert_eq!(w.pairs.len(), 1);
+        assert_eq!(w.symbols.len(), 1);
+        assert!(c.providers.is_empty());
+        assert!(c.classes.is_empty());
+        assert!(c.pairs.is_empty());
+        assert!(c.symbols.is_empty());
+
         let d = make_diff(&w, &c, false);
+        assert_eq!(d.providers_upsert.len(), 1);
+        assert_eq!(d.classes_upsert.len(), 1);
+        assert_eq!(d.pairs_upsert.len(), 1);
+        assert_eq!(d.symbols_upsert.len(), 1);
+        println!("DEBUG is_noop: {}", d.is_noop());
+        println!(
+            "DEBUG type: {}",
+            std::any::type_name::<crate::catalog::sync::diff::CatalogDiff>()
+        );
+        println!("DEBUG value: {d:#?}");
+
         let got = d.to_string();
 
         // Expected layout (headers underlined to the exact length).

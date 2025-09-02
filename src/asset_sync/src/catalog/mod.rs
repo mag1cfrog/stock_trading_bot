@@ -8,3 +8,5 @@ mod cache;
 pub mod config;
 pub mod repo;
 pub mod sync;
+
+pub use cache::{clear_allowed_cache, is_allowed_provider_class, refresh_allowed, snapshot};

@@ -18,6 +18,7 @@
 //! When pruning, we delete in dependency order: `provider_symbol_map` → `provider_asset_class`
 //! → (`provider`, `asset_class`). This respects FKs with `ON DELETE RESTRICT`. We verify
 //! referential integrity with `PRAGMA foreign_key_check` in tests.
+
 mod diff;
 
 use std::collections::{BTreeMap, BTreeSet};

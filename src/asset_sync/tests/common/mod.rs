@@ -3,6 +3,7 @@
 use asset_sync::db::{connection, migrate}; // ensure these are `pub` in your crate
 use diesel::QueryableByName;
 use diesel::prelude::*;
+use diesel::sql_query;
 use diesel::sql_types::{Integer, Text};
 use std::path::PathBuf;
 use tempfile::TempDir;
@@ -86,4 +87,29 @@ pub fn seed_min_catalog(conn: &mut SqliteConnection) -> diesel::QueryResult<()> 
         .execute(conn)?;
 
     Ok(())
+}
+
+pub fn fk_check_empty(conn: &mut SqliteConnection) {
+    // PRAGMA foreign_key_check returns rows if there are violations.
+    // We assert there are none.
+    #[derive(diesel::QueryableByName, Debug)]
+    struct Row {
+        #[diesel(sql_type = diesel::sql_types::Text)]
+        table: String,
+    }
+    let rows: Vec<Row> = sql_query("PRAGMA foreign_key_check;")
+        .load(conn)
+        .expect("fk_check");
+
+    assert!(rows.is_empty(), "foreign key check not empty: {rows:?}");
+}
+
+pub fn count(conn: &mut SqliteConnection, table: &str) -> i64 {
+    #[derive(diesel::QueryableByName)]
+    struct C {
+        #[diesel(sql_type = diesel::sql_types::BigInt)]
+        c: i64,
+    }
+    let q = format!("SELECT COUNT(*) AS c FROM {table}");
+    diesel::sql_query(q).get_result::<C>(conn).unwrap().c
 }

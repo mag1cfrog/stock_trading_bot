@@ -25,6 +25,7 @@ mod read;
 mod want;
 
 use diesel::SqliteConnection;
+use tracing::info;
 
 use crate::catalog::config::{Catalog, normalize_catalog};
 use crate::catalog::sync::apply::apply_diff;
@@ -59,12 +60,30 @@ pub fn sync_catalog(
     let diff = make_diff(&want, &cur, opt.prune);
 
     if opt.dry_run {
-        println!("{diff}");
+        // no println! here — just emit a log and return the diff
+        info!(target: "asset_sync::catalog", is_noop = diff.is_noop(), "dry-run: computed catalog diff");
         return Ok(diff);
     }
 
     // one-shot transactional apply, BEGIN IMMEDIATE
     conn.immediate_transaction::<_, anyhow::Error, _>(|tx| apply_diff(tx, &diff))?;
+
+    info!(
+        target: "asset_sync::catalog",
+        upserts = %(
+            diff.providers_upsert.len()
+            + diff.classes_upsert.len()
+            + diff.pairs_upsert.len()
+            + diff.symbols_upsert.len()
+        ),
+        deletes = %(
+            diff.providers_delete.len()
+            + diff.classes_delete.len()
+            + diff.pairs_delete.len()
+            + diff.symbols_delete.len()
+        ),
+        "catalog sync applied",
+    );
 
     // Refresh the in-memory allow-list snapshot now that the DB is consistent
     crate::catalog::cache::refresh_allowed(conn)?;

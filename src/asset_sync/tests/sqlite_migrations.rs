@@ -1,5 +1,5 @@
 mod common;
-use common::{assert_sqlite_pragmas, setup_db};
+use common::{assert_sqlite_pragmas, seed_min_catalog, setup_db};
 
 use diesel::QueryableByName;
 use diesel::prelude::*;
@@ -21,6 +21,8 @@ struct TimeStr {
 fn migrations_apply_and_pragmas_are_set() {
     let (_db, mut conn) = setup_db();
 
+    seed_min_catalog(&mut conn).expect("seed catalog");
+
     // PRAGMAs (WAL is a persistent property of the .db file; FKs/timeout are per-connection)
     assert_sqlite_pragmas(&mut conn);
 
@@ -40,7 +42,7 @@ fn migrations_apply_and_pragmas_are_set() {
     sql_query(
         "
         INSERT INTO asset_manifest (
-            symbol, provider, asset_class, timeframe_amount, timeframe_unit,
+            symbol, provider_code, asset_class_code, timeframe_amount, timeframe_unit,
             desired_start, desired_end, watermark, last_error
         ) VALUES (
             'AAPL','alpaca','us_equity',1,'Minute',
@@ -79,7 +81,7 @@ fn migrations_apply_and_pragmas_are_set() {
     diesel::sql_query(
         "
   INSERT INTO asset_manifest (
-    symbol, provider, asset_class, timeframe_amount, timeframe_unit,
+    symbol, provider_code, asset_class_code, timeframe_amount, timeframe_unit,
     desired_start, desired_end, watermark, last_error
   ) VALUES (
     'CASCADE','alpaca','us_equity',1,'Minute','2010-01-01T00:00:00Z',NULL,NULL,NULL

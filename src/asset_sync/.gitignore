@@ -2,3 +2,6 @@
 .vscode/
 
 dev.db
+
+**/*.snap.new
+**/*.snap.pending

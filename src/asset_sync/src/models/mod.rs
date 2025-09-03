@@ -9,6 +9,7 @@
 //! See migrations for constraints and triggers (e.g., `updated_at` trigger on
 //! `asset_manifest` and `ON DELETE CASCADE` FKs).
 
+pub mod catalog;
 use crate::schema::*;
 use diesel::prelude::*;
 
@@ -23,9 +24,9 @@ pub struct AssetManifest {
     /// Symbol identifier (e.g., "AAPL", "ESU25").
     pub symbol: String,
     /// Provider identifier (e.g., "alpaca").
-    pub provider: String,
+    pub provider_code: String,
     /// Asset class (e.g., "us_equity", "futures").
-    pub asset_class: String,
+    pub asset_class_code: String,
     /// Timeframe amount component (e.g., 1 in "1 Minute").
     pub timeframe_amount: i32,
     /// Timeframe unit component; constrained to "Minute" or "Day".
@@ -51,9 +52,9 @@ pub struct NewAssetManifest<'a> {
     /// Symbol identifier (e.g., "AAPL", "ESU25").
     pub symbol: &'a str,
     /// Provider identifier (e.g., "alpaca").
-    pub provider: &'a str,
+    pub provider_code: &'a str,
     /// Asset class (e.g., "us_equity", "futures").
-    pub asset_class: &'a str,
+    pub asset_class_code: &'a str,
     /// Timeframe amount component (e.g., 1 in "1 Minute").
     pub timeframe_amount: i32,
     /// Timeframe unit component; must be "Minute" or "Day".

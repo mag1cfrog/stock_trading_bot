@@ -3,6 +3,7 @@
 #![deny(missing_docs)]
 
 pub mod bucket;
+pub mod catalog;
 pub mod db;
 pub mod models;
 pub mod providers;

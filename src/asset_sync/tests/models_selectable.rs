@@ -1,3 +1,6 @@
+mod common;
+use common::seed_min_catalog;
+
 use asset_sync::db::{connection::connect_sqlite, migrate::run_sqlite};
 use asset_sync::models::{AssetManifest, NewAssetManifest};
 use asset_sync::schema::asset_manifest::dsl as am;
@@ -14,11 +17,13 @@ fn selectable_smoke_query_compiles_and_runs() {
     run_sqlite(&path).expect("migrations");
     let mut conn = connect_sqlite(&path).expect("connect");
 
+    seed_min_catalog(&mut conn).expect("seed catalog");
+
     // insert one row (use your helper if you have one)
     let row = NewAssetManifest {
         symbol: "AAPL",
-        provider: "alpaca",
-        asset_class: "us_equity",
+        provider_code: "alpaca",
+        asset_class_code: "us_equity",
         timeframe_amount: 1,
         timeframe_unit: "Minute",
         desired_start: "2010-01-01T00:00:00Z",

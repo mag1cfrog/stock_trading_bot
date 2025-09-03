@@ -269,8 +269,7 @@ pub fn normalize_catalog(cat: &mut Catalog) -> anyhow::Result<NormalizationRepor
 /// - Normalization errors (see [`normalize_catalog_with_policy`])
 pub fn load_catalog_str(toml_str: &str) -> anyhow::Result<Catalog> {
     let mut cat: Catalog = from_str(toml_str).context("failed to parse catalog TOML")?;
-    let _report = normalize_catalog(&mut cat).context("normalize_catalog failed")?;
-    // log::info!("{:?}", _report);
+    normalize_catalog(&mut cat).context("normalize_catalog failed")?;
     Ok(cat)
 }
 

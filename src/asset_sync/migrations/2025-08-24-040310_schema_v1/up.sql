@@ -43,8 +43,13 @@ CREATE TABLE asset_manifest (
     desired_end TEXT,                  -- NULL=open-ended keep-fresh
     watermark TEXT,                  -- RFC3339 UTC contiguous progress
     last_error TEXT,
+
+    -- timestamps: RFC3339 UTC with millisecond precision
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+
+    -- monotonic revision counter (bumps on any UPDATE)
+    update_rev INTEGER NOT NULL DEFAULT 0,
     CHECK (
         (timeframe_unit = 'Minute' AND timeframe_amount BETWEEN 1 AND 59)
         OR (timeframe_unit = 'Hour' AND timeframe_amount BETWEEN 1 AND 23)
@@ -69,13 +74,32 @@ CREATE TABLE asset_manifest (
 
 -- trigger: set updated_at precisely on every update
 DROP TRIGGER IF EXISTS trg_asset_manifest_updated;
+
+-- Monotonic "touch" trigger
+-- Notes:
+--  * The WHERE clause prevents infinite recursion: the second firing sees
+--     updated_at changed and does nothing.
+--  * 'now' can equal OLD.updated_at within the same sqlite3_step(), so 
+--     we add +0.001 seconds.
 CREATE TRIGGER trg_asset_manifest_updated
 AFTER UPDATE ON asset_manifest
 FOR EACH ROW
+WHEN NEW.updated_at = OLD.updated_at
 BEGIN
 UPDATE asset_manifest
-SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-WHERE id = old.id;
+SET
+    updated_at = CASE
+        WHEN julianday('now') > julianday(OLD.updated_at)
+            THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        ELSE strftime(
+            '%Y-%m-%dT%H:%M:%fZ',
+            datetime(OLD.updated_at, '+0.001 seconds')
+        )
+    END,
+    update_rev = OLD.update_rev + 1
+WHERE
+    id = old.id
+    AND updated_at = OLD.updated_at;
 END;
 
 -- 2) roaring bitmap per manifest = “what we have” (with OCC)

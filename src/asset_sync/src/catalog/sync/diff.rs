@@ -282,13 +282,6 @@ mod tests {
         assert_eq!(d.classes_upsert.len(), 1);
         assert_eq!(d.pairs_upsert.len(), 1);
         assert_eq!(d.symbols_upsert.len(), 1);
-        println!("DEBUG is_noop: {}", d.is_noop());
-        println!(
-            "DEBUG type: {}",
-            std::any::type_name::<crate::catalog::sync::diff::CatalogDiff>()
-        );
-        println!("DEBUG value: {d:#?}");
-
         let got = d.to_string();
 
         // Expected layout (headers underlined to the exact length).

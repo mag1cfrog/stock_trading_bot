@@ -122,6 +122,10 @@ pub fn from_local_naive(naive: NaiveDateTime, tz_name: &str) -> anyhow::Result<D
     from_local_naive_tz(naive, tz)
 }
 
+pub fn to_rfc3339_millis(dt: DateTime<Utc>) -> String {
+    dt.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -5,6 +5,7 @@
 pub mod bucket;
 pub mod catalog;
 pub mod db;
+pub mod manifest;
 pub mod models;
 pub mod providers;
 pub mod roaring_bytes;

@@ -1,4 +1,7 @@
 //! Manifest + coverage + gaps repository (SQLite).
+
+pub mod repo;
+
 use chrono::{DateTime, Utc};
 use roaring::RoaringBitmap;
 

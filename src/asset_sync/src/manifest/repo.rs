@@ -4,9 +4,9 @@ use diesel::{associations::HasTable, prelude::*};
 use roaring::RoaringBitmap;
 
 use crate::{
-    manifest::{ManifestRepo, RepoResult},
+    manifest::{self, ManifestRepo, RepoError, RepoResult},
     roaring_bytes,
-    schema::asset_manifest,
+    schema::{asset_coverage_bitmap, asset_manifest},
     spec::{ProviderId, Range},
     tz,
 };
@@ -147,6 +147,36 @@ impl ManifestRepo for SqliteRepo {
             Ok((roaring_bytes::rb_from_bytes(&b), v))
         } else {
             Ok((RoaringBitmap::new(), 0))
+        }
+    }
+
+    fn coverage_put(
+        &self,
+        conn: &mut diesel::SqliteConnection,
+        manifest_id_v: i64,
+        rb: &RoaringBitmap,
+        expected_version: i32,
+    ) -> RepoResult<i32> {
+        use crate::schema::asset_coverage_bitmap::dsl::*;
+
+        let bytes = roaring_bytes::rb_to_bytes(rb);
+        let mid_i32 = manifest_id_v as i32;
+        let new_version = expected_version + 1;
+
+        let got = diesel::update(
+            asset_coverage_bitmap.filter(manifest_id.eq(mid_i32).and(version.eq(expected_version))),
+        )
+        .set((bitmap.eq(bytes), version.eq(new_version)))
+        .returning(version)
+        .get_result(conn)
+        .optional()?;
+
+        match got {
+            Some(v) => Ok(v),
+            None => Err(RepoError::CoverageConflict {
+                expected: expected_version,
+            }
+            .into()),
         }
     }
 }

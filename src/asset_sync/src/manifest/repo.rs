@@ -4,9 +4,9 @@ use diesel::{associations::HasTable, prelude::*};
 use roaring::RoaringBitmap;
 
 use crate::{
-    manifest::{self, ManifestRepo, RepoError, RepoResult},
+    manifest::{ManifestRepo, RepoError, RepoResult},
     roaring_bytes,
-    schema::{asset_coverage_bitmap, asset_manifest},
+    schema::asset_manifest,
     spec::{ProviderId, Range},
     tz,
 };

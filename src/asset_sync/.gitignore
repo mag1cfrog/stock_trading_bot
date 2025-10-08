@@ -5,3 +5,5 @@ dev.db
 
 **/*.snap.new
 **/*.snap.pending
+
+target/

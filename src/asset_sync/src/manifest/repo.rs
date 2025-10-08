@@ -1,3 +1,4 @@
+use anyhow::Ok;
 use chrono::{DateTime, Utc};
 use diesel::{associations::HasTable, prelude::*};
 use roaring::RoaringBitmap;
@@ -128,5 +129,24 @@ impl ManifestRepo for SqliteRepo {
             .execute(conn)?;
 
         Ok(manifest_id)
+    }
+
+    fn coverage_get(
+        &self,
+        conn: &mut diesel::SqliteConnection,
+        manifest_id_v: i64,
+    ) -> RepoResult<(RoaringBitmap, i32)> {
+        use crate::schema::asset_coverage_bitmap::dsl::*;
+
+        if let Some((b, v)) = asset_coverage_bitmap
+            .filter(manifest_id.eq(manifest_id_v as i32))
+            .select((bitmap, version))
+            .first::<(Vec<u8>, i32)>(conn)
+            .optional()?
+        {
+            Ok((roaring_bytes::rb_from_bytes(&b), v))
+        } else {
+            Ok((RoaringBitmap::new(), 0))
+        }
     }
 }

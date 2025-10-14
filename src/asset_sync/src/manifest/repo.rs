@@ -1,15 +1,19 @@
-use anyhow::Ok;
+use anyhow::{Context, Ok};
 use chrono::{DateTime, Utc};
 use diesel::{associations::HasTable, prelude::*};
 use roaring::RoaringBitmap;
 
 use crate::{
+    bucket::{self, bucket_end_exclusive_utc, bucket_id, bucket_start_utc},
     manifest::{ManifestRepo, RepoError, RepoResult},
     roaring_bytes,
     schema::asset_manifest,
     spec::{ProviderId, Range},
+    timeframe::{Timeframe, db as tf_db},
     tz,
 };
+
+use crate::schema::asset_manifest::dsl as am;
 
 #[derive(Insertable, AsChangeset, Debug)]
 #[diesel(table_name = asset_manifest)]
@@ -67,6 +71,17 @@ pub struct SqliteRepo;
 impl SqliteRepo {
     pub fn new() -> Self {
         Self
+    }
+}
+
+#[inline]
+fn end_bucket_exclusive(window_end: DateTime<Utc>, tf: Timeframe) -> u64 {
+    let end_id = bucket::bucket_id(window_end, tf);
+    let end_id_start = bucket::bucket_start_utc(end_id, tf);
+    if end_id_start < window_end {
+        end_id + 1
+    } else {
+        end_id
     }
 }
 
@@ -179,4 +194,77 @@ impl ManifestRepo for SqliteRepo {
             .into()),
         }
     }
+
+    fn compute_missing(
+        &self,
+        conn: &mut diesel::SqliteConnection,
+        manifest_id_v: i64,
+        window_start: DateTime<Utc>,
+        window_end: DateTime<Utc>,
+    ) -> RepoResult<Vec<(DateTime<Utc>, DateTime<Utc>)>> {
+        if window_end <= window_start {
+            return Ok(vec![]);
+        }
+
+        // 1) Load timeframe for this manifest from DB
+        let (amt, unit_str): (i32, String) = am::asset_manifest
+            .find(manifest_id_v as i32)
+            .select((am::timeframe_amount, am::timeframe_unit))
+            .first(conn)
+            .with_context(|| format!("manifest {manifest_id_v} not found"))?;
+
+        let tf: Timeframe = tf_db::from_db_row(amt, &unit_str)?;
+
+        // 2) Translate window to bucket IDs (exclusive end)
+        let start_id_u64 = bucket_id(window_start, tf);
+        let end_id_u64 = bucket_id(window_end, tf);
+        if end_id_u64 <= start_id_u64 {
+            return Ok(vec![]);
+        }
+
+        // Coverage bitmap + version
+        let (present, _ver) = self.coverage_get(conn, manifest_id_v)?;
+
+        // 3) Build window bitmap efficiently
+        let mut window = RoaringBitmap::new();
+        // Roaring is u32; our bucket IDs must fit. Unix epoch + minute/hour/day/week/month do
+        let start_id = u32::try_from(start_id_u64).context("bucket id overflow (start)")?;
+        let end_id = u32::try_from(end_id_u64).context("bucket id overflow (end)")?;
+        window.insert_range(start_id..end_id); // fill contiguous window quicky
+
+        // 4) missing = window - present (set difference) -- fast, container-wise.
+        let missing = &window - &present; // uses `Sub` impl for RoaringBitmap
+
+        // 5) Coalesce the missing bucket IDs into contiguous runs and map back to UTC
+        Ok(coalesce_runs_to_utc_ranges(&missing, tf))
+    }
+}
+
+fn coalesce_runs_to_utc_ranges(
+    rb: &RoaringBitmap,
+    tf: Timeframe,
+) -> Vec<(DateTime<Utc>, DateTime<Utc>)> {
+    let mut out = Vec::new();
+    let mut it = rb.iter();
+    if let Some(mut run_start) = it.next() {
+        let mut prev = run_start;
+        for x in it {
+            if x == prev + 1 {
+                prev = x;
+                continue;
+            }
+            // close [run_start, prev] -> [start_utc, end_utc_exclusive]
+            out.push((
+                bucket_start_utc(run_start as u64, tf),
+                bucket_end_exclusive_utc((prev as u64) + 1, tf),
+            ));
+            run_start = x;
+            prev = x;
+        }
+        out.push((
+            bucket_start_utc(run_start as u64, tf),
+            bucket_end_exclusive_utc((prev as u64) + 1, tf),
+        ));
+    }
+    out
 }

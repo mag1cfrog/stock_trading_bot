@@ -4,7 +4,7 @@ use diesel::{associations::HasTable, prelude::*};
 use roaring::RoaringBitmap;
 
 use crate::{
-    bucket::{self, bucket_end_exclusive_utc, bucket_id, bucket_start_utc},
+    bucket::{bucket_end_exclusive_utc, bucket_id, bucket_start_utc},
     manifest::{ManifestRepo, RepoError, RepoResult},
     roaring_bytes,
     schema::{
@@ -72,19 +72,15 @@ fn desired_start_end(r: &Range) -> (DateTime<Utc>, Option<DateTime<Utc>>) {
 pub struct SqliteRepo;
 
 impl SqliteRepo {
+    /// Creates a new SQLite-backed manifest repository.
     pub fn new() -> Self {
         Self
     }
 }
 
-#[inline]
-fn end_bucket_exclusive(window_end: DateTime<Utc>, tf: Timeframe) -> u64 {
-    let end_id = bucket::bucket_id(window_end, tf);
-    let end_id_start = bucket::bucket_start_utc(end_id, tf);
-    if end_id_start < window_end {
-        end_id + 1
-    } else {
-        end_id
+impl Default for SqliteRepo {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -268,9 +264,57 @@ impl ManifestRepo for SqliteRepo {
         &self,
         conn: &mut diesel::SqliteConnection,
         worker: &str,
-        limit: i64,
+        limit_n: i64,
         ttl: chrono::Duration,
     ) -> RepoResult<Vec<i64>> {
+        use chrono::Utc;
+
+        if limit_n <= 0 {
+            return Ok(vec![]);
+        }
+
+        let now = Utc::now();
+        let now_s = tz::to_rfc3339_millis(now);
+        let expires_s = tz::to_rfc3339_millis(now + ttl);
+
+        let worker_s = worker.to_string();
+
+        let leased_ids: Vec<i32> = conn.immediate_transaction(|tx| {
+            // 1) Select candidate IDs (deterministric order by id)
+            let candidates: Vec<i32> = asset_gaps::table
+                .filter(
+                    state
+                        .eq("queued")
+                        .and(lease_expires_at.is_null().or(lease_expires_at.lt(&now_s))),
+                )
+                .order(id.asc())
+                .limit(limit_n)
+                .select(id)
+                .load::<i32>(tx)?;
+
+            if candidates.is_empty() {
+                return Ok(Vec::new());
+            }
+            // 2) Lease them, rechecking the same conditions; return the ids actually updated
+            let leased = diesel::update(
+                asset_gaps::table.filter(
+                    id.eq_any(&candidates)
+                        .and(state.eq("queued"))
+                        .and(lease_expires_at.is_null().or(lease_expires_at.lt(&now_s))),
+                ),
+            )
+            .set((
+                state.eq("leased"),
+                lease_owner.eq(&worker_s),
+                lease_expires_at.eq(&expires_s),
+            ))
+            .returning(id)
+            .get_results(tx)?;
+
+            Ok(leased)
+        })?;
+
+        Ok(leased_ids.into_iter().map(|x| x as i64).collect())
     }
 
     fn gaps_upsert(

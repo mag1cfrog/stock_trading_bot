@@ -238,6 +238,25 @@ impl ManifestRepo for SqliteRepo {
         // 5) Coalesce the missing bucket IDs into contiguous runs and map back to UTC
         Ok(coalesce_runs_to_utc_ranges(&missing, tf))
     }
+
+    fn gaps_complete(&self, conn: &mut diesel::SqliteConnection, gap_id: i64) -> RepoResult<()> {}
+
+    fn gaps_lease(
+        &self,
+        conn: &mut diesel::SqliteConnection,
+        worker: &str,
+        limit: i64,
+        ttl: chrono::Duration,
+    ) -> RepoResult<Vec<i64>> {
+    }
+
+    fn gaps_upsert(
+        &self,
+        conn: &mut diesel::SqliteConnection,
+        manifest_id: i64,
+        ranges: &[(DateTime<Utc>, DateTime<Utc>)],
+    ) -> RepoResult<()> {
+    }
 }
 
 fn coalesce_runs_to_utc_ranges(

@@ -1,3 +1,17 @@
+//! SQLite-backed implementation of the asset manifest repository.
+//!
+//! This module exposes [`SqliteRepo`], the concrete implementation of
+//! [`ManifestRepo`](crate::manifest::ManifestRepo). It handles:
+//! - Upserting manifest rows and ensuring coverage bitmaps exist.
+//! - Reading/updating coverage roaring bitmaps with optimistic locking.
+//! - Computing missing bucket ranges for a manifest within a time window.
+//! - Managing gap rows (enqueue, lease with TTL, complete) in `asset_gaps`.
+//!
+//! All timestamps are stored as RFC3339 UTC strings and conversions use the
+//! helpers in [`crate::tz`]. Coverage data leverages roaring bitmaps serialized
+//! via [`crate::roaring_bytes`], and timeframe metadata is reconstructed by
+//! [`crate::timeframe::db`].
+
 use anyhow::{Context, Ok};
 use chrono::{DateTime, Utc};
 use diesel::{associations::HasTable, prelude::*};

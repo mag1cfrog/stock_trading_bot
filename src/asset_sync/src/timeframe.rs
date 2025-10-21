@@ -37,7 +37,9 @@ pub enum TimeframeUnit {
 /// A timeframe = amount × unit (e.g., 5-Minute, 3-Hour, 2-Week, 6-Month).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Timeframe {
+    /// Non-zero amount of units represented by this timeframe.
     pub amount: NonZeroU32,
+    /// Calendar unit associated with this timeframe.
     pub unit: TimeframeUnit,
 }
 
@@ -46,9 +48,11 @@ impl Timeframe {
     pub const fn new(amount: NonZeroU32, unit: TimeframeUnit) -> Self {
         Self { amount, unit }
     }
+    /// Returns the non-zero amount of units represented by this timeframe.
     pub const fn amount(&self) -> NonZeroU32 {
         self.amount
     }
+    /// Returns the calendar unit associated with this timeframe.
     pub const fn unit(&self) -> TimeframeUnit {
         self.unit
     }
@@ -60,6 +64,7 @@ pub mod db {
 
     use super::*;
 
+    /// Convert a [`Timeframe`] into its integer amount and unit string for database storage.
     pub fn to_db_strings(tf: Timeframe) -> (i32, &'static str) {
         let amt = tf.amount().get() as i32;
         let unit = match tf.unit {
@@ -72,6 +77,7 @@ pub mod db {
         (amt, unit)
     }
 
+    /// Reconstruct a [`Timeframe`] from a database row containing the stored amount and unit.
     pub fn from_db_row(amount_i32: i32, unit_str: &str) -> anyhow::Result<Timeframe> {
         if amount_i32 <= 0 {
             bail!("timeframe_amount must be > 0");

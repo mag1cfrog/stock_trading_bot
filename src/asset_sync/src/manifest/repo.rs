@@ -7,7 +7,10 @@ use crate::{
     bucket::{self, bucket_end_exclusive_utc, bucket_id, bucket_start_utc},
     manifest::{ManifestRepo, RepoError, RepoResult},
     roaring_bytes,
-    schema::asset_manifest,
+    schema::{
+        asset_gaps::{self, state},
+        asset_manifest,
+    },
     spec::{ProviderId, Range},
     timeframe::{Timeframe, db as tf_db},
     tz,
@@ -239,7 +242,18 @@ impl ManifestRepo for SqliteRepo {
         Ok(coalesce_runs_to_utc_ranges(&missing, tf))
     }
 
-    fn gaps_complete(&self, conn: &mut diesel::SqliteConnection, gap_id: i64) -> RepoResult<()> {}
+    fn gaps_complete(&self, conn: &mut diesel::SqliteConnection, gap_id_v: i64) -> RepoResult<()> {
+        let gid = gap_id_v as i32;
+        let n = diesel::update(asset_gaps::table.find(gid))
+            .set(state.eq("done"))
+            .execute(conn)?;
+
+        if n == 0 {
+            return Err(anyhow::anyhow!("gap not found: {gap_id_v}"));
+        }
+
+        Ok(())
+    }
 
     fn gaps_lease(
         &self,

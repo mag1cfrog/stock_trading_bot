@@ -1,6 +1,9 @@
 //! Manifest + coverage + gaps repository (SQLite).
 
-pub mod repo;
+mod models;
+pub mod sqlite;
+
+pub use sqlite::SqliteRepo;
 
 use chrono::{DateTime, Utc};
 use roaring::RoaringBitmap;
@@ -19,7 +22,7 @@ pub enum RepoError {
 /// Result type used throughout the manifest repository for fallible operations.
 pub type RepoResult<T> = anyhow::Result<T>;
 
-/// Portable surface, SQLite implementation lives in `repo.rs`.
+/// Portable surface, SQLite implementation lives in `sqlite.rs`.
 pub trait ManifestRepo {
     /// Inserts or updates a manifest record and returns its identifier.
     fn upsert_manifest(

@@ -1,4 +1,4 @@
-use asset_sync::manifest::{ManifestRepo, repo::SqliteRepo};
+use asset_sync::manifest::{ManifestRepo, SqliteRepo};
 use asset_sync::roaring_bytes;
 use asset_sync::schema::{asset_coverage_bitmap, asset_manifest};
 use asset_sync::spec::{AssetSpec, ProviderId, Range};

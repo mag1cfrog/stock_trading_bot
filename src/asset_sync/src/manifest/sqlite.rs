@@ -17,34 +17,18 @@ use chrono::{DateTime, Utc};
 use diesel::{associations::HasTable, prelude::*};
 use roaring::RoaringBitmap;
 
+use super::models::{ManifestRow, NewGap};
 use crate::{
     bucket::{bucket_end_exclusive_utc, bucket_id, bucket_start_utc},
     manifest::{ManifestRepo, RepoError, RepoResult},
     roaring_bytes,
-    schema::{
-        asset_gaps::{self, dsl::*},
-        asset_manifest,
-    },
+    schema::asset_gaps::{self, dsl::*},
     spec::{ProviderId, Range},
     timeframe::{Timeframe, db as tf_db},
     tz,
 };
 
 use crate::schema::asset_manifest::dsl as am;
-
-#[derive(Insertable, AsChangeset, Debug)]
-#[diesel(table_name = asset_manifest)]
-struct ManifestRow<'a> {
-    symbol: &'a str,
-    provider_code: &'a str,
-    asset_class_code: &'a str,
-    timeframe_amount: i32,
-    timeframe_unit: &'a str,
-    desired_start: &'a str,       // RFC3339 UTC
-    desired_end: Option<&'a str>, // RFC3339 UTC
-    watermark: Option<&'a str>,   // RFC3339 UTC
-    last_error: Option<&'a str>,
-}
 
 // ---- helpers: map the enums to catalog codes / strings ----
 fn provider_code_map(p: ProviderId) -> &'static str {
@@ -96,15 +80,6 @@ impl Default for SqliteRepo {
     fn default() -> Self {
         Self::new()
     }
-}
-
-#[derive(Insertable)]
-#[diesel(table_name = asset_gaps)]
-struct NewGap {
-    manifest_id: i32,
-    start_ts: String,
-    end_ts: String,
-    state: String,
 }
 
 impl ManifestRepo for SqliteRepo {

@@ -8,7 +8,7 @@ use crate::{
     manifest::{ManifestRepo, RepoError, RepoResult},
     roaring_bytes,
     schema::{
-        asset_gaps::{self, state},
+        asset_gaps::{self, dsl::*},
         asset_manifest,
     },
     spec::{ProviderId, Range},
@@ -88,6 +88,15 @@ fn end_bucket_exclusive(window_end: DateTime<Utc>, tf: Timeframe) -> u64 {
     }
 }
 
+#[derive(Insertable)]
+#[diesel(table_name = asset_gaps)]
+struct NewGap {
+    manifest_id: i32,
+    start_ts: String,
+    end_ts: String,
+    state: String,
+}
+
 impl ManifestRepo for SqliteRepo {
     fn upsert_manifest(
         &self,
@@ -130,7 +139,7 @@ impl ManifestRepo for SqliteRepo {
             .returning(id)
             .get_result(conn)?;
 
-        let manifest_id = manifest_id_i32 as i64;
+        let manifest_id_64 = manifest_id_i32 as i64;
 
         // Ensure coverage row exists (idempotent)
         let bytes = roaring_bytes::rb_to_bytes(&RoaringBitmap::new());
@@ -138,7 +147,7 @@ impl ManifestRepo for SqliteRepo {
         use crate::schema::asset_coverage_bitmap as acb;
         let _ = diesel::insert_into(acb::table)
             .values((
-                acb::manifest_id.eq(manifest_id as i32),
+                acb::manifest_id.eq(manifest_id_i32),
                 acb::bitmap.eq(bytes),
                 acb::version.eq(0),
             ))
@@ -146,7 +155,7 @@ impl ManifestRepo for SqliteRepo {
             .do_nothing()
             .execute(conn)?;
 
-        Ok(manifest_id)
+        Ok(manifest_id_64)
     }
 
     fn coverage_get(
@@ -267,9 +276,41 @@ impl ManifestRepo for SqliteRepo {
     fn gaps_upsert(
         &self,
         conn: &mut diesel::SqliteConnection,
-        manifest_id: i64,
+        manifest_id_v: i64,
         ranges: &[(DateTime<Utc>, DateTime<Utc>)],
     ) -> RepoResult<()> {
+        if ranges.is_empty() {
+            return Ok(());
+        }
+
+        // Prepare values as a batch (tuples are fine; no Insertable struct needed).
+        let mid_i32 = manifest_id_v as i32;
+        let mut rows: Vec<NewGap> = Vec::with_capacity(ranges.len());
+        for (s, e) in ranges {
+            rows.push(NewGap {
+                manifest_id: mid_i32,
+                start_ts: tz::to_rfc3339_millis(*s),
+                end_ts: tz::to_rfc3339_millis(*e),
+                state: "queued".to_string(),
+            });
+        }
+
+        // Chunk to stay well under SQLite bind limits (older SQLite default 999)
+        // 4 columns * 200 rows = 800 binds per statement, safe everywhere.
+        // (Modern SQLite 3.32+ can be 32766, but chunking is robust.)
+        const CHUNK_ROWS: usize = 200;
+
+        // Do it in an IMMEDIATE transaction to avoid mod-txn lock upgrades.
+        conn.immediate_transaction::<_, anyhow::Error, _>(|tx| {
+            for chunk in rows.chunks(CHUNK_ROWS) {
+                diesel::insert_or_ignore_into(asset_gaps::table)
+                    .values(chunk)
+                    .execute(tx)?;
+            }
+            Ok(())
+        })?;
+
+        Ok(())
     }
 }
 

@@ -1,7 +1,9 @@
+use asset_sync::bucket;
 use asset_sync::manifest::{ManifestRepo, RepoError, SqliteRepo};
 use asset_sync::roaring_bytes;
 use asset_sync::schema::{asset_coverage_bitmap, asset_manifest};
 use asset_sync::spec::{AssetSpec, ProviderId, Range};
+use asset_sync::timeframe::{Timeframe as RepoTimeframe, TimeframeUnit as RepoTimeframeUnit};
 use asset_sync::tz;
 use chrono::{Duration, TimeZone, Utc};
 use diesel::Queryable;
@@ -11,6 +13,7 @@ use market_data_ingestor::models::{
     timeframe::{TimeFrame, TimeFrameUnit},
 };
 use roaring::RoaringBitmap;
+use std::num::NonZeroU32;
 
 mod common;
 
@@ -395,6 +398,274 @@ fn coverage_put_conflict_when_manifest_missing() {
     match repo_err {
         RepoError::CoverageConflict { expected } => assert_eq!(expected, 0),
     }
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn compute_missing_returns_empty_when_window_end_not_after_start() {
+    let (_db, mut conn) = common::setup_db();
+    let repo = SqliteRepo::new();
+
+    let window_start = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
+    let window_end = window_start;
+
+    let missing = repo
+        .compute_missing(&mut conn, 123, window_start, window_end)
+        .expect("should short-circuit on empty window");
+
+    assert!(missing.is_empty());
+}
+
+#[test]
+fn compute_missing_errors_when_manifest_missing() {
+    let (_db, mut conn) = common::setup_db();
+    let repo = SqliteRepo::new();
+
+    let window_start = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
+    let window_end = window_start + Duration::hours(1);
+
+    let err = repo
+        .compute_missing(&mut conn, 987, window_start, window_end)
+        .expect_err("missing manifest should error");
+
+    let msg = err.to_string();
+    assert!(
+        msg.contains("manifest 987 not found"),
+        "unexpected error: {msg}"
+    );
+}
+
+#[test]
+fn compute_missing_returns_full_range_when_no_coverage() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 3, 10, 9, 30, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "AAPL".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(5, TimeFrameUnit::Minute),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let window_start = Utc.with_ymd_and_hms(2024, 3, 11, 9, 30, 0).unwrap();
+    let window_end = window_start + Duration::minutes(20);
+
+    let missing = repo
+        .compute_missing(&mut conn, manifest_id, window_start, window_end)
+        .expect("compute missing");
+
+    let repo_tf = RepoTimeframe::new(NonZeroU32::new(5).unwrap(), RepoTimeframeUnit::Minute);
+    let start_id = bucket::bucket_id(window_start, repo_tf);
+    let end_id = bucket::bucket_id(window_end, repo_tf);
+    let expected_start = bucket::bucket_start_utc(start_id, repo_tf);
+    let expected_end = bucket::bucket_end_exclusive_utc(end_id, repo_tf);
+
+    assert_eq!(missing, vec![(expected_start, expected_end)]);
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn compute_missing_respects_existing_coverage_and_coalesces() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "MSFT".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(1, TimeFrameUnit::Hour),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let window_start = Utc.with_ymd_and_hms(2024, 1, 5, 0, 0, 0).unwrap();
+    let window_end = window_start + Duration::hours(7);
+
+    let repo_tf = RepoTimeframe::new(NonZeroU32::new(1).unwrap(), RepoTimeframeUnit::Hour);
+    let base = bucket::bucket_id(window_start, repo_tf);
+    let base_u32 = u32::try_from(base).expect("bucket fits in u32");
+
+    let mut present = RoaringBitmap::new();
+    for offset in [1, 2, 4] {
+        present.insert(base_u32 + offset);
+    }
+
+    let bytes = roaring_bytes::rb_to_bytes(&present);
+    use asset_coverage_bitmap::dsl as acb;
+    diesel::update(acb::asset_coverage_bitmap.filter(acb::manifest_id.eq(manifest_id as i32)))
+        .set((acb::bitmap.eq(bytes), acb::version.eq(3)))
+        .execute(&mut conn)
+        .expect("seed coverage");
+
+    let missing = repo
+        .compute_missing(&mut conn, manifest_id, window_start, window_end)
+        .expect("compute missing");
+
+    let (stored_bitmap, _) = repo
+        .coverage_get(&mut conn, manifest_id)
+        .expect("verify coverage");
+
+    let start_id = bucket::bucket_id(window_start, repo_tf);
+    let end_id = bucket::bucket_id(window_end, repo_tf);
+    let start_id_u32 = u32::try_from(start_id).expect("window start fits in u32");
+    let end_id_u32 = u32::try_from(end_id).expect("window end fits in u32");
+
+    let mut window = RoaringBitmap::new();
+    window.insert_range(start_id_u32..end_id_u32);
+
+    let diff_ids: Vec<u32> = (&window - &stored_bitmap).iter().collect();
+
+    let mut expected = Vec::new();
+    if let Some(first) = diff_ids.first() {
+        let mut run_start = *first as u64;
+        let mut prev = *first as u64;
+        for &id in &diff_ids[1..] {
+            let id_u64 = id as u64;
+            if id_u64 == prev + 1 {
+                prev = id_u64;
+                continue;
+            }
+            expected.push((
+                bucket::bucket_start_utc(run_start, repo_tf),
+                bucket::bucket_end_exclusive_utc(prev + 1, repo_tf),
+            ));
+            run_start = id_u64;
+            prev = id_u64;
+        }
+        expected.push((
+            bucket::bucket_start_utc(run_start, repo_tf),
+            bucket::bucket_end_exclusive_utc(prev + 1, repo_tf),
+        ));
+    }
+
+    assert_eq!(missing, expected);
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn compute_missing_returns_empty_when_window_within_single_bucket() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 6, 1, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "META".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(30, TimeFrameUnit::Minute),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let window_start = Utc.with_ymd_and_hms(2024, 6, 2, 0, 5, 0).unwrap();
+    let window_end = window_start + Duration::minutes(10);
+
+    let missing = repo
+        .compute_missing(&mut conn, manifest_id, window_start, window_end)
+        .expect("compute missing");
+
+    assert!(missing.is_empty());
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn compute_missing_errors_on_start_bucket_overflow() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "GOOG".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(1, TimeFrameUnit::Minute),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let overflow_start_secs = (u32::MAX as i64 + 1) * 60;
+    let window_start = Utc.timestamp_opt(overflow_start_secs, 0).unwrap();
+    let window_end = window_start + Duration::minutes(1);
+
+    let err = repo
+        .compute_missing(&mut conn, manifest_id, window_start, window_end)
+        .expect_err("bucket id overflow should error");
+
+    let msg = err.to_string();
+    assert!(
+        msg.contains("bucket id overflow (start)"),
+        "unexpected error: {msg}"
+    );
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn compute_missing_errors_on_end_bucket_overflow() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "NVDA".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(1, TimeFrameUnit::Minute),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let base_secs = (u32::MAX as i64 - 1) * 60;
+    let window_start = Utc.timestamp_opt(base_secs, 0).unwrap();
+    let window_end = window_start + Duration::minutes(5);
+
+    let err = repo
+        .compute_missing(&mut conn, manifest_id, window_start, window_end)
+        .expect_err("bucket id overflow should error");
+
+    let msg = err.to_string();
+    assert!(
+        msg.contains("bucket id overflow (end)"),
+        "unexpected error: {msg}"
+    );
 
     common::fk_check_empty(&mut conn);
 }

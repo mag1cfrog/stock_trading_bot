@@ -1,7 +1,7 @@
 use asset_sync::bucket;
 use asset_sync::manifest::{ManifestRepo, RepoError, SqliteRepo};
 use asset_sync::roaring_bytes;
-use asset_sync::schema::{asset_coverage_bitmap, asset_manifest};
+use asset_sync::schema::{asset_coverage_bitmap, asset_gaps, asset_manifest};
 use asset_sync::spec::{AssetSpec, ProviderId, Range};
 use asset_sync::timeframe::{Timeframe as RepoTimeframe, TimeframeUnit as RepoTimeframeUnit};
 use asset_sync::tz;
@@ -35,6 +35,14 @@ struct CoverageProjection {
     manifest_id: i32,
     bitmap: Vec<u8>,
     version: i32,
+}
+
+#[derive(Debug, Queryable)]
+struct GapProjection {
+    id: i32,
+    state: String,
+    lease_owner: Option<String>,
+    lease_expires_at: Option<String>,
 }
 
 #[test]
@@ -664,6 +672,106 @@ fn compute_missing_errors_on_end_bucket_overflow() {
     let msg = err.to_string();
     assert!(
         msg.contains("bucket id overflow (end)"),
+        "unexpected error: {msg}"
+    );
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn gaps_complete_marks_row_done_and_preserves_leases() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 4, 1, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "AAPL".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(15, TimeFrameUnit::Minute),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let gap_start = Utc.with_ymd_and_hms(2024, 4, 2, 0, 0, 0).unwrap();
+    let gap_end = gap_start + Duration::hours(2);
+    repo.gaps_upsert(&mut conn, manifest_id, &[(gap_start, gap_end)])
+        .expect("insert gap");
+
+    use asset_gaps::dsl as ag;
+    let initial: GapProjection = ag::asset_gaps
+        .select((ag::id, ag::state, ag::lease_owner, ag::lease_expires_at))
+        .first(&mut conn)
+        .expect("gap row");
+    assert_eq!(initial.state, "queued");
+
+    let lease_owner = "worker-42".to_string();
+    let lease_expiry = tz::to_rfc3339_millis(gap_start + Duration::minutes(45));
+    diesel::update(ag::asset_gaps.find(initial.id))
+        .set((
+            ag::state.eq("leased"),
+            ag::lease_owner.eq(Some(lease_owner.clone())),
+            ag::lease_expires_at.eq(Some(lease_expiry.clone())),
+        ))
+        .execute(&mut conn)
+        .expect("lease gap");
+
+    repo.gaps_complete(&mut conn, initial.id as i64)
+        .expect("complete gap");
+
+    let completed: GapProjection = ag::asset_gaps
+        .find(initial.id)
+        .select((ag::id, ag::state, ag::lease_owner, ag::lease_expires_at))
+        .first(&mut conn)
+        .expect("completed gap");
+
+    assert_eq!(completed.state, "done");
+    assert_eq!(completed.lease_owner.as_deref(), Some(lease_owner.as_str()));
+    assert_eq!(
+        completed.lease_expires_at.as_deref(),
+        Some(lease_expiry.as_str())
+    );
+
+    repo.gaps_complete(&mut conn, initial.id as i64)
+        .expect("idempotent completion");
+
+    let done_again: GapProjection = ag::asset_gaps
+        .find(initial.id)
+        .select((ag::id, ag::state, ag::lease_owner, ag::lease_expires_at))
+        .first(&mut conn)
+        .expect("gap after second completion");
+
+    assert_eq!(done_again.state, "done");
+    assert_eq!(
+        done_again.lease_owner.as_deref(),
+        Some(lease_owner.as_str())
+    );
+    assert_eq!(
+        done_again.lease_expires_at.as_deref(),
+        Some(lease_expiry.as_str())
+    );
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn gaps_complete_errors_when_gap_missing() {
+    let (_db, mut conn) = common::setup_db();
+    let repo = SqliteRepo::new();
+
+    let err = repo
+        .gaps_complete(&mut conn, 12345)
+        .expect_err("missing gap should error");
+
+    let msg = err.to_string();
+    assert!(
+        msg.contains("gap not found: 12345"),
         "unexpected error: {msg}"
     );
 

@@ -777,3 +777,254 @@ fn gaps_complete_errors_when_gap_missing() {
 
     common::fk_check_empty(&mut conn);
 }
+
+#[test]
+fn gaps_lease_returns_empty_when_limit_non_positive() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 5, 1, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "AAPL".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(5, TimeFrameUnit::Minute),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let gap_start = desired_start + Duration::hours(1);
+    repo.gaps_upsert(
+        &mut conn,
+        manifest_id,
+        &[(gap_start, gap_start + Duration::minutes(30))],
+    )
+    .expect("insert gap");
+
+    let leased = repo
+        .gaps_lease(&mut conn, "worker", 0, Duration::minutes(15))
+        .expect("lease call with zero limit");
+    assert!(leased.is_empty());
+
+    use asset_gaps::dsl as ag;
+    let row: GapProjection = ag::asset_gaps
+        .select((ag::id, ag::state, ag::lease_owner, ag::lease_expires_at))
+        .first(&mut conn)
+        .expect("gap row");
+    assert_eq!(row.state, "queued");
+    assert!(row.lease_owner.is_none());
+    assert!(row.lease_expires_at.is_none());
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn gaps_lease_leases_rows_up_to_limit_in_order() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 5, 10, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "MSFT".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(15, TimeFrameUnit::Minute),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let mut ranges = Vec::new();
+    for offset in 0..3 {
+        let start = desired_start + Duration::hours(offset * 2);
+        ranges.push((start, start + Duration::hours(1)));
+    }
+    repo.gaps_upsert(&mut conn, manifest_id, &ranges)
+        .expect("insert gaps");
+
+    use asset_gaps::dsl as ag;
+    let ids: Vec<i32> = ag::asset_gaps
+        .order(ag::id.asc())
+        .select(ag::id)
+        .load(&mut conn)
+        .expect("gap ids");
+    assert_eq!(ids.len(), 3);
+
+    let ttl = Duration::minutes(45);
+    let before = Utc::now();
+    let leased = repo
+        .gaps_lease(&mut conn, "worker-1", 2, ttl)
+        .expect("lease gaps");
+    let after = Utc::now();
+
+    assert_eq!(leased, vec![ids[0] as i64, ids[1] as i64]);
+
+    let rows: Vec<GapProjection> = ag::asset_gaps
+        .order(ag::id.asc())
+        .select((ag::id, ag::state, ag::lease_owner, ag::lease_expires_at))
+        .load(&mut conn)
+        .expect("gap rows");
+
+    for (idx, row) in rows.iter().enumerate() {
+        if idx < 2 {
+            assert_eq!(row.state, "leased");
+            assert_eq!(row.lease_owner.as_deref(), Some("worker-1"));
+            let expires = tz::parse_ts_to_utc(row.lease_expires_at.as_deref().unwrap())
+                .expect("parse expiry");
+            let lower_bound = (before + ttl) - Duration::seconds(5);
+            let upper_bound = after + ttl + Duration::seconds(5);
+            assert!(expires >= lower_bound);
+            assert!(expires <= upper_bound);
+        } else {
+            assert_eq!(row.state, "queued");
+            assert!(row.lease_owner.is_none());
+            assert!(row.lease_expires_at.is_none());
+        }
+    }
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn gaps_lease_reacquires_gap_when_previous_lease_expired() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 6, 1, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "AMZN".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(30, TimeFrameUnit::Minute),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let range = (desired_start, desired_start + Duration::hours(3));
+    repo.gaps_upsert(&mut conn, manifest_id, &[range])
+        .expect("insert gap");
+
+    let ttl = Duration::minutes(20);
+    let first = repo
+        .gaps_lease(&mut conn, "worker-old", 1, ttl)
+        .expect("first lease");
+    assert_eq!(first.len(), 1);
+
+    use asset_gaps::dsl as ag;
+    let gap_id = first[0] as i32;
+    let expired_ts = tz::to_rfc3339_millis(Utc::now() - Duration::minutes(5));
+    diesel::update(ag::asset_gaps.find(gap_id))
+        .set((
+            ag::state.eq("queued"),
+            ag::lease_owner.eq(Some("worker-old".to_string())),
+            ag::lease_expires_at.eq(Some(expired_ts)),
+        ))
+        .execute(&mut conn)
+        .expect("reset gap to queued with stale lease");
+
+    let before = Utc::now();
+    let second = repo
+        .gaps_lease(&mut conn, "worker-new", 1, ttl)
+        .expect("second lease");
+    let after = Utc::now();
+    assert_eq!(second, vec![gap_id as i64]);
+
+    let row: GapProjection = ag::asset_gaps
+        .find(gap_id)
+        .select((ag::id, ag::state, ag::lease_owner, ag::lease_expires_at))
+        .first(&mut conn)
+        .expect("gap row after re-lease");
+
+    assert_eq!(row.state, "leased");
+    assert_eq!(row.lease_owner.as_deref(), Some("worker-new"));
+    let expires =
+        tz::parse_ts_to_utc(row.lease_expires_at.as_deref().unwrap()).expect("parse expiry");
+    let lower_bound = (before + ttl) - Duration::seconds(5);
+    let upper_bound = after + ttl + Duration::seconds(5);
+    assert!(expires >= lower_bound);
+    assert!(expires <= upper_bound);
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn gaps_lease_ignores_rows_not_in_queued_state() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 7, 1, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "TSLA".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(1, TimeFrameUnit::Hour),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    repo.gaps_upsert(
+        &mut conn,
+        manifest_id,
+        &[(desired_start, desired_start + Duration::hours(2))],
+    )
+    .expect("insert gap");
+
+    use asset_gaps::dsl as ag;
+    let row: GapProjection = ag::asset_gaps
+        .select((ag::id, ag::state, ag::lease_owner, ag::lease_expires_at))
+        .first(&mut conn)
+        .expect("gap row");
+
+    let future_expiry = tz::to_rfc3339_millis(Utc::now() + Duration::minutes(15));
+    diesel::update(ag::asset_gaps.find(row.id))
+        .set((
+            ag::state.eq("leased"),
+            ag::lease_owner.eq(Some("worker-existing".to_string())),
+            ag::lease_expires_at.eq(Some(future_expiry.clone())),
+        ))
+        .execute(&mut conn)
+        .expect("mark as leased");
+
+    let leased = repo
+        .gaps_lease(&mut conn, "worker", 5, Duration::minutes(10))
+        .expect("lease attempt");
+    assert!(leased.is_empty());
+
+    let stored: GapProjection = ag::asset_gaps
+        .find(row.id)
+        .select((ag::id, ag::state, ag::lease_owner, ag::lease_expires_at))
+        .first(&mut conn)
+        .expect("gap after skipped lease");
+
+    assert_eq!(stored.state, "leased");
+    assert_eq!(stored.lease_owner.as_deref(), Some("worker-existing"));
+    assert_eq!(
+        stored.lease_expires_at.as_deref(),
+        Some(future_expiry.as_str())
+    );
+
+    common::fk_check_empty(&mut conn);
+}

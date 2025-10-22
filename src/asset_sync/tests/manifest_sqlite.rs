@@ -241,3 +241,56 @@ fn upsert_manifest_supports_multiple_asset_classes() {
 
     common::fk_check_empty(&mut conn);
 }
+
+#[test]
+fn coverage_get_returns_empty_for_unknown_manifest() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let (bitmap, version) = repo.coverage_get(&mut conn, 42).expect("coverage get");
+
+    assert!(bitmap.is_empty());
+    assert_eq!(version, 0);
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn coverage_get_reads_existing_bitmap_and_version() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let start = Utc.with_ymd_and_hms(2024, 7, 1, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "NFLX".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(15, TimeFrameUnit::Minute),
+        range: Range::Open { start },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    use asset_coverage_bitmap::dsl as acb;
+    let mut expected_bitmap = RoaringBitmap::new();
+    expected_bitmap.insert(3);
+    expected_bitmap.insert(4);
+    expected_bitmap.insert(10);
+    let bytes = roaring_bytes::rb_to_bytes(&expected_bitmap);
+
+    diesel::update(acb::asset_coverage_bitmap.filter(acb::manifest_id.eq(manifest_id as i32)))
+        .set((acb::bitmap.eq(bytes), acb::version.eq(5)))
+        .execute(&mut conn)
+        .expect("seed bitmap");
+
+    let (bitmap, version) = repo
+        .coverage_get(&mut conn, manifest_id)
+        .expect("coverage get");
+
+    assert_eq!(version, 5);
+    assert_eq!(bitmap, expected_bitmap);
+    common::fk_check_empty(&mut conn);
+}

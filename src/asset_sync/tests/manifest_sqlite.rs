@@ -1,4 +1,4 @@
-use asset_sync::manifest::{ManifestRepo, SqliteRepo};
+use asset_sync::manifest::{ManifestRepo, RepoError, SqliteRepo};
 use asset_sync::roaring_bytes;
 use asset_sync::schema::{asset_coverage_bitmap, asset_manifest};
 use asset_sync::spec::{AssetSpec, ProviderId, Range};
@@ -292,5 +292,109 @@ fn coverage_get_reads_existing_bitmap_and_version() {
 
     assert_eq!(version, 5);
     assert_eq!(bitmap, expected_bitmap);
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn coverage_put_updates_bitmap_and_version() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let start = Utc.with_ymd_and_hms(2024, 8, 1, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "AMZN".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(30, TimeFrameUnit::Minute),
+        range: Range::Open { start },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let mut bitmap = RoaringBitmap::new();
+    bitmap.insert(1);
+    bitmap.insert(2);
+    bitmap.insert(32);
+
+    let version = repo
+        .coverage_put(&mut conn, manifest_id, &bitmap, 0)
+        .expect("coverage put");
+    assert_eq!(version, 1);
+
+    use asset_coverage_bitmap::dsl as acb;
+    let stored: CoverageProjection = acb::asset_coverage_bitmap
+        .filter(acb::manifest_id.eq(manifest_id as i32))
+        .select((acb::manifest_id, acb::bitmap, acb::version))
+        .first(&mut conn)
+        .expect("coverage row");
+
+    assert_eq!(stored.version, 1);
+    assert_eq!(stored.bitmap, roaring_bytes::rb_to_bytes(&bitmap));
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn coverage_put_conflict_on_stale_version() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let start = Utc.with_ymd_and_hms(2024, 9, 1, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "TSLA".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(1, TimeFrameUnit::Hour),
+        range: Range::Open { start },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let mut initial = RoaringBitmap::new();
+    initial.insert(5);
+    initial.insert(8);
+    repo.coverage_put(&mut conn, manifest_id, &initial, 0)
+        .expect("initial put");
+
+    let mut stale_attempt = RoaringBitmap::new();
+    stale_attempt.insert(99);
+    let err = repo
+        .coverage_put(&mut conn, manifest_id, &stale_attempt, 0)
+        .unwrap_err();
+    let repo_err = err.downcast::<RepoError>().expect("repo error");
+    match repo_err {
+        RepoError::CoverageConflict { expected } => assert_eq!(expected, 0),
+    }
+
+    use asset_coverage_bitmap::dsl as acb;
+    let stored: CoverageProjection = acb::asset_coverage_bitmap
+        .filter(acb::manifest_id.eq(manifest_id as i32))
+        .select((acb::manifest_id, acb::bitmap, acb::version))
+        .first(&mut conn)
+        .expect("coverage row");
+
+    assert_eq!(stored.version, 1);
+    assert_eq!(stored.bitmap, roaring_bytes::rb_to_bytes(&initial));
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn coverage_put_conflict_when_manifest_missing() {
+    let (_db, mut conn) = common::setup_db();
+    let repo = SqliteRepo::new();
+
+    let err = repo
+        .coverage_put(&mut conn, 999, &RoaringBitmap::new(), 0)
+        .unwrap_err();
+    let repo_err = err.downcast::<RepoError>().expect("repo error");
+    match repo_err {
+        RepoError::CoverageConflict { expected } => assert_eq!(expected, 0),
+    }
+
     common::fk_check_empty(&mut conn);
 }

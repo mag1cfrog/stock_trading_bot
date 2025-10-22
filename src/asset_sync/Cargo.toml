@@ -9,7 +9,7 @@ arc-swap = "1.7.1"
 chrono = { workspace = true }
 chrono-tz = { workspace = true }
 clap = { version = "4.5.46", features = ["derive"] }
-diesel = { version = "2.2.12", features = ["sqlite", "postgres", "chrono"] }
+diesel = { version = "2.2.12", features = ["sqlite", "postgres", "chrono", "returning_clauses_for_sqlite_3_35"] }
 diesel-async = { version = "0.6.1", features = ["postgres", "sqlite", "deadpool", "tokio"] }
 diesel_migrations = "2.2.0"
 indexmap = { workspace = true }

@@ -7,9 +7,9 @@
 //!
 //! All functions assume the input timestamp is UTC.
 
-use std::num::NonZeroU32;
-
 use chrono::{DateTime, Datelike, Duration, TimeZone, Utc};
+
+use crate::timeframe::{Timeframe, TimeframeUnit};
 
 /// Unix epoch start (1970-01-01T00:00:00Z).
 pub const EPOCH_UNIX: DateTime<Utc> = DateTime::<Utc>::UNIX_EPOCH;
@@ -25,35 +25,6 @@ pub const SECS_PER_WEEK: i64 = 7 * SECS_PER_DAY;
 
 /// shift so Monday 1969-12-29 00:00Z becomes index 0
 const WEEK_MONDAY_ANCHOR_OFFSET_SECS: i64 = 3 * SECS_PER_DAY; // +3d
-
-/// Timeframe granularity (calendar-aware where needed).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TimeframeUnit {
-    /// UTC minute
-    Minute,
-    /// UTC hour
-    Hour,
-    /// UTC day
-    Day,
-    /// Monday-based, UTC
-    Week,
-    /// calendar months, UTC  
-    Month,
-}
-
-/// A timeframe = amount × unit (e.g., 5-Minute, 3-Hour, 2-Week, 6-Month).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Timeframe {
-    amount: NonZeroU32,
-    unit: TimeframeUnit,
-}
-
-impl Timeframe {
-    /// Create a new TimeFrame
-    pub const fn new(amount: NonZeroU32, unit: TimeframeUnit) -> Self {
-        Self { amount, unit }
-    }
-}
 
 /// Compute the bucket id for a UTC timestamp.
 pub fn bucket_id(ts_utc: DateTime<Utc>, tf: Timeframe) -> u64 {

@@ -45,6 +45,17 @@ struct GapProjection {
     lease_expires_at: Option<String>,
 }
 
+#[derive(Debug, Queryable)]
+struct GapFullProjection {
+    _id: i32,
+    manifest_id: i32,
+    start_ts: String,
+    end_ts: String,
+    state: String,
+    lease_owner: Option<String>,
+    lease_expires_at: Option<String>,
+}
+
 #[test]
 fn upsert_manifest_inserts_open_range_and_creates_coverage() {
     let (_db, mut conn) = common::setup_db();
@@ -1025,6 +1036,200 @@ fn gaps_lease_ignores_rows_not_in_queued_state() {
         stored.lease_expires_at.as_deref(),
         Some(future_expiry.as_str())
     );
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn gaps_upsert_noop_on_empty_ranges() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 8, 1, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "AAPL".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(5, TimeFrameUnit::Minute),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    repo.gaps_upsert(&mut conn, manifest_id, &[])
+        .expect("upsert with empty ranges");
+
+    assert_eq!(common::count(&mut conn, "asset_gaps"), 0);
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn gaps_upsert_inserts_rows_with_defaults() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 8, 2, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "MSFT".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(15, TimeFrameUnit::Minute),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let ranges = [
+        (desired_start, desired_start + Duration::minutes(45)),
+        (
+            desired_start + Duration::hours(2),
+            desired_start + Duration::hours(3),
+        ),
+    ];
+
+    repo.gaps_upsert(&mut conn, manifest_id, &ranges)
+        .expect("insert gaps");
+
+    use asset_gaps::dsl as ag;
+    let rows: Vec<GapFullProjection> = ag::asset_gaps
+        .order(ag::start_ts.asc())
+        .select((
+            ag::id,
+            ag::manifest_id,
+            ag::start_ts,
+            ag::end_ts,
+            ag::state,
+            ag::lease_owner,
+            ag::lease_expires_at,
+        ))
+        .load(&mut conn)
+        .expect("gap rows");
+
+    assert_eq!(rows.len(), 2);
+    for (row, (start, end)) in rows.iter().zip(ranges.iter()) {
+        assert_eq!(row.manifest_id, manifest_id as i32);
+        assert_eq!(row.state, "queued");
+        assert!(row.lease_owner.is_none());
+        assert!(row.lease_expires_at.is_none());
+        assert_eq!(row.start_ts, tz::to_rfc3339_millis(*start));
+        assert_eq!(row.end_ts, tz::to_rfc3339_millis(*end));
+    }
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn gaps_upsert_ignores_duplicate_ranges() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 8, 3, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "AMZN".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(30, TimeFrameUnit::Minute),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let primary = (desired_start, desired_start + Duration::hours(2));
+    let secondary = (
+        desired_start + Duration::hours(4),
+        desired_start + Duration::hours(5),
+    );
+
+    repo.gaps_upsert(
+        &mut conn,
+        manifest_id,
+        &[primary, secondary, primary, secondary],
+    )
+    .expect("insert with duplicates");
+
+    use asset_gaps::dsl as ag;
+    let rows: Vec<GapFullProjection> = ag::asset_gaps
+        .order(ag::start_ts.asc())
+        .select((
+            ag::id,
+            ag::manifest_id,
+            ag::start_ts,
+            ag::end_ts,
+            ag::state,
+            ag::lease_owner,
+            ag::lease_expires_at,
+        ))
+        .load(&mut conn)
+        .expect("gap rows");
+
+    assert_eq!(rows.len(), 2);
+    assert_eq!(
+        rows.iter()
+            .map(|r| (r.start_ts.clone(), r.end_ts.clone()))
+            .collect::<Vec<_>>(),
+        vec![
+            (
+                tz::to_rfc3339_millis(primary.0),
+                tz::to_rfc3339_millis(primary.1),
+            ),
+            (
+                tz::to_rfc3339_millis(secondary.0),
+                tz::to_rfc3339_millis(secondary.1),
+            ),
+        ]
+    );
+
+    common::fk_check_empty(&mut conn);
+}
+
+#[test]
+fn gaps_upsert_handles_large_batches_with_chunking() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2024, 8, 4, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "TSLA".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: AssetClass::UsEquity,
+        timeframe: TimeFrame::new(1, TimeFrameUnit::Hour),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let mut ranges = Vec::new();
+    for idx in 0..205 {
+        let start = desired_start + Duration::minutes((idx * 10) as i64);
+        let end = start + Duration::minutes(5);
+        ranges.push((start, end));
+    }
+
+    repo.gaps_upsert(&mut conn, manifest_id, &ranges)
+        .expect("insert large batch");
+
+    assert_eq!(common::count(&mut conn, "asset_gaps"), ranges.len() as i64);
 
     common::fk_check_empty(&mut conn);
 }

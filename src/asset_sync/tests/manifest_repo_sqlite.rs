@@ -1233,3 +1233,80 @@ fn gaps_upsert_handles_large_batches_with_chunking() {
 
     common::fk_check_empty(&mut conn);
 }
+
+#[test]
+fn sqlite_manifest_partial_coverage_missing_ranges() {
+    let (_db, mut conn) = common::setup_db();
+    common::seed_min_catalog(&mut conn).expect("seed");
+
+    let repo = SqliteRepo::new();
+    let desired_start = Utc.with_ymd_and_hms(2012, 3, 5, 0, 0, 0).unwrap();
+    let spec = AssetSpec {
+        symbol: "MSFT".into(),
+        provider: ProviderId::Alpaca,
+        asset_class: market_data_ingestor::models::asset::AssetClass::UsEquity,
+        timeframe: market_data_ingestor::models::timeframe::TimeFrame::new(
+            1,
+            market_data_ingestor::models::timeframe::TimeFrameUnit::Hour,
+        ),
+        range: Range::Open {
+            start: desired_start,
+        },
+    };
+
+    let manifest_id = repo
+        .upsert_manifest(&mut conn, &spec)
+        .expect("insert manifest");
+
+    let window_start = desired_start;
+    let window_end = desired_start + Duration::hours(10);
+
+    let tf = RepoTimeframe::new(NonZeroU32::new(1).unwrap(), RepoTimeframeUnit::Hour);
+    let base_id_u64 = bucket::bucket_id(window_start, tf);
+    let base_id = base_id_u64 as u32;
+
+    // Sanity check: full range is missing initially.
+    let missing_initial = repo
+        .compute_missing(&mut conn, manifest_id, window_start, window_end)
+        .expect("compute missing initial");
+    let expected_full_start = bucket::bucket_start_utc(base_id_u64, tf);
+    let expected_full_end = bucket::bucket_end_exclusive_utc(base_id_u64 + 10, tf);
+    assert_eq!(
+        missing_initial,
+        vec![(expected_full_start, expected_full_end)]
+    );
+
+    // Simulate partial coverage by inserting non-contiguous buckets.
+    let mut coverage = RoaringBitmap::new();
+    coverage.insert(base_id + 2);
+    coverage.insert(base_id + 5);
+
+    let version = repo
+        .coverage_put(&mut conn, manifest_id, &coverage, 0)
+        .expect("initial coverage put");
+    assert_eq!(version, 1);
+
+    // Missing ranges should coalesce into three segments around the covered buckets.
+    let missing_after = repo
+        .compute_missing(&mut conn, manifest_id, window_start, window_end)
+        .expect("compute missing after partial coverage");
+
+    let expected = vec![
+        (
+            bucket::bucket_start_utc(base_id_u64, tf),
+            bucket::bucket_end_exclusive_utc(base_id_u64 + 2, tf),
+        ),
+        (
+            bucket::bucket_start_utc(base_id_u64 + 3, tf),
+            bucket::bucket_end_exclusive_utc(base_id_u64 + 5, tf),
+        ),
+        (
+            bucket::bucket_start_utc(base_id_u64 + 6, tf),
+            bucket::bucket_end_exclusive_utc(base_id_u64 + 10, tf),
+        ),
+    ];
+
+    assert_eq!(missing_after, expected);
+
+    common::fk_check_empty(&mut conn);
+}

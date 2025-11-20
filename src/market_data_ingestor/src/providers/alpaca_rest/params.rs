@@ -6,7 +6,7 @@ use crate::{
         request_params::{BarsRequestParams, ProviderParams},
         timeframe::{TimeFrame, TimeFrameUnit},
     },
-    providers::ProviderError,
+    providers::{ProviderError, ValidationSnafu},
 };
 
 /// Alpaca subscription plans with different rate limits
@@ -89,30 +89,34 @@ fn format_timeframe_str(tf: &TimeFrame) -> String {
 
 pub fn validate_timeframe(tf: &TimeFrame) -> Result<(), ProviderError> {
     match tf.unit {
-        TimeFrameUnit::Minute if !(1..=59).contains(&tf.amount) => {
-            Err(ProviderError::Validation(format!(
+        TimeFrameUnit::Minute if !(1..=59).contains(&tf.amount) => ValidationSnafu {
+            message: format!(
                 "Alpaca supports 1-59 for Minute timeframes, but got {}",
                 tf.amount
-            )))
+            ),
         }
-        TimeFrameUnit::Hour if !(1..=23).contains(&tf.amount) => {
-            Err(ProviderError::Validation(format!(
+        .fail(),
+        TimeFrameUnit::Hour if !(1..=23).contains(&tf.amount) => ValidationSnafu {
+            message: format!(
                 "Alpaca supports 1-23 for Hour timeframes, but got {}",
                 tf.amount
-            )))
+            ),
         }
-        TimeFrameUnit::Day | TimeFrameUnit::Week if tf.amount != 1 => {
-            Err(ProviderError::Validation(format!(
+        .fail(),
+        TimeFrameUnit::Day | TimeFrameUnit::Week if tf.amount != 1 => ValidationSnafu {
+            message: format!(
                 "Alpaca only supports an amount of 1 for Day and Week timeframes, but got {}",
                 tf.amount
-            )))
+            ),
         }
-        TimeFrameUnit::Month if ![1, 2, 3, 4, 6, 12].contains(&tf.amount) => {
-            Err(ProviderError::Validation(format!(
+        .fail(),
+        TimeFrameUnit::Month if ![1, 2, 3, 4, 6, 12].contains(&tf.amount) => ValidationSnafu {
+            message: format!(
                 "Alpaca only supports amounts of 1, 2, 3, 4, 6, or 12 for Month timeframes, but got {}",
                 tf.amount
-            )))
+            ),
         }
+        .fail(),
         _ => Ok(()),
     }
 }
@@ -182,10 +186,13 @@ pub fn validate_date_range(
         .with_timezone(&Utc);
 
     if start < earliest_date {
-        return Err(ProviderError::Validation(format!(
-            "Alpaca historical data is only available since 2016-01-01, but start date is {}",
-            start.format("%Y-%m-%d")
-        )));
+        return ValidationSnafu {
+            message: format!(
+                "Alpaca historical data is only available since 2016-01-01, but start date is {}",
+                start.format("%Y-%m-%d")
+            ),
+        }
+        .fail();
     }
 
     // Basic plan has 15-minute delay limitation
@@ -193,11 +200,14 @@ pub fn validate_date_range(
         AlpacaSubscriptionPlan::Basic => {
             let delay_threshold = now - Duration::minutes(15);
             if end > delay_threshold {
-                return Err(ProviderError::Validation(format!(
-                    "Basic plan has a 15-minute delay. Latest available data is at {}. Requested end time: {}",
-                    delay_threshold.format("%Y-%m-%d %H:%M:%S UTC"),
-                    end.format("%Y-%m-%d %H:%M:%S UTC")
-                )));
+                return ValidationSnafu {
+                    message: format!(
+                        "Basic plan has a 15-minute delay. Latest available data is at {}. Requested end time: {}",
+                        delay_threshold.format("%Y-%m-%d %H:%M:%S UTC"),
+                        end.format("%Y-%m-%d %H:%M:%S UTC")
+                    ),
+                }
+                .fail();
             }
         }
         AlpacaSubscriptionPlan::AlgoTrader => {
@@ -207,9 +217,10 @@ pub fn validate_date_range(
 
     // Basic date range validation
     if start >= end {
-        return Err(ProviderError::Validation(
-            "Start date must be before end date".to_string(),
-        ));
+        return ValidationSnafu {
+            message: "Start date must be before end date".to_string(),
+        }
+        .fail();
     }
 
     Ok(())

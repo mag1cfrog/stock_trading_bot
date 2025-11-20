@@ -14,7 +14,7 @@
 //! ```rust
 //! use async_trait::async_trait;
 //! use market_data_ingestor::models::{
-//!     bar_series::BarSeries,
+//!     bar::BarSeries,
 //!     request_params::BarsRequestParams,
 //! };
 //! use market_data_ingestor::providers::{DataProvider, ProviderError};
@@ -37,7 +37,7 @@ pub mod alpaca_rest;
 
 use async_trait::async_trait;
 use shared_utils::env::MissingEnvVarError;
-use thiserror::Error;
+use snafu::{Backtrace, Snafu};
 
 use crate::models::{bar::BarSeries, request_params::BarsRequestParams};
 
@@ -62,41 +62,67 @@ pub trait DataProvider {
 }
 
 /// Errors that can occur during the creation of a provider instance
-#[derive(Debug, Error)]
+#[derive(Debug, Snafu)]
+#[snafu(visibility(pub))]
 pub enum ProviderInitError {
     /// missed environment variable.
-    #[error(transparent)]
-    MissingEnvVar(#[from] MissingEnvVarError),
+    #[snafu(display("Missing environment variable: {source}"))]
+    MissingEnvVar {
+        source: MissingEnvVarError,
+        backtrace: Backtrace,
+    },
 
     /// failed to init reqwest client
-    #[error(transparent)]
-    ClientBuild(#[from] reqwest::Error),
+    #[snafu(display("Failed to build HTTP client: {source}"))]
+    ClientBuild {
+        source: reqwest::Error,
+        backtrace: Backtrace,
+    },
 
     /// API key contains invalid characters.
-    #[error("Invalid API key format: {0}")]
-    InvalidApiKey(#[from] reqwest::header::InvalidHeaderValue),
+    #[snafu(display("Invalid API key format: {source}"))]
+    InvalidApiKey {
+        source: reqwest::header::InvalidHeaderValue,
+        backtrace: Backtrace,
+    },
 }
 
 /// Errors that can occur within a `DataProvider` implementation.
-#[derive(Debug, Error)]
+#[derive(Debug, Snafu)]
+#[snafu(visibility(pub))]
 pub enum ProviderError {
     /// An error during an API request (e.g., network failure, timeout).
-    #[error("API request failed: {0}")]
-    Reqwest(#[from] reqwest::Error),
+    #[snafu(display("API request failed: {source}"))]
+    Reqwest {
+        source: reqwest::Error,
+        backtrace: Backtrace,
+    },
 
     /// The provider's API returned a specific error message (e.g., invalid API key).
-    #[error("API error: {0}")]
-    Api(String),
+    #[snafu(display("API error: {message}"))]
+    Api {
+        message: String,
+        backtrace: Backtrace,
+    },
 
     /// The request parameters were invalid for this specific provider.
-    #[error("Invalid parameters for provider: {0}")]
-    Validation(String),
+    #[snafu(display("Invalid parameters for provider: {message}"))]
+    Validation {
+        message: String,
+        backtrace: Backtrace,
+    },
 
     /// An internal error occurred while processing data within the provider.
-    #[error("Internal provider error: {0}")]
-    Internal(String),
+    #[snafu(display("Internal provider error: {message}"))]
+    Internal {
+        message: String,
+        backtrace: Backtrace,
+    },
 
     /// An error during provider configuration or initialization.
-    #[error(transparent)]
-    Init(#[from] ProviderInitError),
+    #[snafu(display("Provider initialization error: {source}"))]
+    Init {
+        #[snafu(backtrace)]
+        source: ProviderInitError,
+    },
 }

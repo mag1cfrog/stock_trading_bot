@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use thiserror::Error;
 
-use crate::models::bar_series::BarSeries;
+use crate::models::bar::BarSeries;
 
 #[derive(Debug, Error)]
 pub enum SinkError {

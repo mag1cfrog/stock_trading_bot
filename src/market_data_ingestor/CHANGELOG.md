@@ -1,5 +1,32 @@
 # Changelog
 All notable changes to market_data_ingestor will be documented in this file.
+## market_data_ingestor-v2.0.0
+
+
+### Bug Fixes
+
+- Update indexmap dependency to use workspace configuration ([931d85b](https://github.com/mag1cfrog/stock_trading_bot/commit/931d85b9b848773877e5e6c24bc1776f8d1b4c43))
+
+
+### Code Refactoring
+
+- Remove python related code ([ecb0ae9](https://github.com/mag1cfrog/stock_trading_bot/commit/ecb0ae92594dfef14541537147f3093639484e7c))
+
+
+### Documentation
+
+- Update changelog for patch release ([30ed93f](https://github.com/mag1cfrog/stock_trading_bot/commit/30ed93f9a1aea54e194ad4a962f919cba59fc89c))
+
+
+### Maintenance
+
+- Release ([ff07976](https://github.com/mag1cfrog/stock_trading_bot/commit/ff079767292853bad09eed27f13553af081cc846))
+
+
+### Style
+
+- Improve error logging format in Python initialization functions ([118e834](https://github.com/mag1cfrog/stock_trading_bot/commit/118e834e7933983f181ce3b49d3c4b746497d2c3))
+
 ## market_data_ingestor-v1.3.5
 
 

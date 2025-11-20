@@ -68,8 +68,8 @@ pub enum ProviderInitError {
     /// missed environment variable.
     #[snafu(display("Missing environment variable: {source}"))]
     MissingEnvVar {
+        #[snafu(backtrace)]
         source: MissingEnvVarError,
-        backtrace: Backtrace,
     },
 
     /// failed to init reqwest client

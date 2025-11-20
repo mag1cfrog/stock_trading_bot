@@ -281,8 +281,18 @@ mod tests {
         let query = construct_params(&params);
         let query_map: std::collections::HashMap<_, _> = query.into_iter().collect();
 
-        assert_eq!(query_map.get("symbols").unwrap(), "AAPL,MSFT");
-        assert_eq!(query_map.get("timeframe").unwrap(), "1Day");
+        assert_eq!(
+            query_map
+                .get("symbols")
+                .expect("symbols parameter should exist"),
+            "AAPL,MSFT"
+        );
+        assert_eq!(
+            query_map
+                .get("timeframe")
+                .expect("timeframe parameter should exist"),
+            "1Day"
+        );
     }
 
     #[test]
@@ -303,8 +313,16 @@ mod tests {
         let query = construct_params(&params);
         let query_map: std::collections::HashMap<_, _> = query.into_iter().collect();
 
-        assert_eq!(query_map.get("limit").unwrap(), "100");
-        assert_eq!(query_map.get("sort").unwrap(), "desc");
+        assert_eq!(
+            query_map
+                .get("limit")
+                .expect("limit parameter should exist"),
+            "100"
+        );
+        assert_eq!(
+            query_map.get("sort").expect("sort parameter should exist"),
+            "desc"
+        );
     }
     #[test]
     fn test_validate_date_range_basic_plan() {

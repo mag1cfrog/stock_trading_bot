@@ -112,11 +112,10 @@ impl AlpacaProvider {
             .context(ReqwestSnafu)?;
 
         if !response.status().is_success() {
-            let error_msg = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown API error".to_string());
-            return ApiSnafu { message: error_msg }.fail();
+            return match response.text().await {
+                Ok(error_msg) => ApiSnafu { message: error_msg }.fail(),
+                Err(e) => Err(e).context(ReqwestSnafu)?,
+            };
         }
 
         response

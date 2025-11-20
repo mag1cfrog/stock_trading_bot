@@ -137,13 +137,17 @@ pub fn construct_params(params: &BarsRequestParams) -> Vec<(String, String)> {
     if let Some(adjustment) = alpaca_params.adjustment {
         query_params.push((
             "adjustment".to_string(),
-            serde_json::to_string(&adjustment).unwrap().replace('"', ""),
+            serde_json::to_string(&adjustment)
+                .expect("Serializing Adjustment enum should never fail")
+                .replace('"', ""),
         ));
     }
     if let Some(feed) = alpaca_params.feed {
         query_params.push((
             "feed".to_string(),
-            serde_json::to_string(&feed).unwrap().replace('"', ""),
+            serde_json::to_string(&feed)
+                .expect("Serializing Feed enum should never fail")
+                .replace('"', ""),
         ));
     }
     if let Some(currency) = alpaca_params.currency {
@@ -155,7 +159,9 @@ pub fn construct_params(params: &BarsRequestParams) -> Vec<(String, String)> {
     if let Some(sort) = alpaca_params.sort {
         query_params.push((
             "sort".to_string(),
-            serde_json::to_string(&sort).unwrap().replace('"', ""),
+            serde_json::to_string(&sort)
+                .expect("Serializing Sort enum should never fail")
+                .replace('"', ""),
         ));
     }
 
@@ -172,7 +178,7 @@ pub fn validate_date_range(
 
     // Both plans support data since 2016
     let earliest_date = DateTime::parse_from_rfc3339("2016-01-01T00:00:00Z")
-        .unwrap()
+        .expect("Hardcoded RFC3339 date string is valid")
         .with_timezone(&Utc);
 
     if start < earliest_date {
@@ -306,7 +312,7 @@ mod tests {
 
         // Invalid: before 2016
         let start = DateTime::parse_from_rfc3339("2015-12-31T00:00:00Z")
-            .unwrap()
+            .expect("Test date string is valid")
             .with_timezone(&Utc);
         let end = now - Duration::hours(1);
         assert!(validate_date_range(start, end, &plan).is_err());
@@ -324,7 +330,7 @@ mod tests {
 
         // Invalid: before 2016 (applies to all plans)
         let start = DateTime::parse_from_rfc3339("2015-12-31T00:00:00Z")
-            .unwrap()
+            .expect("Test date string is valid")
             .with_timezone(&Utc);
         let end = now - Duration::hours(1);
         assert!(validate_date_range(start, end, &plan).is_err());

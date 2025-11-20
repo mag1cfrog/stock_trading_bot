@@ -6,6 +6,7 @@ use indexmap::IndexMap;
 use reqwest::{Client, header};
 use secrecy::{ExposeSecret, SecretString};
 use shared_utils::env::get_env_var;
+use snafu::ResultExt;
 
 use crate::{
     models::{
@@ -14,7 +15,8 @@ use crate::{
         request_params::{BarsRequestParams, ProviderParams},
     },
     providers::{
-        DataProvider, ProviderError, ProviderInitError,
+        ApiSnafu, ClientBuildSnafu, DataProvider, InvalidApiKeySnafu, MissingEnvVarSnafu,
+        ProviderError, ProviderInitError, ReqwestSnafu,
         alpaca_rest::{
             params::{AlpacaSubscriptionPlan, construct_params, validate_request},
             response::{AlpacaBar, AlpacaResponse},
@@ -51,20 +53,32 @@ impl AlpacaProvider {
 
     /// Creates a new Alpaca provider with specified subscription plan.
     pub fn with_subscription_plan(plan: AlpacaSubscriptionPlan) -> Result<Self, ProviderInitError> {
-        let api_key = SecretString::new(get_env_var("APCA_API_KEY_ID")?.into());
-        let secret_key = SecretString::new(get_env_var("APCA_API_SECRET_KEY")?.into());
+        let api_key = SecretString::new(
+            get_env_var("APCA_API_KEY_ID")
+                .context(MissingEnvVarSnafu)?
+                .into(),
+        );
+        let secret_key = SecretString::new(
+            get_env_var("APCA_API_SECRET_KEY")
+                .context(MissingEnvVarSnafu)?
+                .into(),
+        );
 
         let mut headers = header::HeaderMap::new();
         headers.insert(
             "APCA-API-KEY-ID",
-            header::HeaderValue::from_str(api_key.expose_secret())?,
+            header::HeaderValue::from_str(api_key.expose_secret()).context(InvalidApiKeySnafu)?,
         );
         headers.insert(
             "APCA-API-SECRET-KEY",
-            header::HeaderValue::from_str(secret_key.expose_secret())?,
+            header::HeaderValue::from_str(secret_key.expose_secret())
+                .context(InvalidApiKeySnafu)?,
         );
 
-        let client = Client::builder().default_headers(headers).build()?;
+        let client = Client::builder()
+            .default_headers(headers)
+            .build()
+            .context(ClientBuildSnafu)?;
 
         // Create rate limiter based on subscription plan
         let requests_per_minute = plan.rate_limit_per_minute();
@@ -94,17 +108,21 @@ impl AlpacaProvider {
             .get(BASE_URL)
             .query(&query_params)
             .send()
-            .await?;
+            .await
+            .context(ReqwestSnafu)?;
 
         if !response.status().is_success() {
             let error_msg = response
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown API error".to_string());
-            return Err(ProviderError::Api(error_msg));
+            return ApiSnafu { message: error_msg }.fail();
         }
 
-        Ok(response.json::<AlpacaResponse>().await?)
+        response
+            .json::<AlpacaResponse>()
+            .await
+            .context(ReqwestSnafu)
     }
 }
 

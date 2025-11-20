@@ -10,7 +10,7 @@ use shared_utils::env::get_env_var;
 use crate::{
     models::{
         bar::Bar,
-        bar_series::BarSeries,
+        bar::BarSeries,
         request_params::{BarsRequestParams, ProviderParams},
     },
     providers::{

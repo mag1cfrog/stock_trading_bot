@@ -39,7 +39,7 @@ use async_trait::async_trait;
 use shared_utils::env::MissingEnvVarError;
 use thiserror::Error;
 
-use crate::models::{bar_series::BarSeries, request_params::BarsRequestParams};
+use crate::models::{bar::BarSeries, request_params::BarsRequestParams};
 
 /// Trait for fetching time-series bar data from a market data provider.
 ///

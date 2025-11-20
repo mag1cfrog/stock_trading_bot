@@ -1,5 +1,28 @@
 # Changelog
 All notable changes to market_data_ingestor will be documented in this file.
+## market_data_ingestor-v2.0.1
+
+
+### Code Refactoring
+
+- Reorganize market data ingestor module structure and remove unused components ([d1e2de9](https://github.com/mag1cfrog/stock_trading_bot/commit/d1e2de9c8262e308c7c4a3ae1506be175ff732bf))
+
+- Remove StockBarsParams struct and related imports ([b4cd09c](https://github.com/mag1cfrog/stock_trading_bot/commit/b4cd09c2ea17baf85121723f5a6077029dbca942))
+
+- Remove stockbars module from market data ingestor ([8d1fd55](https://github.com/mag1cfrog/stock_trading_bot/commit/8d1fd55e5302512b69faed9187c5bab4c161dc55))
+
+- Update BarSeries references and remove bar_series module ([de3b900](https://github.com/mag1cfrog/stock_trading_bot/commit/de3b9003b10c52ce93b064a7544e247b4d8c9b9c))
+
+
+### Documentation
+
+- Update changelog for major release ([f830855](https://github.com/mag1cfrog/stock_trading_bot/commit/f830855b78ee9d6e67c5f54b46b057b082188b2e))
+
+
+### Maintenance
+
+- Release ([dadbbc2](https://github.com/mag1cfrog/stock_trading_bot/commit/dadbbc2cd8f5541d75ce00bb5a2336ac93d26cad))
+
 ## market_data_ingestor-v2.0.0
 
 

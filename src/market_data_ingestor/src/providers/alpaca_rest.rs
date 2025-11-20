@@ -17,7 +17,7 @@ use crate::{
         bar::BarSeries,
         request_params::{BarsRequestParams, ProviderParams},
     },
-    providers::{
+    provider::{
         ApiSnafu, ClientBuildSnafu, DataProvider, InvalidApiKeySnafu, MissingEnvVarSnafu,
         ProviderError, ProviderInitError, ReqwestSnafu,
         alpaca_rest::{

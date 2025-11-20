@@ -6,7 +6,7 @@ use crate::{
         request_params::{BarsRequestParams, ProviderParams},
         timeframe::{TimeFrame, TimeFrameUnit},
     },
-    providers::{ProviderError, ValidationSnafu},
+    provider::{ProviderError, ValidationSnafu},
 };
 
 /// Alpaca subscription plans with different rate limits

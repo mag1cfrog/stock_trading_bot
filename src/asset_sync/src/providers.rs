@@ -1,5 +1,5 @@
 //! Provider registry that help runtime to map ProviderId to concrete providers
-use market_data_ingestor::providers::{
+use market_data_ingestor::provider::{
     DataProvider, ProviderInitError, alpaca_rest::provider::AlpacaProvider,
 };
 

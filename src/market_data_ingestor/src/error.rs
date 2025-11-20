@@ -1,6 +1,6 @@
 use snafu::{Backtrace, Snafu};
 
-use crate::{io::sink::SinkError, providers::ProviderError};
+use crate::{io::sink::SinkError, provider::ProviderError};
 
 /// The unified error type for the `market_data_ingestor` crate.
 #[derive(Debug, Snafu)]

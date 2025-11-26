@@ -1,9 +1,13 @@
-use thiserror::Error;
+use snafu::prelude::*;
 
 /// An environment variable required by the application is not set.
-#[derive(Debug, Error)]
-#[error("Missing environment variable: {0}")]
-pub struct MissingEnvVarError(pub String);
+#[derive(Debug, Snafu)]
+#[snafu(visibility(pub))]
+pub struct MissingEnvVarError {
+    pub name: String,
+    source: std::env::VarError,
+    backtrace: snafu::Backtrace,
+}
 
 /// Reads an environment variable, returning a structured error if it's missing.
 ///
@@ -13,5 +17,7 @@ pub struct MissingEnvVarError(pub String);
 /// # Arguments
 /// * `name` - The name of the environment variable to read.
 pub fn get_env_var(name: &str) -> Result<String, MissingEnvVarError> {
-    std::env::var(name).map_err(|_| MissingEnvVarError(name.to_string()))
+    std::env::var(name).context(MissingEnvVarSnafu {
+        name: name.to_string(),
+    })
 }

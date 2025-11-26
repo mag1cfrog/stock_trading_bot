@@ -1,16 +1,21 @@
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
+use snafu::{Backtrace, Snafu};
 
-#[derive(Debug, Error)]
+#[derive(Debug, Snafu)]
+#[snafu(visibility(pub))]
 pub enum TimeFrameError {
-    #[error("Invalid amount for {:?}: {}", unit, message)]
+    #[snafu(display("Invalid amount for {unit:?}: {message}"))]
     InvalidAmount {
         unit: TimeFrameUnit,
         message: String,
+        backtrace: Backtrace,
     },
 
-    #[error("Invalid input: {}", message)]
-    InvalidInput { message: String },
+    #[snafu(display("Invalid input: {message}"))]
+    InvalidInput {
+        message: String,
+        backtrace: Backtrace,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

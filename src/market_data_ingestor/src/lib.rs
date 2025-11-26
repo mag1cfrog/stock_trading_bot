@@ -1,4 +1,4 @@
-pub mod errors;
+pub mod error;
 pub mod io;
 pub mod models;
-pub mod providers;
+pub mod provider;

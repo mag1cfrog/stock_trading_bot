@@ -6,7 +6,7 @@ use crate::{
         request_params::{BarsRequestParams, ProviderParams},
         timeframe::{TimeFrame, TimeFrameUnit},
     },
-    providers::ProviderError,
+    provider::{ProviderError, ValidationSnafu},
 };
 
 /// Alpaca subscription plans with different rate limits
@@ -89,30 +89,34 @@ fn format_timeframe_str(tf: &TimeFrame) -> String {
 
 pub fn validate_timeframe(tf: &TimeFrame) -> Result<(), ProviderError> {
     match tf.unit {
-        TimeFrameUnit::Minute if !(1..=59).contains(&tf.amount) => {
-            Err(ProviderError::Validation(format!(
+        TimeFrameUnit::Minute if !(1..=59).contains(&tf.amount) => ValidationSnafu {
+            message: format!(
                 "Alpaca supports 1-59 for Minute timeframes, but got {}",
                 tf.amount
-            )))
+            ),
         }
-        TimeFrameUnit::Hour if !(1..=23).contains(&tf.amount) => {
-            Err(ProviderError::Validation(format!(
+        .fail(),
+        TimeFrameUnit::Hour if !(1..=23).contains(&tf.amount) => ValidationSnafu {
+            message: format!(
                 "Alpaca supports 1-23 for Hour timeframes, but got {}",
                 tf.amount
-            )))
+            ),
         }
-        TimeFrameUnit::Day | TimeFrameUnit::Week if tf.amount != 1 => {
-            Err(ProviderError::Validation(format!(
+        .fail(),
+        TimeFrameUnit::Day | TimeFrameUnit::Week if tf.amount != 1 => ValidationSnafu {
+            message: format!(
                 "Alpaca only supports an amount of 1 for Day and Week timeframes, but got {}",
                 tf.amount
-            )))
+            ),
         }
-        TimeFrameUnit::Month if ![1, 2, 3, 4, 6, 12].contains(&tf.amount) => {
-            Err(ProviderError::Validation(format!(
+        .fail(),
+        TimeFrameUnit::Month if ![1, 2, 3, 4, 6, 12].contains(&tf.amount) => ValidationSnafu {
+            message: format!(
                 "Alpaca only supports amounts of 1, 2, 3, 4, 6, or 12 for Month timeframes, but got {}",
                 tf.amount
-            )))
+            ),
         }
+        .fail(),
         _ => Ok(()),
     }
 }
@@ -137,13 +141,17 @@ pub fn construct_params(params: &BarsRequestParams) -> Vec<(String, String)> {
     if let Some(adjustment) = alpaca_params.adjustment {
         query_params.push((
             "adjustment".to_string(),
-            serde_json::to_string(&adjustment).unwrap().replace('"', ""),
+            serde_json::to_string(&adjustment)
+                .expect("Serializing Adjustment enum should never fail")
+                .replace('"', ""),
         ));
     }
     if let Some(feed) = alpaca_params.feed {
         query_params.push((
             "feed".to_string(),
-            serde_json::to_string(&feed).unwrap().replace('"', ""),
+            serde_json::to_string(&feed)
+                .expect("Serializing Feed enum should never fail")
+                .replace('"', ""),
         ));
     }
     if let Some(currency) = alpaca_params.currency {
@@ -155,7 +163,9 @@ pub fn construct_params(params: &BarsRequestParams) -> Vec<(String, String)> {
     if let Some(sort) = alpaca_params.sort {
         query_params.push((
             "sort".to_string(),
-            serde_json::to_string(&sort).unwrap().replace('"', ""),
+            serde_json::to_string(&sort)
+                .expect("Serializing Sort enum should never fail")
+                .replace('"', ""),
         ));
     }
 
@@ -172,14 +182,17 @@ pub fn validate_date_range(
 
     // Both plans support data since 2016
     let earliest_date = DateTime::parse_from_rfc3339("2016-01-01T00:00:00Z")
-        .unwrap()
+        .expect("Hardcoded RFC3339 date string is valid")
         .with_timezone(&Utc);
 
     if start < earliest_date {
-        return Err(ProviderError::Validation(format!(
-            "Alpaca historical data is only available since 2016-01-01, but start date is {}",
-            start.format("%Y-%m-%d")
-        )));
+        return ValidationSnafu {
+            message: format!(
+                "Alpaca historical data is only available since 2016-01-01, but start date is {}",
+                start.format("%Y-%m-%d")
+            ),
+        }
+        .fail();
     }
 
     // Basic plan has 15-minute delay limitation
@@ -187,11 +200,14 @@ pub fn validate_date_range(
         AlpacaSubscriptionPlan::Basic => {
             let delay_threshold = now - Duration::minutes(15);
             if end > delay_threshold {
-                return Err(ProviderError::Validation(format!(
-                    "Basic plan has a 15-minute delay. Latest available data is at {}. Requested end time: {}",
-                    delay_threshold.format("%Y-%m-%d %H:%M:%S UTC"),
-                    end.format("%Y-%m-%d %H:%M:%S UTC")
-                )));
+                return ValidationSnafu {
+                    message: format!(
+                        "Basic plan has a 15-minute delay. Latest available data is at {}. Requested end time: {}",
+                        delay_threshold.format("%Y-%m-%d %H:%M:%S UTC"),
+                        end.format("%Y-%m-%d %H:%M:%S UTC")
+                    ),
+                }
+                .fail();
             }
         }
         AlpacaSubscriptionPlan::AlgoTrader => {
@@ -201,9 +217,10 @@ pub fn validate_date_range(
 
     // Basic date range validation
     if start >= end {
-        return Err(ProviderError::Validation(
-            "Start date must be before end date".to_string(),
-        ));
+        return ValidationSnafu {
+            message: "Start date must be before end date".to_string(),
+        }
+        .fail();
     }
 
     Ok(())
@@ -264,8 +281,18 @@ mod tests {
         let query = construct_params(&params);
         let query_map: std::collections::HashMap<_, _> = query.into_iter().collect();
 
-        assert_eq!(query_map.get("symbols").unwrap(), "AAPL,MSFT");
-        assert_eq!(query_map.get("timeframe").unwrap(), "1Day");
+        assert_eq!(
+            query_map
+                .get("symbols")
+                .expect("symbols parameter should exist"),
+            "AAPL,MSFT"
+        );
+        assert_eq!(
+            query_map
+                .get("timeframe")
+                .expect("timeframe parameter should exist"),
+            "1Day"
+        );
     }
 
     #[test]
@@ -286,8 +313,16 @@ mod tests {
         let query = construct_params(&params);
         let query_map: std::collections::HashMap<_, _> = query.into_iter().collect();
 
-        assert_eq!(query_map.get("limit").unwrap(), "100");
-        assert_eq!(query_map.get("sort").unwrap(), "desc");
+        assert_eq!(
+            query_map
+                .get("limit")
+                .expect("limit parameter should exist"),
+            "100"
+        );
+        assert_eq!(
+            query_map.get("sort").expect("sort parameter should exist"),
+            "desc"
+        );
     }
     #[test]
     fn test_validate_date_range_basic_plan() {
@@ -306,7 +341,7 @@ mod tests {
 
         // Invalid: before 2016
         let start = DateTime::parse_from_rfc3339("2015-12-31T00:00:00Z")
-            .unwrap()
+            .expect("Test date string is valid")
             .with_timezone(&Utc);
         let end = now - Duration::hours(1);
         assert!(validate_date_range(start, end, &plan).is_err());
@@ -324,7 +359,7 @@ mod tests {
 
         // Invalid: before 2016 (applies to all plans)
         let start = DateTime::parse_from_rfc3339("2015-12-31T00:00:00Z")
-            .unwrap()
+            .expect("Test date string is valid")
             .with_timezone(&Utc);
         let end = now - Duration::hours(1);
         assert!(validate_date_range(start, end, &plan).is_err());

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     models::{asset::AssetClass, timeframe::TimeFrame},
-    providers::alpaca_rest::params::AlpacaBarsParams,
+    provider::alpaca_rest::params::AlpacaBarsParams,
 };
 
 /// Universal parameters for requesting time-series bar data from any market data provider.

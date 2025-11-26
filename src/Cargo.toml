@@ -16,4 +16,5 @@ market_data_ingestor = { path = "market_data_ingestor" }
 chrono = { version = "0.4.39", features = ["serde"] }
 chrono-tz = { version = "0.10.4" }
 serde = { version = "1.0.218", features = ["derive"] }
+snafu = "0.8.9"
 indexmap = { version = "2.10.0", features = ["serde"] }

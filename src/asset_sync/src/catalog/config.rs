@@ -133,7 +133,7 @@ pub fn normalize_code_ascii_slug(raw: &str) -> anyhow::Result<String> {
         if ch.is_ascii_alphanumeric() || ch == '_' {
             out.push(ch.to_ascii_lowercase());
         } else {
-            bail!("code contains invalid non-ASCII or punctuation: {:?}", ch);
+            bail!("code contains invalid non-ASCII or punctuation: {ch:?}");
         }
     }
     Ok(out)

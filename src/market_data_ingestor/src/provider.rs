@@ -17,7 +17,7 @@
 //!     bar::BarSeries,
 //!     request_params::BarsRequestParams,
 //! };
-//! use market_data_ingestor::providers::{DataProvider, ProviderError};
+//! use market_data_ingestor::provider::{DataProvider, ProviderError};
 //!
 //! struct MyProvider;
 //!
